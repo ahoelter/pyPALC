@@ -1,3 +1,5 @@
 __pycache__
 
 /10_Doxygen/*
+
+*.swp
