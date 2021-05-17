@@ -1,0 +1,196 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gui_help_text &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <script src="../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_help_text</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gui_help_text</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: Arne Hoelter</span>
+
+<span class="sd">Everything that is placed on the &#39;Help&#39; Tab can be written or found in this</span>
+<span class="sd">module.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">bokeh.layouts</span> <span class="kn">import</span> <span class="n">row</span>
+<span class="kn">from</span> <span class="nn">bokeh.models.widgets</span> <span class="kn">import</span> <span class="n">Div</span><span class="p">,</span> <span class="n">Panel</span><span class="p">,</span> <span class="n">Tabs</span>
+
+<div class="viewcode-block" id="help_text"><a class="viewcode-back" href="../gui_help_text.html#gui_help_text.help_text">[docs]</a><span class="k">def</span> <span class="nf">help_text</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Strings in html-format that are placed in Div widget in Rows to be displayed</span>
+<span class="sd">    in the Tabs of the &#39;Help&#39; page.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    help_tabs : obj</span>
+<span class="sd">        Tabs widget that contains all data of &#39;Help&#39; page.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lspace</span> <span class="o">=</span> <span class="s1">&#39;&lt;br&gt;&lt;p&gt;&lt;/p&gt;&#39;</span>
+    <span class="n">llspace</span> <span class="o">=</span> <span class="s1">&#39;&lt;br&gt;&lt;p&gt;&lt;/p&gt;&lt;br&gt;&#39;</span>
+    <span class="n">empty_head</span> <span class="o">=</span> <span class="s1">&#39;&lt;b&gt; &lt;/b&gt;&#39;</span>
+    <span class="c1">########################## Text for page 0 (general) ######################</span>
+    <span class="n">page0_info1</span> <span class="o">=</span> <span class="s1">&#39;&lt;b&gt; General Information &lt;/b&gt;&#39;</span>
+    <span class="n">page0_general1</span> <span class="o">=</span> <span class="s1">&#39;This is a &lt;i&gt; Loudspeaker Array Curving Optimization Software&lt;/i&gt;.&#39;</span>
+    <span class="n">page0_authors1</span> <span class="o">=</span> <span class="s1">&#39;Programmed and developed by: &lt;br&gt; &lt;b&gt;&lt;a href=&quot;https://www.ak.tu-berlin.de/menue/team/wissenschaftliche_mitarbeiter/arne_hoelter/&quot; target=&quot;_blank&quot;&gt;Arne Hölter&lt;/a&gt;&lt;/b&gt; and &lt;b&gt;Florian Straube&lt;/b&gt;&#39;</span><span class="c1">#&lt;b&gt;&lt;a href=&quot;https://www.ak.tu-berlin.de/menue/team/wissenschaftliche_mitarbeiter/dr_florian_straube/&quot; target=&quot;_blank&quot;&gt;Florian Straube&lt;/a&gt;&lt;/b&gt;&#39;</span>
+    <span class="n">page0_authors2</span> <span class="o">=</span> <span class="s1">&#39;Correspondence should be addressed to: &lt;br&gt; &lt;a href=&quot;mailto:hoelter@campus.tu-berlin.de?subject=PALC-App&quot;&gt;hoelter@campus.tu-berlin.de&lt;/a&gt;&#39;</span>
+    <span class="n">page0_general2</span> <span class="o">=</span> <span class="s1">&#39;Based on the following publications:&#39;</span>
+    <span class="n">page0_paper1</span> <span class="o">=</span> <span class="s1">&#39;&lt;b&gt;[1] Straube, F.; Schultz, F.; Bonillo, D.A.; Weinzierl, S. (2018): “An Analytical Approach for Optimizing the Curving of Line Source Arrays.” In: &lt;i&gt;J. Audio Eng. Soc.&lt;/i&gt; 66(1/2), 4–20.&lt;/b&gt;&#39;</span> <span class="c1">#&amp;nbsp</span>
+    <span class="n">page0_paper2</span> <span class="o">=</span> <span class="s1">&#39;&lt;b&gt;[2] Hölter, A.; Straube, F.; Schultz, F.; Weinzierl, S. (2020): “Eine Web-Applikation zu Optimierung der Krümmung von Line Source Arrays.” In: &lt;i&gt;Fortschritte der Akustik: Tagungsband d. 46. DAGA&lt;/i&gt;, Hannover.&lt;/b&gt;&#39;</span>
+    <span class="n">page0_paper3</span> <span class="o">=</span> <span class="s1">&#39;&lt;b&gt;[3] Hölter, A.; Straube, F.; Schultz, F.; Weinzierl, S. (2021): “Enhanced Polygonal Audience Line Curving for Line Source Arrays.” In: &lt;i&gt;Proc. of the 149th Audio Eng. Soc. Conv.&lt;/i&gt;, Online.&lt;/b&gt;&#39;</span>
+    <span class="n">page0_paper4</span> <span class="o">=</span> <span class="s1">&#39;&lt;b&gt;[4] Hölter, A.; Schultz, F.; Straube F.; Weinzierl, S. (2021): &quot;Line Array Curving vs. Schalldruckpegelverlauf über die Distanz: Optimierung des PALC-Algorithmus.&quot; In: &lt;i&gt;Fortschritte der Akustik: Tagungsband d. 47. DAGA&lt;/i&gt;, Wien.&lt;/b&gt;&#39;</span>
+    <span class="n">page0_col0</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">page0_info1</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page0_general1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page0_authors1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page0_authors2</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    <span class="n">page0_col1</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page0_general2</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page0_paper1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page0_paper2</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page0_paper3</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page0_paper4</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    
+    <span class="c1">########################## Text for page 1 ################################</span>
+    <span class="n">page1_info1</span> <span class="o">=</span> <span class="s2">&quot;&lt;b&gt;I. Page - Create the Venue!&lt;/b&gt;&quot;</span>
+    <span class="n">page1_info2</span> <span class="o">=</span> <span class="s2">&quot;It is only possible to create straight lines, see below for more information.&quot;</span>
+    <span class="n">page1_1</span> <span class="o">=</span> <span class="s2">&quot;1. Enter the &lt;b&gt;start position&lt;/b&gt; of an audience line on the x-axis in meter.&quot;</span>
+    <span class="n">page1_2</span> <span class="o">=</span> <span class="s2">&quot;2. Enter the &lt;b&gt;end position&lt;/b&gt; of an audience line on the x-axis in meter.&quot;</span>
+    <span class="n">page1_3</span> <span class="o">=</span> <span class="s2">&quot;3. Enter the &lt;b&gt;discretization&lt;/b&gt; of an audience line, i.e., the number of points per meter. Only integer values are allowed. Note: The maximum of discretized points is 1000, e.g., a discretization of 10 points per meter would allow around 100 meter of audience lines.&quot;</span>
+    <span class="n">page1_4</span> <span class="o">=</span> <span class="s2">&quot;4. Enter the &lt;b&gt;start position&lt;/b&gt; of an audience line on the y-axis in meter.&quot;</span>
+    <span class="n">page1_5</span> <span class="o">=</span> <span class="s2">&quot;5. Enter the &lt;b&gt;end position&lt;/b&gt; of an audience line on the y-axis in meter.&quot;</span>
+    <span class="n">page1_6</span> <span class="o">=</span> <span class="s2">&quot;6. Click on the button to &lt;b&gt;save&lt;/b&gt; the current audience line. It will be displayed in the right figure. If &lt;b&gt;tapped&lt;/b&gt; on a line, the line will be created in front of the tapped line.&quot;</span>
+    <span class="n">page1_7</span> <span class="o">=</span> <span class="s2">&quot;7. Click on the button to &lt;b&gt;remove&lt;/b&gt; the last audience line that was created. It is also possible after computation. If &lt;b&gt;tapped&lt;/b&gt; on a line, the selected line will be deleted.&quot;</span>
+    <span class="n">page1_8</span> <span class="o">=</span> <span class="s2">&quot;8. Click on the button to &lt;b&gt;get&lt;/b&gt; a PALC compatible venue proposal, i.e., a continuous polygonal audience line (PAL) is created based on the various drawn audience lines. The gaps between the different audience lines are processed.&quot;</span>
+    <span class="n">page1_col0</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">page1_info1</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page1_info2</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_2</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_3</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    <span class="n">page1_col1</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page1_4</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_5</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_6</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_7</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page1_8</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+
+    <span class="c1">########################## Text for page 2 ################################</span>
+    <span class="n">page2_info</span> <span class="o">=</span> <span class="s2">&quot;&lt;b&gt;II. Configure the Loudspeakers!&lt;/b&gt;&quot;</span>
+    <span class="n">page2_1</span> <span class="o">=</span> <span class="s2">&quot;9. The &lt;b&gt;PALC aperture angle&lt;/b&gt; of the loudspeakers in degree is the start value for the iterative PALC calculation. In some cases it can be useful to set the start value lower than the default value, e.g., if many loudspeakers shall reinforce a small venue. In most of the cases the default value can be maintained.&quot;</span>
+    <span class="n">page2_2</span> <span class="o">=</span> <span class="s2">&quot;10. The &lt;b&gt;loudspeaker height&lt;/b&gt; in meter. The front grille&#39;s height of the deployed loudspeaker cabinets.&quot;</span>
+    <span class="n">page2_3</span> <span class="o">=</span> <span class="s2">&quot;11a. Choose the &lt;b&gt;directivity&lt;/b&gt; of the loudspeakers. Either modeled or measured data. Modeled: the directivities &lt;i&gt;circular piston&lt;/i&gt;, &lt;i&gt;line piston&lt;/i&gt; or a &lt;i&gt;combination of a circular and a line piston&lt;/i&gt; are possible. For the latter the circular piston is used for the low frequencies and the line piston is used for the high frequencies. The crossover is modeled with a 4th-order Linkwitz-Riley filter at 1.5 kHz.&quot;</span>
+    <span class="n">page2_4</span> <span class="o">=</span> <span class="s2">&quot;11b. &lt;b&gt;Upload measured loudspeaker data&lt;/b&gt;: Only .csv-files are accepted. The first entry must be a zero as a placeholder. The first line must contain the frequency bins in Hz. The first row must contain the angles in degree. The rest of the table must contain the complex directivity values in cartesian representation (amplitude and phase). The imaginary unit is &#39;i&#39; or &#39;j&#39;.&quot;</span>
+    <span class="n">page2_col0</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">page2_info</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page2_1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page2_2</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    <span class="n">page2_col1</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page2_3</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page2_4</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+
+    <span class="c1">########################## Text for page 3 ################################</span>
+    <span class="n">page3_info</span> <span class="o">=</span> <span class="s2">&quot;&lt;b&gt;III. Configure the Loudspeaker Array!&lt;/b&gt;&quot;</span>
+    <span class="n">page3_1</span> <span class="o">=</span> <span class="s2">&quot;12. Enter the &lt;b&gt;number&lt;/b&gt; of loudspeaker cabinets which the array is built of.&quot;</span>
+    <span class="n">page3_2</span> <span class="o">=</span> <span class="s2">&quot;13. Enter the &lt;b&gt;x-coordinate&lt;/b&gt; of the top front edge of the array&#39;s top loudspeaker cabinet in meter.&quot;</span>
+    <span class="n">page3_3</span> <span class="o">=</span> <span class="s2">&quot;14. Enter the &lt;b&gt;y-coordinate&lt;/b&gt; of the top front edge of the array&#39;s top loudspeaker cabinet in meter.&quot;</span>
+    <span class="n">page3_4</span> <span class="o">=</span> <span class="s2">&quot;15. Enter the &lt;b&gt;gap&lt;/b&gt; between the loudspeaker cabinets within the array in meter.&quot;</span>
+    <span class="n">page3_5</span> <span class="o">=</span> <span class="s2">&quot;16. Choose if the calculation is performed with a &lt;b&gt;set of discrete tilt angles&lt;/b&gt; in degree.&quot;</span>
+    <span class="n">page3_6</span> <span class="o">=</span> <span class="s2">&quot;17. Enabled if (15.) is set to &#39;Yes&#39;. Enter a &lt;b&gt;set of discrete tilt angles&lt;/b&gt; that will be used for the line array curving. The value separator is &#39;,&#39; and the decimal separator is &#39;.&#39;, e.g., [0,1,2.5,3,5]. This means the possible inter cabinet tilt angles are 0 deg, 1 deg, 2.5 deg, 3 deg and 5 deg.&quot;</span>
+    <span class="n">page3_col0</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">page3_info</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page3_1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page3_2</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page3_3</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>  
+    <span class="n">page3_col1</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page3_4</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page3_5</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page3_6</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    
+    <span class="c1">########################## Text for page 4 ################################</span>
+    <span class="n">page4_info</span> <span class="o">=</span> <span class="s2">&quot;&lt;b&gt;IV. Algorithm Options and Calculation!&lt;/b&gt;&quot;</span>
+    <span class="n">page4_1</span> <span class="o">=</span> <span class="s2">&quot;18. Choose the &lt;b&gt;PALC-algorithm&lt;/b&gt;. &lt;i&gt;PALC1&lt;/i&gt;: the PALC aperture angles of all loudspeaker cabinets are set to be constant. &lt;i&gt;PALC2&lt;/i&gt;: the product of the PALC aperture angles of a loudspeaker cabinet and the distance of the acoustic center of the respective loudspeaker cabinet to the audience line is set to be constant. &lt;i&gt;PALC3&lt;/i&gt; is similar to PALC2 but it takes the tangent of the PALC aperture angle instead of the approximated angle itself.&quot;</span>
+    <span class="n">page4_2</span> <span class="o">=</span> <span class="s2">&quot;19. &lt;b&gt;Gap handling approach&lt;/b&gt;. &lt;i&gt;Without&lt;/i&gt;: No additional lines are inserted in the gaps between the audience lines. &lt;i&gt;Hard Margin&lt;/i&gt;: The gaps are not handled as audience lines and the calculation runs separately for each continuous audience line. The combination with target slope weighting optimization is not possible. &lt;i&gt;Soft Margin&lt;/i&gt;: Non audience lines are inserted in the gaps between the audience lines. They are treated with a lower weighting in the calculation.&quot;</span>
+    <span class="n">page4_3</span> <span class="o">=</span> <span class="s2">&quot;20. The &lt;b&gt;strength of the soft margin approach&lt;/b&gt; is enabled when choosing soft margin in (19.). Raise the slider to use lower weighting for gaps or reduce the slider to converge weighting of the gaps to the audience lines.&quot;</span>
+    <span class="n">page4_4</span> <span class="o">=</span> <span class="s2">&quot;21. &lt;b&gt;Weighting&lt;/b&gt;: Choose a weighting in order to affect the SPL loss over distance: linear spacing, logarithmic spacing or a target slope. &lt;br&gt; If linear or logarithmic spacing is chosen, choose the strength of the weighting factors at the slider below. &lt;br&gt; If Target Slope is chosen, the SPL loss over distance will be optimized regarding the target slope. Choose the number of hinges (0, 1 or 2). The combination with the hard margin gap handling approach is not possible.&quot;</span>
+    <span class="n">page4_5</span> <span class="o">=</span> <span class="s2">&quot;22. Adjust the weighting parameter by clicking on: &lt;b&gt;+&lt;/b&gt; to increase the SPL loss over distance, &lt;b&gt;-&lt;/b&gt; to decrease the SPL loss over distance.&quot;</span>
+    <span class="n">page4_6</span> <span class="o">=</span> <span class="s2">&quot;23. Choose the &lt;b&gt;tolerance&lt;/b&gt; as criterion for the iterative algorithm to abort. If no convergence is reached in a calculation, it should always be the first step to increase the abort criterion.&quot;</span>
+    <span class="n">page4_7</span> <span class="o">=</span> <span class="s2">&quot;24. If the uppermost loudspeaker cabinet within the array is supposed to be mounted with a specific, &lt;b&gt;fixed&lt;/b&gt; tilt angle, change to &#39;Yes&#39;.&quot;</span>
+    <span class="n">page4_8</span> <span class="o">=</span> <span class="s2">&quot;25. If (24.) is set to &#39;Yes&#39;: Choose the &lt;b&gt;fixed tilt angle&lt;/b&gt; of the uppermost loudspeaker cabinet. Note: It is only possible to change the angle in defined range depending on LSA and venue geometry.&quot;</span>
+    <span class="n">page4_9</span> <span class="o">=</span> <span class="s2">&quot;26. &lt;b&gt;Run calculation&lt;/b&gt;: Start the computation of the PALC algorithm. &lt;br&gt; &lt;b&gt;Note&lt;/b&gt;, if no convergence is reached, decrease initial aperture angle in (9.) or increase the tolerance (23.).&quot;</span>
+    <span class="n">page4_10</span> <span class="o">=</span> <span class="s2">&quot;27. &lt;b&gt;Delete the result visualization&lt;/b&gt;: Removes the visualization of the results. This is automatically executed if clicking on &#39;1. PAL&#39; in the menu.&quot;</span>
+    <span class="n">page4_col0</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">page4_info</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page4_1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_2</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    <span class="n">page4_col1</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page4_3</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_4</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_5</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    <span class="n">page4_col2</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page4_6</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_7</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_8</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_9</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page4_10</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    
+    <span class="c1">########################## Text for page 5 ################################</span>
+    <span class="n">page5_info</span> <span class="o">=</span> <span class="s2">&quot;&lt;b&gt;V. Visualization of the Sound Field Prediction!&lt;/b&gt;&quot;</span>
+    <span class="n">page5_1</span> <span class="o">=</span> <span class="s2">&quot;28. &lt;b&gt;Venue slice&lt;/b&gt; with discrete audience line positions in the color of the corresponding SPL predictions in (29.) and (30.). Click on a specific discrete position to see the corresponding SPL prediction in (29.) and (30.).&quot;</span>
+    <span class="n">page5_2</span> <span class="o">=</span> <span class="s2">&quot;29. &lt;b&gt;SPL frequency responses&lt;/b&gt; at all audience positions for the loudspeaker array using the &lt;i&gt;PALC&lt;/i&gt; optimized tilt angles.&quot;</span>
+    <span class="n">page5_3</span> <span class="o">=</span> <span class="s2">&quot;30. &lt;b&gt;SPL frequency responses&lt;/b&gt; at all audience positions for the &lt;i&gt;reference loudspeaker array&lt;/i&gt;.&quot;</span>
+    <span class="n">page5_4</span> <span class="o">=</span> <span class="s2">&quot;31. &lt;b&gt;Homogeneity&lt;/b&gt; over frequency at all audience positions for the loudspeaker array using the &lt;i&gt;PALC&lt;/i&gt; optimized tilt angles in blue and for the &lt;i&gt;reference loudspeaker array&lt;/i&gt; in red.&quot;</span>
+    <span class="n">page5_5</span> <span class="o">=</span> <span class="s2">&quot;32. &lt;b&gt;Bar chart&lt;/b&gt; of the SPL values at the audience positions for the loudspeaker array using the &lt;i&gt;PALC&lt;/i&gt; optimized tilt angles.&quot;</span>
+    <span class="n">page5_6</span> <span class="o">=</span> <span class="s2">&quot;33. &lt;b&gt;Bar chart&lt;/b&gt; of the SPL values at the audience positions for the &lt;i&gt;reference loudspeaker array&lt;/i&gt;.&quot;</span>
+    <span class="n">page5_7</span> <span class="o">=</span> <span class="s2">&quot;34. &lt;b&gt;Beam plot&lt;/b&gt; visualizing the SPL values in the arrays&#39; vertical radiation plane.&quot;</span>
+    <span class="n">page5_col0</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">page5_info</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page5_1</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page5_2</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page5_3</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    <span class="n">page5_col1</span> <span class="o">=</span> <span class="n">Div</span><span class="p">(</span><span class="n">text</span> <span class="o">=</span> <span class="n">empty_head</span> <span class="o">+</span> <span class="n">llspace</span> <span class="o">+</span> <span class="n">page5_4</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page5_5</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page5_6</span> <span class="o">+</span> <span class="n">lspace</span> <span class="o">+</span> <span class="n">page5_7</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">350</span><span class="p">)</span>
+    
+    <span class="c1">##### Set up the Text Div Widgets Panels as Rows and Panels in Tabs #######</span>
+    <span class="n">help_tab0</span>  <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">row</span><span class="p">([</span><span class="n">page0_col0</span><span class="p">,</span> <span class="n">page0_col1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;General Information&#39;</span><span class="p">)</span>
+    <span class="n">help_tab1</span>  <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">row</span><span class="p">([</span><span class="n">page1_col0</span><span class="p">,</span> <span class="n">page1_col1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Venue Slice&#39;</span><span class="p">)</span>
+    <span class="n">help_tab2</span>  <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">row</span><span class="p">([</span><span class="n">page2_col0</span><span class="p">,</span> <span class="n">page2_col1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Loudspeaker&#39;</span><span class="p">)</span>
+    <span class="n">help_tab3</span>  <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">row</span><span class="p">([</span><span class="n">page3_col0</span><span class="p">,</span> <span class="n">page3_col1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Array&#39;</span><span class="p">)</span>
+    <span class="n">help_tab4</span>  <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">row</span><span class="p">([</span><span class="n">page4_col0</span><span class="p">,</span> <span class="n">page4_col1</span><span class="p">,</span> <span class="n">page4_col2</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Algorithm and Calculation&#39;</span><span class="p">)</span>
+    <span class="n">help_tab5</span>  <span class="o">=</span> <span class="n">Panel</span><span class="p">(</span><span class="n">child</span><span class="o">=</span><span class="n">row</span><span class="p">([</span><span class="n">page5_col0</span><span class="p">,</span> <span class="n">page5_col1</span><span class="p">]),</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Visualization of the Sound Field Prediction&#39;</span><span class="p">)</span>
+    <span class="c1"># Put the Panels in the Tabs</span>
+    <span class="n">help_tabs</span>  <span class="o">=</span> <span class="n">Tabs</span><span class="p">(</span><span class="n">tabs</span><span class="o">=</span><span class="p">[</span><span class="n">help_tab0</span><span class="p">,</span> <span class="n">help_tab1</span><span class="p">,</span> <span class="n">help_tab2</span><span class="p">,</span> <span class="n">help_tab3</span><span class="p">,</span> <span class="n">help_tab4</span><span class="p">,</span> <span class="n">help_tab5</span><span class="p">])</span>
+   
+    <span class="k">return</span> <span class="n">help_tabs</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_help_text</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

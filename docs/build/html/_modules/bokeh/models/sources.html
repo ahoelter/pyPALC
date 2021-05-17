@@ -1,0 +1,911 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bokeh.models.sources &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">bokeh.models.sources</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for bokeh.models.sources</h1><div class="highlight"><pre>
+<span></span><span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Copyright (c) 2012 - 2020, Anaconda, Inc., and Bokeh Contributors.</span>
+<span class="c1"># All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># The full license is in the file LICENSE.txt, distributed with this software.</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Boilerplate</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="kn">import</span> <span class="nn">logging</span> <span class="c1"># isort:skip</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Imports</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="c1"># Standard library imports</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="c1"># Bokeh imports</span>
+<span class="kn">from</span> <span class="nn">..core.has_props</span> <span class="kn">import</span> <span class="n">abstract</span>
+<span class="kn">from</span> <span class="nn">..core.properties</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">JSON</span><span class="p">,</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Bool</span><span class="p">,</span>
+    <span class="n">ColumnData</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">Enum</span><span class="p">,</span>
+    <span class="n">Instance</span><span class="p">,</span>
+    <span class="n">Int</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">PandasDataFrame</span><span class="p">,</span>
+    <span class="n">PandasGroupBy</span><span class="p">,</span>
+    <span class="n">Seq</span><span class="p">,</span>
+    <span class="n">String</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..model</span> <span class="kn">import</span> <span class="n">Model</span>
+<span class="kn">from</span> <span class="nn">..util.dependencies</span> <span class="kn">import</span> <span class="n">import_optional</span>
+<span class="kn">from</span> <span class="nn">..util.serialization</span> <span class="kn">import</span> <span class="n">convert_datetime_array</span>
+<span class="kn">from</span> <span class="nn">..util.warnings</span> <span class="kn">import</span> <span class="n">BokehUserWarning</span>
+<span class="kn">from</span> <span class="nn">.callbacks</span> <span class="kn">import</span> <span class="n">CustomJS</span>
+<span class="kn">from</span> <span class="nn">.filters</span> <span class="kn">import</span> <span class="n">Filter</span>
+<span class="kn">from</span> <span class="nn">.selections</span> <span class="kn">import</span> <span class="n">Selection</span><span class="p">,</span> <span class="n">SelectionPolicy</span><span class="p">,</span> <span class="n">UnionRenderers</span>
+
+<span class="n">pd</span> <span class="o">=</span> <span class="n">import_optional</span><span class="p">(</span><span class="s1">&#39;pandas&#39;</span><span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Globals and constants</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;AjaxDataSource&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;CDSView&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ColumnarDataSource&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ColumnDataSource&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DataSource&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;GeoJSONDataSource&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;ServerSentDataSource&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;WebSource&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># General API</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="nd">@abstract</span>
+<span class="k">class</span> <span class="nc">DataSource</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; A base class for data source types.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">selected</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Selection</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">Selection</span><span class="p">(),</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    An instance of a ``Selection`` that indicates selected indices on this ``DataSource``.</span>
+<span class="s2">    This is a read-only property. You may only change the attributes of this object</span>
+<span class="s2">    to change the selection (e.g., ``selected.indices``).</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="nd">@abstract</span>
+<span class="k">class</span> <span class="nc">ColumnarDataSource</span><span class="p">(</span><span class="n">DataSource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; A base class for data source types, which can be mapped onto</span>
+<span class="sd">    a columnar format.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">selection_policy</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">SelectionPolicy</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">UnionRenderers</span><span class="p">(),</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    An instance of a ``SelectionPolicy`` that determines how selections are set.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">ColumnDataSource</span><span class="p">(</span><span class="n">ColumnarDataSource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Maps names of columns to sequences or arrays.</span>
+
+<span class="sd">    The ``ColumnDataSource`` is a fundamental data structure of Bokeh. Most</span>
+<span class="sd">    plots, data tables, etc. will be driven by a ``ColumnDataSource``.</span>
+
+<span class="sd">    If the ``ColumnDataSource`` initializer is called with a single argument that</span>
+<span class="sd">    can be any of the following:</span>
+
+<span class="sd">    * A Python ``dict`` that maps string names to sequences of values, e.g.</span>
+<span class="sd">      lists, arrays, etc.</span>
+
+<span class="sd">      .. code-block:: python</span>
+
+<span class="sd">          data = {&#39;x&#39;: [1,2,3,4], &#39;y&#39;: np.ndarray([10.0, 20.0, 30.0, 40.0])}</span>
+
+<span class="sd">          source = ColumnDataSource(data)</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        ``ColumnDataSource`` only creates a shallow copy of ``data``. Use e.g.</span>
+<span class="sd">        ``ColumnDataSource(copy.deepcopy(data))`` if initializing from another</span>
+<span class="sd">        ``ColumnDataSource.data`` object that you want to keep independent.</span>
+
+<span class="sd">    * A Pandas ``DataFrame`` object</span>
+
+<span class="sd">      .. code-block:: python</span>
+
+<span class="sd">          source = ColumnDataSource(df)</span>
+
+<span class="sd">      In this case the CDS will have columns corresponding to the columns of</span>
+<span class="sd">      the ``DataFrame``. If the ``DataFrame`` columns have multiple levels,</span>
+<span class="sd">      they will be flattened using an underscore (e.g. level_0_col_level_1_col).</span>
+<span class="sd">      The index of the ``DataFrame`` will be flattened to an ``Index`` of tuples</span>
+<span class="sd">      if it&#39;s a ``MultiIndex``, and then reset using ``reset_index``. The result</span>
+<span class="sd">      will be a column with the same name if the index was named, or</span>
+<span class="sd">      level_0_name_level_1_name if it was a named ``MultiIndex``. If the</span>
+<span class="sd">      ``Index`` did not have a name or the ``MultiIndex`` name could not be</span>
+<span class="sd">      flattened/determined, the ``reset_index`` function will name the index column</span>
+<span class="sd">      ``index``, or ``level_0`` if the name ``index`` is not available.</span>
+
+<span class="sd">    * A Pandas ``GroupBy`` object</span>
+
+<span class="sd">      .. code-block:: python</span>
+
+<span class="sd">          group = df.groupby((&#39;colA&#39;, &#39;ColB&#39;))</span>
+
+<span class="sd">      In this case the CDS will have columns corresponding to the result of</span>
+<span class="sd">      calling ``group.describe()``. The ``describe`` method generates columns</span>
+<span class="sd">      for statistical measures such as ``mean`` and ``count`` for all the</span>
+<span class="sd">      non-grouped original columns. The CDS columns are formed by joining</span>
+<span class="sd">      original column names with the computed measure. For example, if a</span>
+<span class="sd">      ``DataFrame`` has columns ``&#39;year&#39;`` and ``&#39;mpg&#39;``. Then passing</span>
+<span class="sd">      ``df.groupby(&#39;year&#39;)`` to a CDS will result in columns such as</span>
+<span class="sd">      ``&#39;mpg_mean&#39;``</span>
+
+<span class="sd">      If the ``GroupBy.describe`` result has a named index column, then</span>
+<span class="sd">      CDS will also have a column with this name. However, if the index name</span>
+<span class="sd">      (or any subname of a ``MultiIndex``) is ``None``, then the CDS will have</span>
+<span class="sd">      a column generically named ``index`` for the index.</span>
+
+<span class="sd">      Note this capability to adapt ``GroupBy`` objects may only work with</span>
+<span class="sd">      Pandas ``&gt;=0.20.0``.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        There is an implicit assumption that all the columns in a given</span>
+<span class="sd">        ``ColumnDataSource`` all have the same length at all times. For this</span>
+<span class="sd">        reason, it is usually preferable to update the ``.data`` property</span>
+<span class="sd">        of a data source &quot;all at once&quot;.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">ColumnData</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">Seq</span><span class="p">(</span><span class="n">Any</span><span class="p">),</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Mapping of column names to sequences of data. The columns can be, e.g,</span>
+<span class="s2">    Python lists or tuples, NumPy arrays, etc.</span>
+
+<span class="s2">    The .data attribute can also be set from Pandas DataFrames or GroupBy</span>
+<span class="s2">    objects. In these cases, the behaviour is identical to passing the objects</span>
+<span class="s2">    to the ``ColumnDataSource`` initializer.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">accepts</span><span class="p">(</span>
+        <span class="n">PandasDataFrame</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">ColumnDataSource</span><span class="o">.</span><span class="n">_data_from_df</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">accepts</span><span class="p">(</span>
+        <span class="n">PandasGroupBy</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">ColumnDataSource</span><span class="o">.</span><span class="n">_data_from_groupby</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">asserts</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">len</span><span class="p">({</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">()})</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;ColumnDataSource&#39;s columns must be of the same length. &quot;</span> <span class="o">+</span>
+                    <span class="s2">&quot;Current lengths: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">())),</span> <span class="n">BokehUserWarning</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; If called with a single argument that is a dict or</span>
+<span class="sd">        ``pandas.DataFrame``, treat that implicitly as the &quot;data&quot; attribute.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">:</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># TODO (bev) invalid to pass args and &quot;data&quot;, check and raise exception</span>
+        <span class="n">raw_data</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">pd</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+                <span class="n">raw_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_from_df</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">pd</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">raw_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">groupby</span><span class="o">.</span><span class="n">GroupBy</span><span class="p">):</span>
+                <span class="n">raw_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_from_groupby</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;expected a dict or pandas.DataFrame, got </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">raw_data</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">column_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; A list of the column names in this data source.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_data_from_df</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Create a ``dict`` of columns from a Pandas ``DataFrame``,</span>
+<span class="sd">        suitable for creating a ColumnDataSource.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df (DataFrame) : data to convert</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, np.array]</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Flatten columns</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">MultiIndex</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">col</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Could not flatten MultiIndex columns. &#39;</span>
+                                <span class="s1">&#39;use string column names or flatten manually&#39;</span><span class="p">)</span>
+        <span class="c1"># Transform columns CategoricalIndex in list</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">CategoricalIndex</span><span class="p">):</span>
+            <span class="n">_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="c1"># Flatten index</span>
+        <span class="n">index_name</span> <span class="o">=</span> <span class="n">ColumnDataSource</span><span class="o">.</span><span class="n">_df_index_name</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index_name</span> <span class="o">==</span> <span class="s1">&#39;index&#39;</span><span class="p">:</span>
+            <span class="n">_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">index_name</span><span class="p">)</span>
+        <span class="n">_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">tmp_data</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">values</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_df</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="n">new_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">tmp_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">new_data</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+        <span class="k">return</span> <span class="n">new_data</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_data_from_groupby</span><span class="p">(</span><span class="n">group</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Create a ``dict`` of columns from a Pandas ``GroupBy``,</span>
+<span class="sd">        suitable for creating a ``ColumnDataSource``.</span>
+
+<span class="sd">        The data generated is the result of running ``describe``</span>
+<span class="sd">        on the group.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            group (GroupBy) : data to convert</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, np.array]</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">ColumnDataSource</span><span class="o">.</span><span class="n">_data_from_df</span><span class="p">(</span><span class="n">group</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_df_index_name</span><span class="p">(</span><span class="n">df</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Return the Bokeh-appropriate column name for a ``DataFrame`` index</span>
+
+<span class="sd">        If there is no named index, then `&quot;index&quot; is returned.</span>
+
+<span class="sd">        If there is a single named index, then ``df.index.name`` is returned.</span>
+
+<span class="sd">        If there is a multi-index, and the index names are all strings, then</span>
+<span class="sd">        the names are joined with &#39;_&#39; and the result is returned, e.g. for a</span>
+<span class="sd">        multi-index ``[&#39;ind1&#39;, &#39;ind2&#39;]`` the result will be &quot;ind1_ind2&quot;.</span>
+<span class="sd">        Otherwise if any index name is not a string, the fallback name &quot;index&quot;</span>
+<span class="sd">        is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df (DataFrame) : the ``DataFrame`` to find an index name for</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">elif</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;_&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;index&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;index&quot;</span>
+
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_df</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Create a ``dict`` of columns from a Pandas ``DataFrame``,</span>
+<span class="sd">        suitable for creating a ``ColumnDataSource``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (DataFrame) : data to convert</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, np.array]</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_data_from_df</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_groupby</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Create a ``dict`` of columns from a Pandas ``GroupBy``,</span>
+<span class="sd">        suitable for creating a ``ColumnDataSource``.</span>
+
+<span class="sd">        The data generated is the result of running ``describe``</span>
+<span class="sd">        on the group.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (Groupby) : data to convert</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict[str, np.array]</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_data_from_df</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">to_df</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Convert this data source to pandas ``DataFrame``.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            DataFrame</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pd</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Pandas must be installed to convert to a Pandas Dataframe&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Appends a new column of data to the data source.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (seq) : new data to add</span>
+<span class="sd">            name (str, optional) : column name to use.</span>
+<span class="sd">                If not supplied, generate a name of the form &quot;Series ####&quot;</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str:  the column name used</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">while</span> <span class="s2">&quot;Series </span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;Series </span><span class="si">%d</span><span class="s2">&quot;</span><span class="o">%</span><span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+
+    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Remove a column of data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str) : name of the column to remove</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            If the column name does not exist, a warning is issued.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Unable to find column &#39;</span><span class="si">%s</span><span class="s2">&#39; in data source&quot;</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_data</span><span class="p">,</span> <span class="n">rollover</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Efficiently update data source columns with new append-only data.</span>
+
+<span class="sd">        In cases where it is necessary to update data columns in, this method</span>
+<span class="sd">        can efficiently send only the new data, instead of requiring the</span>
+<span class="sd">        entire data set to be re-sent.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_data (dict[str, seq]) : a mapping of column names to sequences of</span>
+<span class="sd">                new data to append to each column.</span>
+
+<span class="sd">                All columns of the data source must be present in ``new_data``,</span>
+<span class="sd">                with identical-length append data.</span>
+
+<span class="sd">            rollover (int, optional) : A maximum column size, above which data</span>
+<span class="sd">                from the start of the column begins to be discarded. If None,</span>
+<span class="sd">                then columns will continue to grow unbounded (default: None)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            source = ColumnDataSource(data=dict(foo=[], bar=[]))</span>
+
+<span class="sd">            # has new, identical-length updates for all columns in source</span>
+<span class="sd">            new_data = {</span>
+<span class="sd">                &#39;foo&#39; : [10, 20],</span>
+<span class="sd">                &#39;bar&#39; : [100, 200],</span>
+<span class="sd">            }</span>
+
+<span class="sd">            source.stream(new_data)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># calls internal implementation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stream</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">rollover</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_data</span><span class="p">,</span> <span class="n">rollover</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">setter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Internal implementation to efficiently update data source columns</span>
+<span class="sd">        with new append-only data. The internal implementation adds the setter</span>
+<span class="sd">        attribute.  [https://github.com/bokeh/bokeh/issues/6577]</span>
+
+<span class="sd">        In cases where it is necessary to update data columns in, this method</span>
+<span class="sd">        can efficiently send only the new data, instead of requiring the</span>
+<span class="sd">        entire data set to be re-sent.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            new_data (dict[str, seq] or DataFrame or Series) : a mapping of</span>
+<span class="sd">                column names to sequences of new data to append to each column,</span>
+<span class="sd">                a pandas DataFrame, or a pandas Series in case of a single row -</span>
+<span class="sd">                in this case the Series index is used as column names</span>
+
+<span class="sd">                All columns of the data source must be present in ``new_data``,</span>
+<span class="sd">                with identical-length append data.</span>
+
+<span class="sd">            rollover (int, optional) : A maximum column size, above which data</span>
+<span class="sd">                from the start of the column begins to be discarded. If None,</span>
+<span class="sd">                then columns will continue to grow unbounded (default: None)</span>
+<span class="sd">            setter (ClientSession or ServerSession or None, optional) :</span>
+<span class="sd">                This is used to prevent &quot;boomerang&quot; updates to Bokeh apps.</span>
+<span class="sd">                (default: None)</span>
+<span class="sd">                In the context of a Bokeh server application, incoming updates</span>
+<span class="sd">                to properties will be annotated with the session that is</span>
+<span class="sd">                doing the updating. This value is propagated through any</span>
+<span class="sd">                subsequent change notifications that the update triggers.</span>
+<span class="sd">                The session can compare the event setter to itself, and</span>
+<span class="sd">                suppress any updates that originate from itself.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            source = ColumnDataSource(data=dict(foo=[], bar=[]))</span>
+
+<span class="sd">            # has new, identical-length updates for all columns in source</span>
+<span class="sd">            new_data = {</span>
+<span class="sd">                &#39;foo&#39; : [10, 20],</span>
+<span class="sd">                &#39;bar&#39; : [100, 200],</span>
+<span class="sd">            }</span>
+
+<span class="sd">            source.stream(new_data)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">needs_length_check</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">pd</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+            <span class="n">new_data</span> <span class="o">=</span> <span class="n">new_data</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">if</span> <span class="n">pd</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_data</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">needs_length_check</span> <span class="o">=</span> <span class="kc">False</span> <span class="c1"># DataFrame lengths equal by definition</span>
+            <span class="n">_df</span> <span class="o">=</span> <span class="n">new_data</span>
+            <span class="n">newkeys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">_df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="n">index_name</span> <span class="o">=</span> <span class="n">ColumnDataSource</span><span class="o">.</span><span class="n">_df_index_name</span><span class="p">(</span><span class="n">_df</span><span class="p">)</span>
+            <span class="n">newkeys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">index_name</span><span class="p">)</span>
+            <span class="n">new_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">_df</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="n">new_data</span><span class="p">[</span><span class="n">index_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">newkeys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">new_data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="n">oldkeys</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">newkeys</span> <span class="o">!=</span> <span class="n">oldkeys</span><span class="p">:</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="n">oldkeys</span> <span class="o">-</span> <span class="n">newkeys</span>
+            <span class="n">extra</span> <span class="o">=</span> <span class="n">newkeys</span> <span class="o">-</span> <span class="n">oldkeys</span>
+            <span class="k">if</span> <span class="n">missing</span> <span class="ow">and</span> <span class="n">extra</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Must stream updates to all existing columns (missing: </span><span class="si">%s</span><span class="s2">, extra: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)),</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">extra</span><span class="p">)))</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">missing</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must stream updates to all existing columns (missing: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must stream updates to all existing columns (extra: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">extra</span><span class="p">)))</span>
+
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+        <span class="k">if</span> <span class="n">needs_length_check</span><span class="p">:</span>
+            <span class="n">lengths</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+            <span class="n">arr_types</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">)</span> <span class="k">if</span> <span class="n">pd</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">new_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">arr_types</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;stream(...) only supports 1d sequences, got ndarray with size </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,))</span>
+                    <span class="n">lengths</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">lengths</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All streaming column updates must be the same length&quot;</span><span class="p">)</span>
+
+        <span class="c1"># slightly awkward that we have to call convert_datetime_array here ourselves</span>
+        <span class="c1"># but the downstream code expects things to already be ms-since-epoch</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">new_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">pd</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">)):</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">old_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="c1"># Apply the transformation if the new data contains datetimes</span>
+            <span class="c1"># but the current data has already been transformed</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;m&#39;</span> <span class="ow">and</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">old_values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">old_values</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;m&#39;</span><span class="p">):</span>
+                <span class="n">new_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">convert_datetime_array</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">values</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">_stream</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">document</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">new_data</span><span class="p">,</span> <span class="n">rollover</span><span class="p">,</span> <span class="n">setter</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">patch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">patches</span><span class="p">,</span> <span class="n">setter</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Efficiently update data source columns at specific locations</span>
+
+<span class="sd">        If it is only necessary to update a small subset of data in a</span>
+<span class="sd">        ``ColumnDataSource``, this method can be used to efficiently update only</span>
+<span class="sd">        the subset, instead of requiring the entire data set to be sent.</span>
+
+<span class="sd">        This method should be passed a dictionary that maps column names to</span>
+<span class="sd">        lists of tuples that describe a patch change to apply. To replace</span>
+<span class="sd">        individual items in columns entirely, the tuples should be of the</span>
+<span class="sd">        form:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            (index, new_value)  # replace a single column value</span>
+
+<span class="sd">            # or</span>
+
+<span class="sd">            (slice, new_values) # replace several column values</span>
+
+<span class="sd">        Values at an index or slice will be replaced with the corresponding</span>
+<span class="sd">        new values.</span>
+
+<span class="sd">        In the case of columns whose values are other arrays or lists, (e.g.</span>
+<span class="sd">        image or patches glyphs), it is also possible to patch &quot;subregions&quot;.</span>
+<span class="sd">        In this case the first item of the tuple should be a whose first</span>
+<span class="sd">        element is the index of the array item in the CDS patch, and whose</span>
+<span class="sd">        subsequent elements are integer indices or slices into the array item:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            # replace the entire 10th column of the 2nd array:</span>
+
+<span class="sd">              +----------------- index of item in column data source</span>
+<span class="sd">              |</span>
+<span class="sd">              |       +--------- row subindex into array item</span>
+<span class="sd">              |       |</span>
+<span class="sd">              |       |       +- column subindex into array item</span>
+<span class="sd">              V       V       V</span>
+<span class="sd">            ([2, slice(None), 10], new_values)</span>
+
+<span class="sd">        Imagining a list of 2d NumPy arrays, the patch above is roughly</span>
+<span class="sd">        equivalent to:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            data = [arr1, arr2, ...]  # list of 2d arrays</span>
+
+<span class="sd">            data[2][:, 10] = new_data</span>
+
+<span class="sd">        There are some limitations to the kinds of slices and data that can</span>
+<span class="sd">        be accepted.</span>
+
+<span class="sd">        * Negative ``start``, ``stop``, or ``step`` values for slices will</span>
+<span class="sd">          result in a ``ValueError``.</span>
+
+<span class="sd">        * In a slice, ``start &gt; stop`` will result in a ``ValueError``</span>
+
+<span class="sd">        * When patching 1d or 2d subitems, the subitems must be NumPy arrays.</span>
+
+<span class="sd">        * New values must be supplied as a **flattened one-dimensional array**</span>
+<span class="sd">          of the appropriate size.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            patches (dict[str, list[tuple]]) : lists of patches for each column</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">        The following example shows how to patch entire column elements. In this case,</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            source = ColumnDataSource(data=dict(foo=[10, 20, 30], bar=[100, 200, 300]))</span>
+
+<span class="sd">            patches = {</span>
+<span class="sd">                &#39;foo&#39; : [ (slice(2), [11, 12]) ],</span>
+<span class="sd">                &#39;bar&#39; : [ (0, 101), (2, 301) ],</span>
+<span class="sd">            }</span>
+
+<span class="sd">            source.patch(patches)</span>
+
+<span class="sd">        After this operation, the value of the ``source.data`` will be:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            dict(foo=[11, 12, 30], bar=[101, 200, 301])</span>
+
+<span class="sd">        For a more comprehensive complete example, see :bokeh-tree:`examples/howto/patch_app.py`.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+        <span class="n">extra</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">patches</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">extra</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can only patch existing columns (extra: </span><span class="si">%s</span><span class="s2">)&quot;</span> <span class="o">%</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">extra</span><span class="p">)))</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">patch</span> <span class="ow">in</span> <span class="n">patches</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+            <span class="n">col_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">patch</span><span class="p">:</span>
+
+                <span class="c1"># integer index, patch single value of 1d column</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">ind</span> <span class="o">&gt;</span> <span class="n">col_len</span> <span class="ow">or</span> <span class="n">ind</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Out-of bounds index (</span><span class="si">%d</span><span class="s2">) in patch for column: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+
+                <span class="c1"># slice index, patch multiple values of 1d column</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+                    <span class="n">_check_slice</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">ind</span><span class="o">.</span><span class="n">stop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ind</span><span class="o">.</span><span class="n">stop</span> <span class="o">&gt;</span> <span class="n">col_len</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Out-of bounds slice index stop (</span><span class="si">%d</span><span class="s2">) in patch for column: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+
+                <span class="c1"># multi-index, patch sub-regions of &quot;n-d&quot; column</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Empty (length zero) patch multi-index&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Patch multi-index must contain more than one subindex&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Initial patch sub-index may only be integer, got: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">col_len</span> <span class="ow">or</span> <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Out-of bounds initial sub-index (</span><span class="si">%d</span><span class="s2">) in patch for column: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ind</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can only sub-patch into columns with NumPy array items&quot;</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ind</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Shape mismatch between patch slice and sliced data&quot;</span><span class="p">)</span>
+
+                    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">slice</span><span class="p">):</span>
+                        <span class="n">_check_slice</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="k">if</span> <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stop</span> <span class="o">&gt;</span> <span class="n">col_len</span><span class="p">:</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Out-of bounds initial slice sub-index stop (</span><span class="si">%d</span><span class="s2">) in patch for column: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">ind</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+
+                    <span class="c1"># Note: bounds of sub-indices after the first are not checked!</span>
+                    <span class="k">for</span> <span class="n">subind</span> <span class="ow">in</span> <span class="n">ind</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subind</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)):</span>
+                            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid patch sub-index: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">subind</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">subind</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+                            <span class="n">_check_slice</span><span class="p">(</span><span class="n">subind</span><span class="p">)</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid patch index: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">ind</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">_patch</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">document</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">patches</span><span class="p">,</span> <span class="n">setter</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">CDSView</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; A view into a ``ColumnDataSource`` that represents a row-wise subset.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">filters</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span><span class="n">Instance</span><span class="p">(</span><span class="n">Filter</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="p">[],</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    List of filters that the view comprises.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">ColumnarDataSource</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    The ``ColumnDataSource`` associated with this view. Used to determine</span>
+<span class="s2">    the length of the columns.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">GeoJSONDataSource</span><span class="p">(</span><span class="n">ColumnarDataSource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">geojson</span> <span class="o">=</span> <span class="n">JSON</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    GeoJSON that contains features for plotting. Currently</span>
+<span class="s2">    ``GeoJSONDataSource`` can only process a ``FeatureCollection`` or</span>
+<span class="s2">    ``GeometryCollection``.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="nd">@abstract</span>
+<span class="k">class</span> <span class="nc">WebSource</span><span class="p">(</span><span class="n">ColumnDataSource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Base class for web column data sources that can update from data</span>
+<span class="sd">    URLs.</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        This base class is typically not useful to instantiate on its own.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">Instance</span><span class="p">(</span><span class="n">CustomJS</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    A JavaScript callback to adapt raw JSON responses to Bokeh ``ColumnDataSource``</span>
+<span class="s2">    format.</span>
+
+<span class="s2">    If provided, this callback is executes immediately after the JSON data is</span>
+<span class="s2">    received, but before appending or replacing data in the data source. The</span>
+<span class="s2">    ``CustomJS`` callback will receive the ``AjaxDataSource`` as ``cb_obj`` and</span>
+<span class="s2">    will receive the raw JSON response as ``cb_data.response``. The callback</span>
+<span class="s2">    code should return a ``data`` object suitable for a Bokeh ``ColumnDataSource``</span>
+<span class="s2">    (i.e.  a mapping of string column names to arrays of data).</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">max_size</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Maximum size of the data columns. If a new fetch would result in columns</span>
+<span class="s2">    larger than ``max_size``, then earlier data is dropped to make room.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s2">&quot;replace&quot;</span><span class="p">,</span> <span class="s2">&quot;append&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Whether to append new data to existing data (up to ``max_size``), or to</span>
+<span class="s2">    replace existing data entirely.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">data_url</span> <span class="o">=</span> <span class="n">String</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    A URL to to fetch data from.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">ServerSentDataSource</span><span class="p">(</span><span class="n">WebSource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; A data source that can populate columns by receiving server sent</span>
+<span class="sd">    events endpoints.</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+<span class="k">class</span> <span class="nc">AjaxDataSource</span><span class="p">(</span><span class="n">WebSource</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; A data source that can populate columns by making Ajax calls to REST</span>
+<span class="sd">    endpoints.</span>
+
+<span class="sd">    The ``AjaxDataSource`` can be especially useful if you want to make a</span>
+<span class="sd">    standalone document (i.e. not backed by the Bokeh server) that can still</span>
+<span class="sd">    dynamically update using an existing REST API.</span>
+
+<span class="sd">    The response from the REST API should match the ``.data`` property of a</span>
+<span class="sd">    standard ``ColumnDataSource``, i.e. a JSON dict that maps names to arrays</span>
+<span class="sd">    of values:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        {</span>
+<span class="sd">            &#39;x&#39; : [1, 2, 3, ...],</span>
+<span class="sd">            &#39;y&#39; : [9, 3, 2, ...]</span>
+<span class="sd">        }</span>
+
+<span class="sd">    Alternatively, if the REST API returns a different format, a ``CustomJS``</span>
+<span class="sd">    callback can be provided to convert the REST response into Bokeh format,</span>
+<span class="sd">    via the ``adapter`` property of this data source.</span>
+
+<span class="sd">    Initial data can be set by specifying the ``data`` property directly.</span>
+<span class="sd">    This is necessary when used in conjunction with a ``FactorRange``, even</span>
+<span class="sd">    if the columns in `data`` are empty.</span>
+
+<span class="sd">    A full example can be seen at :bokeh-tree:`examples/howto/ajax_source.py`</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">polling_interval</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    A polling interval (in milliseconds) for updating data source.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">method</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span> <span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Specify the HTTP method to use for the Ajax request (GET or POST)</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">if_modified</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Whether to include an ``If-Modified-Since`` header in Ajax requests</span>
+<span class="s2">    to the server. If this header is supported by the server, then only</span>
+<span class="s2">    new data since the last request will be returned.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">content_type</span> <span class="o">=</span> <span class="n">String</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s1">&#39;application/json&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Set the &quot;contentType&quot; parameter for the Ajax request.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">http_headers</span> <span class="o">=</span> <span class="n">Dict</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Specify HTTP headers to set for the Ajax request.</span>
+
+<span class="s2">    Example:</span>
+
+<span class="s2">    .. code-block:: python</span>
+
+<span class="s2">        ajax_source.headers = { &#39;x-my-custom-header&#39;: &#39;some value&#39; }</span>
+
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Dev API</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Private API</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="k">def</span> <span class="nf">_check_slice</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">stop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">start</span> <span class="o">&gt;</span> <span class="n">s</span><span class="o">.</span><span class="n">stop</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Patch slices must have start &lt; end, got </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">s</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">start</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> \
+       <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">stop</span>  <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">stop</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> \
+       <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">step</span>  <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">s</span><span class="o">.</span><span class="n">step</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Patch slices must have non-negative (start, stop, step) values, got </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">s</span><span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Code</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">bokeh.models.sources</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

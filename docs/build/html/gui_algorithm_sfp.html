@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gui_algorithm_sfp &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="gui_help_text" href="gui_help_text.html" />
+    <link rel="prev" title="gui_ls_array" href="gui_ls_array.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gui_help_text.html" title="gui_help_text"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gui_ls_array.html" title="gui_ls_array"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_algorithm_sfp</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-gui_algorithm_sfp">
+<span id="gui-algorithm-sfp"></span><h1>gui_algorithm_sfp<a class="headerlink" href="#module-gui_algorithm_sfp" title="Permalink to this headline">¶</a></h1>
+<p>author: Arne Hoelter</p>
+<p>The module contains functions used in callbacks that belong to the PALC algorithm
+computation and the sound field prediction by the CDPS-model.</p>
+<dl class="py function">
+<dt id="gui_algorithm_sfp.choose_gap_handling">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">choose_gap_handling</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gui_gap_handling</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gui_strength_smarg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#choose_gap_handling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.choose_gap_handling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enables the Slider widget <a class="reference internal" href="main.html#main.gui_strength_smarg" title="main.gui_strength_smarg"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_strength_smarg</span></code></a> if soft margin is
+chosen as the gap handling approach. Otherwise disables the slider.
+Called by <a class="reference internal" href="main.html#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gui_gap_handling</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Select widget of gap handling approach.</p></li>
+<li><p><strong>gui_strength_smarg</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Slider widget of strength of soft margin gap handling approach.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_algorithm_sfp.get_fixed_angle_borders">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">get_fixed_angle_borders</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">last_pal_sec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#get_fixed_angle_borders"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.get_fixed_angle_borders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the average / mid and maximum tilt angle for the heighest LSA cabinet.
+When functionality of fixing the heighest LSA cabinet on a specific tilt
+angle, the borders of the maximum and minimum tilt angle can thus be found.
+Called by <a class="reference internal" href="main.html#main.use_fixed_angle" title="main.use_fixed_angle"><code class="xref any py py-func docutils literal notranslate"><span class="pre">use_fixed_angle</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>last_pal_sec</strong> (<em>list</em>) – Last PAL section, i.e., PALC_pal.pal[-1].</p></li>
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of the PALC algorithm.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>gamma_tilt_deg</strong> – Contains average (first entry) and maximum (seconed entry) tilt angle
+of the heighest LSA cabinet.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_algorithm_sfp.optimize_PALC">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">optimize_PALC</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SFP_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tech_res</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_loops</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#optimize_PALC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.optimize_PALC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the while loop of target slope optimization. Will return the optimized
+weighting factors in <a class="reference internal" href="main.html#main.Opt_w" title="main.Opt_w"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_w</span></code></a>. Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a>. Calls mainly
+methods of <a class="reference internal" href="PALC_classes.html#PALC_classes.Opt_weight" title="PALC_classes.Opt_weight"><code class="xref py py-class docutils literal notranslate"><span class="pre">PALC_classes.Opt_weight</span></code></a>, <a class="reference internal" href="PALC_opt.html#module-PALC_opt" title="PALC_opt"><code class="xref py py-mod docutils literal notranslate"><span class="pre">PALC_opt</span></code></a> and
+<a class="reference internal" href="sfp_functions.html#module-sfp_functions" title="sfp_functions"><code class="xref py py-mod docutils literal notranslate"><span class="pre">sfp_functions</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of the PALC algorithm.</p></li>
+<li><p><strong>SFP_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of the sound field prediction.</p></li>
+<li><p><strong>PALC_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Data of the venue slice.</p></li>
+<li><p><strong>PALC_plots</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Data to plot the venue slice information.</p></li>
+<li><p><strong>Opt_arr</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Data of the optimized LSA.</p></li>
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Venue slice that was drawn by the user.</p></li>
+<li><p><strong>Tech_res</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Technical Measure results depending on the sound field prediction.</p></li>
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Data of the Sound Pressure Level over Distance.</p></li>
+<li><p><strong>Opt_w</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Optimized weighting data to run the target slope optimization.</p></li>
+<li><p><strong>max_loops</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum of loops to compute. The default is 40.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_algorithm_sfp.round_fixed_angle">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">round_fixed_angle</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gui_fixed_first_angle</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#round_fixed_angle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.round_fixed_angle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rounds fixed tilt angle of heighest LSA cabinet to min or max value if user
+input was out of possible range. Min and max is stored in <a class="reference internal" href="main.html#main.Opt_arr" title="main.Opt_arr"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_arr</span></code></a>.
+<a class="reference internal" href="main.html#main.PALC_config" title="main.PALC_config"><code class="xref any py py-data docutils literal notranslate"><span class="pre">PALC_config</span></code></a> and <a class="reference internal" href="main.html#main.gui_fixed_first_angle" title="main.gui_fixed_first_angle"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_fixed_first_angle</span></code></a> is updated. Called by
+<a class="reference internal" href="main.html#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – PALC configuration object.</p></li>
+<li><p><strong>Opt_arr</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Optimized array data object.</p></li>
+<li><p><strong>gui_fixed_first_angle</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – TextInput widget that handles the fixed tilt angle of the heighest LSA cabinet.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_algorithm_sfp.set_beamplot_visibility">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">set_beamplot_visibility</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gui_which_beam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pBeam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pBeam_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#set_beamplot_visibility"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.set_beamplot_visibility" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets beamplot figures to visible or invisible depending on user input in
+<a class="reference internal" href="main.html#main.gui_which_beam" title="main.gui_which_beam"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_which_beam</span></code></a> widget. Called by <a class="reference internal" href="main.html#main.get_beamplot" title="main.get_beamplot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_beamplot</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gui_which_beam</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – CheckBoxGroup widget that handles which beamplot is shown.</p></li>
+<li><p><strong>pBeam</strong> (<em>fig</em><em> [</em><em>out</em><em>]</em>) – Beamplot figure of PALC results.</p></li>
+<li><p><strong>pBeam_ref</strong> (<em>fig</em><em> [</em><em>out</em><em>]</em>) – Beamplot figure of reference array.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_algorithm_sfp.set_weighting_in">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">set_weighting_in</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gui_weighting</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting_plus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting_minus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weighting_step_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gui_weighting_nu</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#set_weighting_in"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.set_weighting_in" title="Permalink to this definition">¶</a></dt>
+<dd><p>If linear or logarithmic spaced weighting is chosen in <a class="reference internal" href="main.html#main.gui_weighting" title="main.gui_weighting"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_weighting</span></code></a>,
+enables the weighting Buttons and Sliders <a class="reference internal" href="main.html#main.weighting_plus" title="main.weighting_plus"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_plus</span></code></a>,
+<a class="reference internal" href="main.html#main.weighting_minus" title="main.weighting_minus"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_minus</span></code></a>, <a class="reference internal" href="main.html#main.weighting_step_size" title="main.weighting_step_size"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_step_size</span></code></a> and <a class="reference internal" href="main.html#main.gui_weighting_nu" title="main.gui_weighting_nu"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_weighting_nu</span></code></a>.
+Triggered by <a class="reference internal" href="main.html#main.weighting_select" title="main.weighting_select"><code class="xref any py py-func docutils literal notranslate"><span class="pre">weighting_select</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gui_weighting</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – DESCRIPTION.</p></li>
+<li><p><strong>weighting_plus</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – DESCRIPTION.</p></li>
+<li><p><strong>weighting_minus</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – DESCRIPTION.</p></li>
+<li><p><strong>weighting_step_size</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – DESCRIPTION.</p></li>
+<li><p><strong>gui_weighting_nu</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – DESCRIPTION.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_algorithm_sfp.update_gh_w_select">
+<code class="sig-prename descclassname"><span class="pre">gui_algorithm_sfp.</span></code><code class="sig-name descname"><span class="pre">update_gh_w_select</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gui_weighting</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gui_gap_handling</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_algorithm_sfp.html#update_gh_w_select"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_algorithm_sfp.update_gh_w_select" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensures that hard margin gap handling approach and target slope weighting
+optimization cannot be enabled at same time. Called by <a class="reference internal" href="main.html#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a> and
+<a class="reference internal" href="main.html#main.weighting_select" title="main.weighting_select"><code class="xref any py py-func docutils literal notranslate"><span class="pre">weighting_select</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gui_weighting</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Select widget of weighting approach.</p></li>
+<li><p><strong>gui_gap_handling</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Select widget of gap handling approach.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gui_ls_array.html"
+                        title="previous chapter">gui_ls_array</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="gui_help_text.html"
+                        title="next chapter">gui_help_text</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/gui_algorithm_sfp.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="gui_help_text.html" title="gui_help_text"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gui_ls_array.html" title="gui_ls_array"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_algorithm_sfp</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

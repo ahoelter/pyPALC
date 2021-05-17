@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>checkPAL &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="sfp_functions" href="sfp_functions.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sfp_functions.html" title="sfp_functions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">checkPAL</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-checkPAL">
+<span id="checkpal"></span><h1>checkPAL<a class="headerlink" href="#module-checkPAL" title="Permalink to this headline">¶</a></h1>
+<p>author: Arne Hoelter</p>
+<p>The checkPAL module checks conditions of user drawn audience lines. Non-audience
+lines can be inserted. The venue slice will be transformed into a PALC
+compatible format. This guarantees also the compatibility for the sound field
+prediction (SFP).</p>
+<dl class="py function">
+<dt id="checkPAL.get_PALC_compatible_PAL">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">get_PALC_compatible_PAL</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_nal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s_sfp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#get_PALC_compatible_PAL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.get_PALC_compatible_PAL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a PALC compatible PAL object that can be passed to the PALC
+computation. Needs the data that were generated in <a class="reference internal" href="#checkPAL.suggestPAL" title="checkPAL.suggestPAL"><code class="xref any py py-func docutils literal notranslate"><span class="pre">suggestPAL</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_pal</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains the object to pass to PALC computation.</p></li>
+<li><p><strong>c_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of the drawn audience lines by the user.</p></li>
+<li><p><strong>s_nal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of the non-audience line.</p></li>
+<li><p><strong>s_sfp</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of audience lines that are only used for SFP.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="checkPAL.get_slope_b">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">get_slope_b</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_stop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_stop</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#get_slope_b"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.get_slope_b" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the slope and intersection point on the y-axis of line specified by
+start and stop point. The format of the line is: y = slope * x + b</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_start</strong> (<em>float</em>) – Start point on x-axis.</p></li>
+<li><p><strong>x_stop</strong> (<em>float</em>) – Stop point on x-axis.</p></li>
+<li><p><strong>y_start</strong> (<em>float</em>) – Start point on y-axis.</p></li>
+<li><p><strong>y_stop</strong> (<em>float</em>) – Stop point on y-axis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>slope</strong> (<em>float</em>) – Slope of the drawn line.</p></li>
+<li><p><strong>b</strong> (<em>float</em>) – Intersection point with y-axis.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="checkPAL.pal_draw_condition_1">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">pal_draw_condition_1</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_stop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_stop</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#pal_draw_condition_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.pal_draw_condition_1" title="Permalink to this definition">¶</a></dt>
+<dd><p>First draw condition of polygonal audience lines. Stop values are bigger
+or equal to the start values</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_start</strong> (<em>float</em>) – Start point on x-axis.</p></li>
+<li><p><strong>x_stop</strong> (<em>float</em>) – Stop point on x-axis.</p></li>
+<li><p><strong>y_start</strong> (<em>float</em>) – Start point on y-axis.</p></li>
+<li><p><strong>y_stop</strong> (<em>float</em>) – Stop point on y-axis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if condition has passed, otherwise False.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="checkPAL.pal_draw_condition_2">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">pal_draw_condition_2</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slope</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#pal_draw_condition_2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.pal_draw_condition_2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Second draw condition of polygonal audience lines. The slope of the
+lines must be zero or positive</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>slope</strong> (<em>float</em>) – Slope of the polygonal audience line.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>condition_2</strong> – True if condition has passed, otherwise False.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="checkPAL.pal_draw_condition_3">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">pal_draw_condition_3</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_stop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_stop</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slope</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#pal_draw_condition_3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.pal_draw_condition_3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Third draw condition of polygonal audience lines. No point of intersection
+shall be in the range of a line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_start</strong> (<em>float</em>) – Start point on x-axis.</p></li>
+<li><p><strong>x_stop</strong> (<em>float</em>) – Stop point on x-axis.</p></li>
+<li><p><strong>y_start</strong> (<em>float</em>) – Start point on y-axis.</p></li>
+<li><p><strong>y_stop</strong> (<em>float</em>) – Stop point on y-axis.</p></li>
+<li><p><strong>slope</strong> (<em>float</em>) – Slope of drawn line.</p></li>
+<li><p><strong>b</strong> (<em>float</em>) – Intersection point on y-axis of drawn line.</p></li>
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of the drawn lines.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>True if condition has passed, otherwise False.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="checkPAL.suggestPAL">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">suggestPAL</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suggested_nal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suggested_sfp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#suggestPAL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.suggestPAL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Suggests a venue slice depending on drawn audience lines. Creates a suggestion
+for non-audience lines and lines only considered for SFP. Therefore considers
+all possible cases explained in AES PAPER REF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of the drawn audience lines by the user.</p></li>
+<li><p><strong>suggested_nal</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains data of the non-audience line.</p></li>
+<li><p><strong>suggested_sfp</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains data of audience lines that are only used for SFP.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="checkPAL.which_pal_jump">
+<code class="sig-prename descclassname"><span class="pre">checkPAL.</span></code><code class="sig-name descname"><span class="pre">which_pal_jump</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mPAL</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/checkPAL.html#which_pal_jump"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#checkPAL.which_pal_jump" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detects lines that will be totally avoided in the PALC computation. This
+must be considered in the PALC compatible PAL format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains the drawn polygonal audience lines.</p></li>
+<li><p><strong>mPAL</strong> (<em>int</em>) – Number of audience lines to be considered.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>jump</strong> – Index of lines that are totally avoided in PALC computation.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="sfp_functions.html"
+                        title="previous chapter">sfp_functions</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/checkPAL.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sfp_functions.html" title="sfp_functions"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">checkPAL</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

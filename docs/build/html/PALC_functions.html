@@ -1,0 +1,354 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PALC_functions &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PALC_opt" href="PALC_opt.html" />
+    <link rel="prev" title="calcPALC" href="calcPALC.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PALC_opt.html" title="PALC_opt"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="calcPALC.html" title="calcPALC"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_functions</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-PALC_functions">
+<span id="palc-functions"></span><h1>PALC_functions<a class="headerlink" href="#module-PALC_functions" title="Permalink to this headline">¶</a></h1>
+<p>author: Arne Hoelter</p>
+<p>This module contains function that are used in <a class="reference internal" href="calcPALC.html#module-calcPALC" title="calcPALC"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calcPALC()</span></code></a> and
+<a class="reference internal" href="#PALC_functions.calc_angles" title="PALC_functions.calc_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calc_angles</span></code></a>.</p>
+<dl class="py function">
+<dt id="PALC_functions.LSA_visualization">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">LSA_visualization</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_margin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#LSA_visualization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.LSA_visualization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the positions of the LSA cabinet edges to visualize them in a
+bokeh figure as patches. Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_plots</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains plotting data of the PALC results.</p></li>
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains the PALC configuration.</p></li>
+<li><p><strong>gamma_n</strong> (<em>ndarray</em>) – Absolute tilt angles of the LSA cabinets in degree.</p></li>
+<li><p><strong>N_margin</strong> (<em>int</em><em>, </em><em>optional</em>) – If not all LSA cabinets shall be visualized. The default is [].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_patches</strong> (<em>list</em>) – x-coordinates of the LSA patches.</p></li>
+<li><p><strong>y_patches</strong> (<em>list</em>) – y-coordinates of the LSA patches.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.calc_angles">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">calc_angles</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pal_e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#calc_angles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.calc_angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main routine of the PALC computation and is calles by <a class="reference internal" href="calcPALC.html#module-calcPALC" title="calcPALC"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calcPALC()</span></code></a>.
+Computes the tilt angles of the LSA cabinets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_plots</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains plotting data of the PALC results.</p></li>
+<li><p><strong>pal</strong> (<em>list</em>) – All audience lines to be considered in PALC (audience lines,
+non-audience lines). Each element contains a audience line as a ndarray.</p></li>
+<li><p><strong>psi_n</strong> (<em>float</em>) – Init splay angle for first PALC loop.</p></li>
+<li><p><strong>gamma_n</strong> (<em>ndarray</em>) – Init tilt angles for the first iteration in radian.</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of LSA cabinets.</p></li>
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains PALC Configuration.</p></li>
+<li><p><strong>pal_e</strong> (<em>ndarray</em>) – Audience lines without non-audience lines.</p></li>
+<li><p><strong>Opt_arr</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Result of the PALC algorithm. Optimized LSA data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.calc_arc_array">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">calc_arc_array</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_LSA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_dangles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'No'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#calc_arc_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.calc_arc_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the absolute tilt angles of an arc LSA curving. Called by
+<a class="reference internal" href="gui_ls_array.html#gui_ls_array.ref_array_angles" title="gui_ls_array.ref_array_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">ref_array_angles</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – Number of loudspeaker array cabinets.</p></li>
+<li><p><strong>gamma_LSA</strong> (<em>list</em><em>, </em><em>optional</em>) – Possible discrete intercabinet tilt angles, if use_dangles is set to
+‘Yes’. The default is [].</p></li>
+<li><p><strong>gamma_0</strong> (<em>float</em><em>, </em><em>optional</em>) – Tilt angle of the highest (first) LSA cabinet in degree.
+The default is 0.</p></li>
+<li><p><strong>gamma_delta</strong> (<em>float</em><em>, </em><em>optional</em>) – Angle of the intercabinet angles in degree. The default is 1.</p></li>
+<li><p><strong>use_dangles</strong> (<em>str</em><em>, </em><em>optional</em>) – If discrete tilt angles shall be used: ‘Yes’. The default is ‘No’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>gamma_deg</strong> – Array with the progressive LSA curving in degree.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.calc_diff_tilt_angles">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">calc_diff_tilt_angles</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gamma_tilt_deg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#calc_diff_tilt_angles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.calc_diff_tilt_angles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the intercabinet tilt angles. Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>gamma_tilt_deg</strong> (<em>ndarray</em>) – Computed absolute tilt angles in degree.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Rounded intercabinet tilt angles and absolute tilt angles in degree.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.calc_gamma">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">calc_gamma</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gamma_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psi_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_start</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_a_t_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lambda_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#calc_gamma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.calc_gamma" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates a specific loudspeaker tilt angle of a LSA cabinet. Called by
+<a class="reference internal" href="#PALC_functions.calc_angles" title="PALC_functions.calc_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calc_angles</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gamma_n</strong> (<em>ndarray</em>) – Set of LSA tilt angles.</p></li>
+<li><p><strong>psi_n</strong> (<em>float</em>) – Splay / aperture angle of the loudspeaker cabinets or of the m-th LS cabinet.</p></li>
+<li><p><strong>x_start</strong> (<em>float</em>) – Highest point of the LSA cabinet in x-coordinate.</p></li>
+<li><p><strong>y_start</strong> (<em>float</em>) – Highest point of the LSA cabinet in y-coordinate.</p></li>
+<li><p><strong>x_a_t_n</strong> (<em>float</em>) – Top position of covered audience line by m-th LSA cabinet (x- and y-coordinate).</p></li>
+<li><p><strong>Lambda_y</strong> (<em>float</em>) – Height of m-th LSA cabinet.</p></li>
+<li><p><strong>m</strong> (<em>int</em><em>, </em><em>optional</em>) – Variable which LSA cabinet is optimized. The default is 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tilt angle of m-th LSA cabinet in degree.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.calc_intersection_PAL">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">calc_intersection_PAL</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xy_1_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xy_1_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xy_2_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xy_2_b</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#calc_intersection_PAL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.calc_intersection_PAL" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates intersection points of the polygonal audience lines
+This function is necessary for the handling of gaps in the audience lines and
+is used to create the non-audience lines.
+Calculation of the intersection of two adjacent sections of the polygonal
+audience line based on the intersection of two linear functions in vector
+representation. Called by <a class="reference internal" href="#PALC_functions.calc_angles" title="PALC_functions.calc_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calc_angles</span></code></a>, <a class="reference internal" href="checkPAL.html#checkPAL.pal_draw_condition_3" title="checkPAL.pal_draw_condition_3"><code class="xref any py py-func docutils literal notranslate"><span class="pre">pal_draw_condition_3</span></code></a>
+and <a class="reference internal" href="checkPAL.html#checkPAL.suggestPAL" title="checkPAL.suggestPAL"><code class="xref any py py-func docutils literal notranslate"><span class="pre">suggestPAL</span></code></a>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>vec{OP_1} = vec{OA_1} + lambda_1 * ( vec{OB_1} - vec{OA_1} )</p></li>
+<li><p>vec{OP_2} = vec{OA_2} + lambda_2 * ( vec{OB_2} - vec{OA_2} )</p></li>
+<li><p>vec{OA_1} = [ xy_1_a(1) xy_1_a(2) ]</p></li>
+<li><p>vec{OB_1} = [ xy_1_b(1) xy_1_b(2) ]</p></li>
+<li><p>vec{OA_2} = [ xy_2_a(1) xy_2_a(2) ]</p></li>
+<li><p>vec{OB_2} = [ xy_2_b(1) xy_2_b(2) ]</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xy_1_a</strong> (<em>list</em>) – Start position (x, y) of the pal section 1.</p></li>
+<li><p><strong>xy_1_b</strong> (<em>list</em>) – Stop position (x, y) of the pal section 1.</p></li>
+<li><p><strong>xy_2_a</strong> (<em>list</em>) – Start position (x, y) of the pal section 2.</p></li>
+<li><p><strong>xy_2_b</strong> (<em>list</em>) – Stop position (x, y) of the pal section 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>xy_s</strong> (<em>list</em>) – Intersection (x, y) of pal section 1 and pal section 2.</p></li>
+<li><p><strong>lambda_1</strong> (<em>float</em>) – Vector parameter 1 for the intersection.</p></li>
+<li><p><strong>lambda_2</strong> (<em>float</em>) – Vector parameter 2 for the intersection.</p></li>
+<li><p><strong>point_exist</strong> (<em>bool</em>) – True, if a point of intersection exists. Otherwise False.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.calc_progressive_array">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">calc_progressive_array</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_LSA</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">38</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_dangles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'No'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#calc_progressive_array"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.calc_progressive_array" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the absolute tilt angles of a progressive LSA curving. Called by
+<a class="reference internal" href="gui_ls_array.html#gui_ls_array.ref_array_angles" title="gui_ls_array.ref_array_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">ref_array_angles</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – Number of loudspeaker array cabinets.</p></li>
+<li><p><strong>gamma_LSA</strong> (<em>list</em><em>, </em><em>optional</em>) – Possible discrete intercabinet tilt angles, if use_dangles is set to
+‘Yes’. The default is [].</p></li>
+<li><p><strong>gamma_0</strong> (<em>float</em><em>, </em><em>optional</em>) – Tilt angle of the highest (first) LSA cabinet in degree.
+The default is 0.</p></li>
+<li><p><strong>gamma_f</strong> (<em>float</em><em>, </em><em>optional</em>) – Angle of the last tilt angle in degree. The default is 38.</p></li>
+<li><p><strong>use_dangles</strong> (<em>str</em><em>, </em><em>optional</em>) – If discrete tilt angles shall be used: ‘Yes’. The default is ‘No’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>gamma_deg</strong> – Array with the progressive LSA curving in degree.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.list_sort">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">list_sort</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#list_sort"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.list_sort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorts a sequence of lists. Actually not used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>seq</strong> (<em>list</em>) – List to sort.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Sorted list.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.repmat">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">repmat</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#repmat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.repmat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contained in numpy.matlib module,
+see <a class="reference external" href="https://github.com/numpy/numpy/blob/v1.13.0/numpy/matlib.py#L310-L358">https://github.com/numpy/numpy/blob/v1.13.0/numpy/matlib.py#L310-L358</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_functions.source_pos">
+<code class="sig-prename descclassname"><span class="pre">PALC_functions.</span></code><code class="sig-name descname"><span class="pre">source_pos</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gamma_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_functions.html#source_pos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_functions.source_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the positions of the LSA cabinets for a given tilt angles.
+Called by <a class="reference internal" href="#PALC_functions.calc_angles" title="PALC_functions.calc_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calc_angles</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gamma_n</strong> (<em>ndarray</em>) – Set of LSA tilt angles.</p></li>
+<li><p><strong>PALC_config</strong> (<em>obj</em>) – Configuration of the PALC-algorithm.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_start</strong> (<em>ndarray</em>) – Highest points of LSA cabinets in x-coordinates.</p></li>
+<li><p><strong>y_start</strong> (<em>ndarray</em>) – Highest points of LSA cabinets in y-coordinates.</p></li>
+<li><p><strong>x_stop</strong> (<em>ndarray</em>) – Lowest points of LSA cabinets in x-coordinates.</p></li>
+<li><p><strong>y_stop</strong> (<em>ndarray</em>) – Lowest points of LSA cabinets in y-coordinates.</p></li>
+<li><p><strong>x_src</strong> (<em>ndarray</em>) – Center points of LSA cabinets in x-coordinates.</p></li>
+<li><p><strong>y_src</strong> (<em>ndarray</em>) – Center points of LSA cabinets in y-coordinates.</p></li>
+<li><p><strong>x_S</strong> (<em>ndarray</em>) – Center of the whole LSA in x-coordinates.</p></li>
+<li><p><strong>y_S</strong> (<em>ndarray</em>) – Center of the whole LSA in y-coordinates.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="calcPALC.html"
+                        title="previous chapter">calcPALC</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PALC_opt.html"
+                        title="next chapter">PALC_opt</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/PALC_functions.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PALC_opt.html" title="PALC_opt"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="calcPALC.html" title="calcPALC"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_functions</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

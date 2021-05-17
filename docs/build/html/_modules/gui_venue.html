@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gui_venue &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_venue</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gui_venue</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: Arne Hoelter</span>
+
+<span class="sd">Helper functions in the venue slice creation.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">checkPAL</span>
+<span class="kn">from</span> <span class="nn">gui_helper</span> <span class="kn">import</span> <span class="n">update_text</span>
+
+
+<div class="viewcode-block" id="check_all_draw_conditions"><a class="viewcode-back" href="../gui_venue.html#gui_venue.check_all_draw_conditions">[docs]</a><span class="k">def</span> <span class="nf">check_all_draw_conditions</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> \
+                              <span class="n">created_pal</span><span class="p">,</span> <span class="n">pal_error_info</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks all draw condition, when audience lines are created.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x_start : float</span>
+<span class="sd">        Start point on x-axis.</span>
+<span class="sd">    x_stop : float</span>
+<span class="sd">        Stop point on x-axis.</span>
+<span class="sd">    y_start : float</span>
+<span class="sd">        Start point on y-axis.</span>
+<span class="sd">    y_stop : float</span>
+<span class="sd">        Stop point on y-axis.</span>
+<span class="sd">    created_pal : obj [in]</span>
+<span class="sd">        Contains all drawn lines by the user and corresponding data.</span>
+<span class="sd">    pal_error_info : obj [out]</span>
+<span class="sd">        Contains an error info if a condition failed - line could not be drawn.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if condition 1 passed, otherwise False.</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if condition 2 passed, otherwise False.</span>
+<span class="sd">    bool</span>
+<span class="sd">        True if condition 3 passed, otherwise False.</span>
+<span class="sd">    slope : float</span>
+<span class="sd">        Slope of the drawn line.</span>
+<span class="sd">    b : float</span>
+<span class="sd">        Intersection point on the y-axis of the drawn line.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># set condition3 default to True</span>
+    <span class="n">condition3</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1"># calc slope and intersection on y-axis (b) of audience line    </span>
+    <span class="n">slope</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">checkPAL</span><span class="o">.</span><span class="n">get_slope_b</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">)</span>
+
+    <span class="c1"># first condition (stop values are bigger or equal to the start values)</span>
+    <span class="n">condition1</span> <span class="o">=</span> <span class="n">checkPAL</span><span class="o">.</span><span class="n">pal_draw_condition_1</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">x_start</span> <span class="o">==</span> <span class="n">x_stop</span> <span class="ow">and</span> <span class="n">y_start</span> <span class="o">==</span> <span class="n">y_stop</span><span class="p">):</span>
+        <span class="n">update_text</span><span class="p">(</span><span class="n">pal_error_info</span><span class="p">,</span><span class="s1">&#39;Error: Wrong Input. Points are not allowed&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">condition1</span><span class="p">:</span>
+        <span class="n">update_text</span><span class="p">(</span><span class="n">pal_error_info</span><span class="p">,</span> \
+                    <span class="s1">&#39;Error: Stop values must be higher or equal than the start values and only positive values are allowed&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span>
+    <span class="c1"># second condition (the slope of the line must be zero or positive):</span>
+    <span class="c1"># f(x)=m*x+b, first step: calculate slope (m) and b and save them</span>
+    <span class="c1"># check if x_start and x_stop are equal (vertical line)</span>
+    <span class="k">if</span> <span class="n">condition1</span><span class="p">:</span>
+        <span class="n">condition2</span> <span class="o">=</span> <span class="n">checkPAL</span><span class="o">.</span><span class="n">pal_draw_condition_2</span><span class="p">(</span><span class="n">slope</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">condition2</span><span class="p">:</span>
+            <span class="n">update_text</span><span class="p">(</span><span class="n">pal_error_info</span><span class="p">,</span> <span class="s1">&#39;Error: The slope of the drawn line must be positive&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span>
+    <span class="c1"># avoid double clicking and and lines laying on each other</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline_start</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">condition3</span> <span class="o">=</span> <span class="n">checkPAL</span><span class="o">.</span><span class="n">pal_draw_condition_3</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> \
+                                                   <span class="n">y_stop</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">condition1</span><span class="p">,</span> <span class="n">condition2</span><span class="p">,</span> <span class="n">condition3</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_venue</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

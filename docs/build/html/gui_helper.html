@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gui_helper &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PALC_classes" href="PALC_classes.html" />
+    <link rel="prev" title="gui_help_text" href="gui_help_text.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PALC_classes.html" title="PALC_classes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="gui_help_text.html" title="gui_help_text"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_helper</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-gui_helper">
+<span id="gui-helper"></span><h1>gui_helper<a class="headerlink" href="#module-gui_helper" title="Permalink to this headline">¶</a></h1>
+<p>author: Arne Hoelter</p>
+<p>Functions that help to organize the <a class="reference internal" href="main.html"><span class="doc">main</span></a> and display in the GUI. The
+functions do not directly correspond to a specific page in the GUI. They
+are typically called by several functions / callbacks of the <a class="reference internal" href="main.html"><span class="doc">main</span></a> script.</p>
+<dl class="py function">
+<dt id="gui_helper.get_p_axis_rng">
+<code class="sig-prename descclassname"><span class="pre">gui_helper.</span></code><code class="sig-name descname"><span class="pre">get_p_axis_rng</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_equal_axis</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_helper.html#get_p_axis_rng"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_helper.get_p_axis_rng" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the range and the scaling of the venue slice plot <a class="reference internal" href="main.html#main.p" title="main.p"><code class="xref any py py-data docutils literal notranslate"><span class="pre">p</span></code></a>. The
+scaling depends on the user selection in CheckBoxGroup widget
+<a class="reference internal" href="main.html#main.p_equal_axis" title="main.p_equal_axis"><code class="xref any py py-data docutils literal notranslate"><span class="pre">p_equal_axis</span></code></a> and called by <a class="reference internal" href="main.html#main.scale_p_axis" title="main.scale_p_axis"><code class="xref any py py-func docutils literal notranslate"><span class="pre">scale_p_axis</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p</strong> (<em>fig</em><em> [</em><em>out</em><em>]</em>) – Venue slice figure.</p></li>
+<li><p><strong>plt_ranges</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains the ranging data.</p></li>
+<li><p><strong>p_equal_axis</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – CheckBoxGroup widget to select scaling type of <a class="reference internal" href="main.html#main.p" title="main.p"><code class="xref any py py-data docutils literal notranslate"><span class="pre">p</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_helper.update_text">
+<code class="sig-prename descclassname"><span class="pre">gui_helper.</span></code><code class="sig-name descname"><span class="pre">update_text</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_helper.html#update_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_helper.update_text" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set text in str-format to an object. The text will be displayed in the GUI.
+The text is usually an extra info or an error message, raised by an except
+case.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text_obj</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Object that contains text to display in the GUI.</p></li>
+<li><p><strong>text</strong> (<em>str</em>) – Text to display in the GUI.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="gui_helper.venue_slice2CDS">
+<code class="sig-prename descclassname"><span class="pre">gui_helper.</span></code><code class="sig-name descname"><span class="pre">venue_slice2CDS</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plt_venue_slice_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_venue_slice_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_arr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/gui_helper.html#venue_slice2CDS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gui_helper.venue_slice2CDS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores venue slice data in a ColumnDataSource to plot the data in the
+venue slice plot any:<cite>p</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plt_venue_slice_1</strong> (<em>ColumnDataSource</em><em> [</em><em>out</em><em>]</em>) – First CDS to visualize the rays of the LSA cabinets to the venue.</p></li>
+<li><p><strong>plt_venue_slice_2</strong> (<em>ColumnDataSource</em><em> [</em><em>out</em><em>]</em>) – Second CDS to visualize the LSA cabinets.</p></li>
+<li><p><strong>PALC_plots</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains the plotting data.</p></li>
+<li><p><strong>Opt_arr</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains the data of the optimized LSA array by PALC.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="gui_help_text.html"
+                        title="previous chapter">gui_help_text</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="PALC_classes.html"
+                        title="next chapter">PALC_classes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/gui_helper.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="PALC_classes.html" title="PALC_classes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="gui_help_text.html" title="gui_help_text"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_helper</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

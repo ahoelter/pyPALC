@@ -1,0 +1,889 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>sfp_functions &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">sfp_functions</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for sfp_functions</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: arne Hoelter</span>
+
+<span class="sd">Function to be used to compute the sound field prediction with the</span>
+<span class="sd">Complex Directivity Point Source (CDPS)-model.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">PALC_functions</span> <span class="kn">import</span> <span class="n">repmat</span><span class="p">,</span> <span class="n">source_pos</span>
+<span class="kn">import</span> <span class="nn">scipy.special</span> <span class="k">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">scipy.signal</span> <span class="k">as</span> <span class="nn">sig</span>
+<span class="kn">from</span> <span class="nn">scipy.stats.mstats</span> <span class="kn">import</span> <span class="n">mquantiles</span>
+
+
+<div class="viewcode-block" id="get_freq_vec"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.get_freq_vec">[docs]</a><span class="k">def</span> <span class="nf">get_freq_vec</span><span class="p">(</span><span class="n">N_freq</span><span class="p">,</span> <span class="n">step_freq</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute a linear frequency vector. Called by :any:`calcSFP` and</span>
+<span class="sd">    :any:`init_dir_plot`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    N_freq : int</span>
+<span class="sd">        Number of frequency bins.</span>
+<span class="sd">    step_freq : int</span>
+<span class="sd">        Step size of frequency vector.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f : 1D-array</span>
+<span class="sd">        Frequency vector.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">N_freq</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="p">(</span><span class="n">step_freq</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">N_freq</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">f</span> <span class="o">&lt;=</span> <span class="mi">20000</span><span class="p">]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">f</span> <span class="o">&gt;=</span> <span class="mi">20</span><span class="p">]</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span></div>
+
+
+<div class="viewcode-block" id="greens_fct"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.greens_fct">[docs]</a><span class="k">def</span> <span class="nf">greens_fct</span><span class="p">(</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">omega</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the 3D Green&#39;s function. The acoustic transfer function in air.</span>
+<span class="sd">    Called by :any:`CalcGreenFunctions`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x0 : float</span>
+<span class="sd">        Source position x-axis.</span>
+<span class="sd">    y0 : float</span>
+<span class="sd">        Source position y-axis.</span>
+<span class="sd">    omega : float</span>
+<span class="sd">        Discrete radian frequency.</span>
+<span class="sd">    c : float</span>
+<span class="sd">        Speed of sound.</span>
+<span class="sd">    x : 1D-array</span>
+<span class="sd">        Receiver positions x-axis.</span>
+<span class="sd">    y : 1D-array</span>
+<span class="sd">        Receiver positions y-axis.</span>
+<span class="sd">    z : 1D-array</span>
+<span class="sd">        Receiver positions z-axis.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    G : 1D-array</span>
+<span class="sd">        Computed Green&#39;s function for all receiver positions.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span><span class="nb">complex</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span> <span class="n">omega</span> <span class="o">/</span> <span class="n">c</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
+                                 <span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">)))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x</span><span class="o">-</span><span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y</span><span class="o">-</span><span class="n">y0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">z</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">G</span></div>
+
+
+<div class="viewcode-block" id="AirAbsorptionRelaxationFrequencies"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.AirAbsorptionRelaxationFrequencies">[docs]</a><span class="k">def</span> <span class="nf">AirAbsorptionRelaxationFrequencies</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">T0</span><span class="p">,</span> <span class="n">p_r</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the relaxation frequencies for air absorption conforming to</span>
+<span class="sd">    ISO 9613-1. Called by :any:`AirAbsorptionCoefficient`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T : float</span>
+<span class="sd">        Temperature in K.</span>
+<span class="sd">    p : float</span>
+<span class="sd">        Pressure in Pa.</span>
+<span class="sd">    H : float</span>
+<span class="sd">        Humidity as molar conentration in percent.</span>
+<span class="sd">    T0 : float</span>
+<span class="sd">        Reference temperature in K, 293.15 K.</span>
+<span class="sd">    p_r : float</span>
+<span class="sd">        Reference sound pressure in Pa, 101.325*10³ Pa.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f_rO : float</span>
+<span class="sd">        Relaxation frequency of oxygen.</span>
+<span class="sd">    f_rN : float</span>
+<span class="sd">        Relaxation frequency of nitrogen.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">f_rO</span> <span class="o">=</span> <span class="n">p</span> <span class="o">/</span> <span class="n">p_r</span> <span class="o">*</span> <span class="p">(</span><span class="mi">24</span> <span class="o">+</span> <span class="mf">4.04</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">4</span> <span class="o">*</span> <span class="n">H</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.02</span><span class="o">+</span><span class="n">H</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">0.391</span><span class="o">+</span><span class="n">H</span><span class="p">))</span>
+    
+    <span class="n">f_rN</span> <span class="o">=</span> <span class="n">p</span> <span class="o">/</span> <span class="n">p_r</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">T0</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">9</span><span class="o">+</span><span class="mi">280</span><span class="o">*</span><span class="n">H</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">4.17</span><span class="o">*</span><span class="p">((</span><span class="n">T</span><span class="o">/</span><span class="n">T0</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+    
+    <span class="k">return</span> <span class="n">f_rO</span><span class="p">,</span> <span class="n">f_rN</span></div>
+
+
+<div class="viewcode-block" id="AirAbsorptionCoefficient"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.AirAbsorptionCoefficient">[docs]</a><span class="k">def</span> <span class="nf">AirAbsorptionCoefficient</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the air absorption coefficient alpha. Called by</span>
+<span class="sd">    :any:`calcSFP` and :any:`calcBeamplot`.</span>
+<span class="sd">    Calls :any:`AirAbsorptionRelaxationFrequencies`. Uses the following</span>
+<span class="sd">    constants:</span>
+<span class="sd">        </span>
+<span class="sd">        * p_r        = 101.325*10³ Pa as reference sound pressure</span>
+<span class="sd">        * T0         = 293.15 K       as reference temperature in K for</span>
+<span class="sd">                                         relaxation frequencies and alpha</span>
+<span class="sd">        * T0_p_sat_r = 273.16 K       as reference temperature in K for p_sat_r</span>
+<span class="sd">        * c0         = 331.45 m/s     as reference speed of sound</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    f : float</span>
+<span class="sd">        Frequency in Hz.</span>
+<span class="sd">    T : float</span>
+<span class="sd">        Temperature in K.</span>
+<span class="sd">    p : float</span>
+<span class="sd">        Pressure in Pa.</span>
+<span class="sd">    h : float</span>
+<span class="sd">        Relative humidity in percent.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    alpha : float</span>
+<span class="sd">        Attenuation coefficient in dB/m.</span>
+<span class="sd">    c : float</span>
+<span class="sd">        Speed of sound.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p_r</span> <span class="o">=</span> <span class="mf">101.325</span><span class="o">*</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>   <span class="c1"># reference sound pressure in Pa</span>
+    <span class="n">T0</span> <span class="o">=</span> <span class="mf">293.15</span>             <span class="c1"># reference termperature in K for the relaxation frequencies and alpha</span>
+    <span class="n">T0_p_sat_r</span> <span class="o">=</span> <span class="mf">273.16</span>     <span class="c1"># reference termperature in K for p_sat_r</span>
+    <span class="n">c0</span> <span class="o">=</span> <span class="mf">331.45</span>             <span class="c1"># reference speed of sound in m/s</span>
+    
+    <span class="n">p_sat_r</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">6.8346</span><span class="o">*</span><span class="p">(</span><span class="n">T0_p_sat_r</span><span class="o">/</span><span class="n">T</span><span class="p">)</span><span class="o">**</span><span class="mf">1.261</span> <span class="o">+</span> <span class="mf">4.6151</span><span class="p">)</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">p_sat_r</span> <span class="o">*</span> <span class="n">p_r</span> <span class="o">/</span> <span class="n">p</span>
+    
+    <span class="n">f_rO</span><span class="p">,</span> <span class="n">f_rN</span> <span class="o">=</span> <span class="n">AirAbsorptionRelaxationFrequencies</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">T0</span><span class="p">,</span> <span class="n">p_r</span><span class="p">)</span>
+    
+    <span class="n">alpha</span> <span class="o">=</span> <span class="mf">8.686</span> <span class="o">*</span> <span class="n">f</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">((</span><span class="mf">1.84</span><span class="o">*</span><span class="p">(</span><span class="mi">10</span><span class="o">**-</span><span class="mi">11</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">p</span><span class="o">/</span><span class="n">p_r</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">T0</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span> \
+            <span class="o">+</span> <span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="n">T0</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.01275</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">2239.1</span><span class="o">/</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">f_rO</span> <span class="o">+</span> <span class="n">f</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">f_rO</span><span class="p">)</span> <span class="o">+</span> \
+               <span class="mf">0.1068</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">3352</span><span class="o">/</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">f_rN</span> <span class="o">+</span> <span class="n">f</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">f_rN</span><span class="p">)))</span>
+    
+    <span class="n">c</span> <span class="o">=</span> <span class="n">c0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">29</span> <span class="o">*</span> <span class="n">T</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.4</span><span class="o">*</span><span class="p">(</span><span class="n">T0</span><span class="o">-</span><span class="mi">20</span><span class="p">)))</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="mi">700</span><span class="o">+</span><span class="n">H</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">500</span><span class="o">+</span><span class="n">H</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">29</span><span class="o">-</span><span class="mf">0.11</span><span class="o">*</span><span class="n">H</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">c</span></div>
+
+
+<div class="viewcode-block" id="LinkwitzRileyCrossOver"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.LinkwitzRileyCrossOver">[docs]</a><span class="k">def</span> <span class="nf">LinkwitzRileyCrossOver</span><span class="p">(</span><span class="n">f_c_m</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes a Linkwitz-Riley-Crossover filter. The lowpass and highpass are</span>
+<span class="sd">    of second order butterworth filter. Called by :any:`calc_directivity`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    f_c_m : float</span>
+<span class="sd">        Cut-off frequency.</span>
+<span class="sd">    fs : float</span>
+<span class="sd">        Sampling frequency.</span>
+<span class="sd">    f : list or 1D-array</span>
+<span class="sd">        Considered frequency bins.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    D_xo_low : 1D-array</span>
+<span class="sd">        Complex frequency response of the Linkwitz-Riley lowpass of</span>
+<span class="sd">        the selected BP frequencies and the selected sampling frequency.</span>
+<span class="sd">    D_xo_high : 1D-array</span>
+<span class="sd">        Complex frequency response of the Linkwitz-Riley highpass of</span>
+<span class="sd">        the selected BP frequencies and the selected sampling frequency.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># transform the frequency bins into normalized radian frequency</span>
+    <span class="c1"># Lowpass</span>
+    <span class="c1"># lowpass coefficients</span>
+    <span class="n">b_xo_low</span><span class="p">,</span> <span class="n">a_xo_low</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">butter</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">f_c_m</span><span class="o">/</span><span class="p">(</span><span class="n">fs</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">btype</span><span class="o">=</span><span class="s1">&#39;lowpass&#39;</span><span class="p">)</span>
+    <span class="c1"># Complex frequency response of the second order Butterworth filter</span>
+    <span class="n">f_xo_low</span><span class="p">,</span> <span class="n">D_xo_low</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">freqz</span><span class="p">(</span><span class="n">b_xo_low</span><span class="p">,</span> <span class="n">a_xo_low</span><span class="p">,</span> <span class="n">worN</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
+    <span class="n">D_xo_low</span> <span class="o">=</span> <span class="n">D_xo_low</span> <span class="o">*</span> <span class="n">D_xo_low</span>
+    
+    <span class="c1"># Highpass</span>
+    <span class="c1"># highpass coefficients</span>
+    <span class="n">b_xo_high</span><span class="p">,</span> <span class="n">a_xo_high</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">butter</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">f_c_m</span><span class="o">/</span><span class="p">(</span><span class="n">fs</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="n">btype</span><span class="o">=</span><span class="s1">&#39;highpass&#39;</span><span class="p">)</span>
+    <span class="c1"># Complex frequency response of the second order Butterworth filter</span>
+    <span class="n">f_xo_low</span><span class="p">,</span> <span class="n">D_xo_high</span> <span class="o">=</span> <span class="n">sig</span><span class="o">.</span><span class="n">freqz</span><span class="p">(</span><span class="n">b_xo_high</span><span class="p">,</span> <span class="n">a_xo_high</span><span class="p">,</span> <span class="n">worN</span><span class="o">=</span><span class="n">f</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">fs</span><span class="p">)</span>
+    <span class="n">D_xo_high</span> <span class="o">=</span> <span class="n">D_xo_high</span> <span class="o">*</span> <span class="n">D_xo_high</span>
+    
+    <span class="k">return</span> <span class="n">D_xo_low</span><span class="p">,</span> <span class="n">D_xo_high</span></div>
+
+   
+<div class="viewcode-block" id="calc_directivity"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calc_directivity">[docs]</a><span class="k">def</span> <span class="nf">calc_directivity</span><span class="p">(</span><span class="n">dire</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">Lambda_y</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">omega</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">dir_meas</span><span class="p">,</span> <span class="n">dir_meas_deg</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the LSA cabinets directivity. Possible directivities are Circular</span>
+<span class="sd">    Piston, Line Piston, Combined Circular / Line Piston, Measured</span>
+<span class="sd">    Loudspeaker Data or Constant (Monopole). The Crossover frequency is set</span>
+<span class="sd">    to 1.5 kHz.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dire : str</span>
+<span class="sd">        Directivity can be either &#39;Circular Piston&#39;, &#39;Line Piston&#39;,</span>
+<span class="sd">        &#39;Combined Circular/Line&#39;, &#39;Measured Loudspeaker Data&#39; or &#39;const&#39;.</span>
+<span class="sd">    alpha : float</span>
+<span class="sd">        Active radiation factor. Normally 0.82 (Schultz et al.)</span>
+<span class="sd">    Lambda_y : float</span>
+<span class="sd">        Height of LSA cabinets.</span>
+<span class="sd">    beta : 1D-array</span>
+<span class="sd">        Considered radiation angles.</span>
+<span class="sd">    omega : 1D-array</span>
+<span class="sd">        Considered radian frequencies.</span>
+<span class="sd">    c : float</span>
+<span class="sd">        Speed of sound.</span>
+<span class="sd">    f : 1D-array</span>
+<span class="sd">        Considered frequency bin in Hz.</span>
+<span class="sd">    dir_meas : ndarray</span>
+<span class="sd">        Measured loudspeaker directivity.</span>
+<span class="sd">    dir_meas_deg : ndarray</span>
+<span class="sd">        Radiation angles of measured loudspeaker directivity.</span>
+<span class="sd">    n : int</span>
+<span class="sd">        Index of considered frequency bin in actual loop.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    H_post : ndarray</span>
+<span class="sd">        Computed loudspeaker directivity.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dire</span> <span class="o">==</span> <span class="s1">&#39;Circular Piston&#39;</span><span class="p">:</span>
+        <span class="n">R_circ</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">Lambda_y</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">H_post</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">jv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">omega</span> <span class="o">/</span> <span class="n">c</span> <span class="o">*</span> <span class="n">R_circ</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span> <span class="o">/</span> \
+                          <span class="p">(</span><span class="n">omega</span> <span class="o">/</span> <span class="n">c</span> <span class="o">*</span> <span class="n">R_circ</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">)))</span>
+        <span class="n">H_post</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">H_post</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">dire</span> <span class="o">==</span> <span class="s1">&#39;Line Piston&#39;</span><span class="p">:</span>
+        <span class="n">Lambda_y_line</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">Lambda_y</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">H_post</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">omega</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">Lambda_y_line</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span> <span class="o">/</span> \
+                     <span class="p">(</span><span class="n">omega</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">Lambda_y_line</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span>
+        <span class="n">H_post</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">H_post</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">dire</span> <span class="o">==</span> <span class="s1">&#39;Combined Circular/Line&#39;</span><span class="p">:</span>
+        <span class="c1"># sampling frequency for filtering</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="mi">40000</span> 
+        <span class="c1"># cut-off frequency of Linkwitz-Riley-Crossover</span>
+        <span class="n">f_c_m</span> <span class="o">=</span> <span class="mi">1500</span>
+        <span class="c1"># Calculate filter coefficients</span>
+        <span class="n">D_xo_low</span><span class="p">,</span> <span class="n">D_xo_high</span> <span class="o">=</span> <span class="n">LinkwitzRileyCrossOver</span><span class="p">(</span><span class="n">f_c_m</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+        <span class="c1"># calculate H_post for circular piston</span>
+        <span class="n">R_circ</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">Lambda_y</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">H_post_circ</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">jv</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">omega</span> <span class="o">/</span> <span class="n">c</span> <span class="o">*</span> <span class="n">R_circ</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span> <span class="o">/</span> \
+                               <span class="p">(</span><span class="n">omega</span> <span class="o">/</span> <span class="n">c</span> <span class="o">*</span> <span class="n">R_circ</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">)))</span>
+        <span class="n">H_post_circ</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">H_post_circ</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">H_post_circ</span> <span class="o">=</span> <span class="n">H_post_circ</span> <span class="o">*</span> <span class="n">D_xo_low</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="c1"># calculate H_post for line piston</span>
+        <span class="n">Lambda_y_line</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">Lambda_y</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">H_post_line</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">omega</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">Lambda_y_line</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span> <span class="o">/</span> \
+                          <span class="p">(</span><span class="n">omega</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="o">*</span> <span class="n">Lambda_y_line</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">beta</span><span class="p">))</span>
+        <span class="n">H_post_line</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">H_post_line</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">H_post_line</span> <span class="o">=</span> <span class="n">H_post_line</span> <span class="o">*</span> <span class="n">D_xo_high</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="c1"># Combine H_post of circular and line piston</span>
+        <span class="n">H_post</span> <span class="o">=</span> <span class="n">H_post_circ</span> <span class="o">+</span> <span class="n">H_post_line</span>
+    <span class="k">elif</span> <span class="n">dire</span> <span class="o">==</span> <span class="s1">&#39;Measured Loudspeaker Data&#39;</span><span class="p">:</span>
+        <span class="n">H_post</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">beta</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">dir_meas_deg</span><span class="p">,</span> <span class="n">dir_meas</span><span class="p">)</span>
+<span class="c1">#        H_post_abs = np.interp(beta*180/np.pi, dir_meas_deg, np.abs(dir_meas))</span>
+<span class="c1">#        H_post_angle = np.interp(beta*180/np.pi, dir_meas_deg, np.angle(dir_meas))</span>
+<span class="c1">#        H_post2 = H_post_abs * np.exp(np.complex(0+1j) * H_post_angle)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">H_post</span> <span class="o">=</span> <span class="mi">1</span>
+    
+    <span class="k">return</span> <span class="n">H_post</span></div>
+    
+
+<div class="viewcode-block" id="CalcGreenFunctions"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.CalcGreenFunctions">[docs]</a><span class="k">def</span> <span class="nf">CalcGreenFunctions</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">x_src_l</span><span class="p">,</span> <span class="n">y_src_l</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">dire</span><span class="p">,</span> <span class="n">Lambda_y</span><span class="p">,</span> \
+                       <span class="n">gamma_l</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">omega</span><span class="p">,</span> <span class="n">G_sen</span><span class="p">,</span> <span class="n">dir_meas</span><span class="p">,</span> <span class="n">dir_meas_deg</span><span class="p">,</span> <span class="n">airloss_alpha</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the Green&#39;s function multiplied with the loudspeaker directivity.</span>
+<span class="sd">    Calls :any:`greens_fct` and :any:`calc_directivity`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : 1D-array</span>
+<span class="sd">        Receiver positions on x-axis.</span>
+<span class="sd">    y : 1D-array</span>
+<span class="sd">        Receiver positions on y-axis.</span>
+<span class="sd">    z : 1D-array</span>
+<span class="sd">        Receiver positions on z-axis.</span>
+<span class="sd">    x_src_l : 1D-array</span>
+<span class="sd">        Source positions on x-axis.</span>
+<span class="sd">    y_src_l : 1D-array</span>
+<span class="sd">        Source positions on y-axis.</span>
+<span class="sd">    alpha : float</span>
+<span class="sd">        Active radiation factor. Normally 0.82 (Schultz et al.)</span>
+<span class="sd">    dire : str</span>
+<span class="sd">        Directivity can be either &#39;Circular Piston&#39;, &#39;Line Piston&#39;,</span>
+<span class="sd">        &#39;Combined Circular/Line&#39;, &#39;Measured Loudspeaker Data&#39; or &#39;const&#39;.</span>
+<span class="sd">    Lambda_y : float</span>
+<span class="sd">        Height of LSA cabinets.</span>
+<span class="sd">    gamma_l : 1D-array</span>
+<span class="sd">        Set of LSA tilt angles in radian.</span>
+<span class="sd">    c : float</span>
+<span class="sd">        Speed of sound.</span>
+<span class="sd">    omega : float</span>
+<span class="sd">        Radian frequency.</span>
+<span class="sd">    G_sen : float</span>
+<span class="sd">        Additional factor of the Green&#39;s function.</span>
+<span class="sd">    dir_meas : ndarray</span>
+<span class="sd">        Measured loudspeaker directivity.</span>
+<span class="sd">    dir_meas_deg : ndarray</span>
+<span class="sd">        Radiation angles of the measured loudspeaker directivity.</span>
+<span class="sd">    airloss_alpha : 1D-array</span>
+<span class="sd">        Computed air attenuation / absorption.</span>
+<span class="sd">    f : float</span>
+<span class="sd">        Considered frequency in Hz.</span>
+<span class="sd">    n : int</span>
+<span class="sd">        Index of considered frequency in actual loop.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    G : ndarray</span>
+<span class="sd">        Green&#39;s function multiplied with loudspeaker directivity.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">G</span> <span class="o">=</span> <span class="n">greens_fct</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">x_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">),</span> <span class="n">repmat</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">),</span> <span class="n">omega</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> \
+                   <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">z</span><span class="p">)</span>
+
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G_sen</span> <span class="o">*</span> <span class="n">G</span>
+    
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arcsin</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">repmat</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> \
+                     <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> \
+                                <span class="n">repmat</span><span class="p">(</span><span class="n">x_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
+                        <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">repmat</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span> \
+                        <span class="o">+</span> <span class="n">repmat</span><span class="p">(</span><span class="n">gamma_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+                        
+    <span class="c1"># air attenuation</span>
+    <span class="n">src_rec_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">repmat</span><span class="p">(</span><span class="n">x_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> \
+                           <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">repmat</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span> <span class="o">-</span> <span class="n">repmat</span><span class="p">(</span><span class="n">y_src_l</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    
+    <span class="n">air_att</span> <span class="o">=</span> <span class="n">airloss_alpha</span> <span class="o">*</span> <span class="n">src_rec_dist</span>
+    <span class="n">air_att</span> <span class="o">=</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">air_att</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span> <span class="o">*</span> <span class="n">air_att</span>
+ 
+    <span class="n">H_post</span> <span class="o">=</span> <span class="n">calc_directivity</span><span class="p">(</span><span class="n">dire</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">Lambda_y</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">omega</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">dir_meas</span><span class="p">,</span> <span class="n">dir_meas_deg</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+    <span class="n">G</span> <span class="o">=</span> <span class="n">G</span> <span class="o">*</span> <span class="n">H_post</span>
+    
+    <span class="k">return</span> <span class="n">G</span></div>
+
+ 
+<div class="viewcode-block" id="calcSFP"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calcSFP">[docs]</a><span class="k">def</span> <span class="nf">calcSFP</span><span class="p">(</span><span class="n">gamma_tilt_deg</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">,</span> <span class="n">Tech_res</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main function to compute 2D sound field prediction with a 3D transfer</span>
+<span class="sd">    function. Calls :any:`AirAbsorptionCoefficient` and :any:`CalcGreenFunctions`.</span>
+<span class="sd">    Called by :any:`start_calc` and :any:`optimize_PALC`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gamma_tilt_deg : list</span>
+<span class="sd">        Set of LSA tilt angles in degree.</span>
+<span class="sd">    created_pal : obj [in]</span>
+<span class="sd">        Contains the venue slice that shall simulated by the CDPS-model.</span>
+<span class="sd">    SFP_config : obj [in]</span>
+<span class="sd">        Configuration of the sound field prediction.</span>
+<span class="sd">    Tech_res : obj [out]</span>
+<span class="sd">        Stores the results of the sound field prediction.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x_S : float</span>
+<span class="sd">        Center position of the LSA on x-axis.</span>
+<span class="sd">    y_S : float</span>
+<span class="sd">        Center position of the LSA on y-axis.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># general</span>
+    <span class="n">gamma_n</span> <span class="o">=</span> <span class="n">gamma_tilt_deg</span> <span class="o">/</span> <span class="mi">180</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">SFP_config</span><span class="o">.</span><span class="n">N</span>
+    
+    <span class="c1">########################## SIMULATION SETUP ###############################</span>
+    <span class="c1"># reference pressure</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span>
+    <span class="c1"># frequencies</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">get_freq_vec</span><span class="p">(</span><span class="n">N_freq</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">step_freq</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">f_xy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">2000</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">16000</span><span class="p">])</span>
+
+    <span class="c1"># initialize variables</span>
+    <span class="n">omega</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">f</span>
+    <span class="n">omega_xy</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">f_xy</span>
+    <span class="n">D_opt_LSA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">N</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="n">P_LSA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+
+    <span class="c1"># air attenuation</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">AirAbsorptionCoefficient</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mf">293.15</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mf">101.325</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">h</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+    <span class="c1"># directivity</span>
+    <span class="c1"># if PALC_config.directivity not in [&#39;Measured Loudspeaker Data&#39;]:</span>
+    <span class="c1">#     dire_meas_LSA = np.ones([np.shape(f)[0],np.shape(f)[0]])</span>
+    <span class="c1">#     dire_meas_deg = np.ones([np.shape(f)[0],np.shape(f)[0]])</span>
+        
+    <span class="c1">######################### SPL CALCULATION #################################</span>
+    <span class="n">x_start</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> <span class="n">x_c_n</span><span class="p">,</span> <span class="n">y_c_n</span><span class="p">,</span> <span class="n">x_S</span><span class="p">,</span> <span class="n">y_S</span> <span class="o">=</span> <span class="n">source_pos</span><span class="p">(</span><span class="n">gamma_n</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">G_LSA_vert</span> <span class="o">=</span> <span class="n">CalcGreenFunctions</span><span class="p">(</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">yline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">]),</span> \
+                                        <span class="n">x_c_n</span><span class="p">,</span> <span class="n">y_c_n</span><span class="p">,</span> <span class="mf">0.82</span><span class="p">,</span> <span class="n">SFP_config</span><span class="o">.</span><span class="n">directivity</span><span class="p">,</span> \
+                                        <span class="n">SFP_config</span><span class="o">.</span><span class="n">Lambda_y</span><span class="p">,</span> <span class="n">gamma_n</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">omega</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> \
+                                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">SFP_config</span><span class="o">.</span><span class="n">dir_meas</span><span class="p">[:,</span><span class="n">n</span><span class="p">]),</span> \
+                                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">SFP_config</span><span class="o">.</span><span class="n">dir_meas_deg</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]),</span> \
+                                        <span class="n">alpha</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">f</span><span class="p">,</span> <span class="n">n</span> <span class="p">)</span>
+
+        <span class="n">P_LSA</span><span class="p">[:,</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">G_LSA_vert</span> <span class="o">@</span> <span class="n">D_opt_LSA</span><span class="p">[:,</span><span class="n">n</span><span class="p">]</span> <span class="c1"># D_opt_LSA possibility to include driving functions</span>
+    <span class="n">p_SPL</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">P_LSA</span><span class="p">)</span> <span class="o">/</span> <span class="n">p0</span><span class="p">)</span>
+    <span class="n">Tech_res</span><span class="o">.</span><span class="n">update_tech_meas</span><span class="p">(</span><span class="n">p_SPL</span><span class="o">=</span><span class="n">p_SPL</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">x_S</span><span class="p">,</span> <span class="n">y_S</span></div>
+
+
+<div class="viewcode-block" id="calcBeamplot"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calcBeamplot">[docs]</a><span class="k">def</span> <span class="nf">calcBeamplot</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">gamma_n</span><span class="p">,</span> <span class="n">plt_ranges</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">dire_meas_LSA</span><span class="p">,</span> <span class="n">dire_meas_deg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calcuates the SPL values to map them on a mesh. This is called beamplot.</span>
+<span class="sd">    Calls :any:`AirAbsorptionCoefficient` and :any:`CalcGreenFunctions`. Called</span>
+<span class="sd">    by :any:`getBeamplotRes`. The maximum amount of points in the mesh is set</span>
+<span class="sd">    to 1000. If the app is run locally, the amount of points may be increased.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    PALC_config : obj [in]</span>
+<span class="sd">        Configuration of the PALC algorithm.</span>
+<span class="sd">    gamma_n : either list or 1D-array</span>
+<span class="sd">        Set of LSA tilt angles in radian.</span>
+<span class="sd">    plt_ranges : obj [out]</span>
+<span class="sd">        Handles the ranges of bokeh figures.</span>
+<span class="sd">    f : float</span>
+<span class="sd">        Frequency to be considered in beamplot.</span>
+<span class="sd">    dir_meas_LSA : ndarray</span>
+<span class="sd">        Measured loudspeaker directivity.</span>
+<span class="sd">    dir_meas_deg : ndarray</span>
+<span class="sd">        Radiation angles of the measured loudspeaker directivity.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p_SPL : 2D-array</span>
+<span class="sd">        Sound pressure level values to be mapped on mesh (X, Y).</span>
+<span class="sd">    X : 2D-array</span>
+<span class="sd">        Mesh of x-axis values.</span>
+<span class="sd">    Y : 2D-array</span>
+<span class="sd">        Mesh of y-axis values</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># general</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span>
+   
+<span class="c1">########################## SIMULATION SETUP ###############################</span>
+    <span class="c1"># maximum of discrete mapping points:</span>
+    <span class="n">max_points</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="c1"># mesh</span>
+    <span class="n">x_range</span> <span class="o">=</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span>
+    <span class="n">y_range</span> <span class="o">=</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span>
+    <span class="n">pts_x</span> <span class="o">=</span> <span class="n">max_points</span> <span class="o">/</span> <span class="p">(</span><span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">pts_y</span> <span class="o">=</span> <span class="n">max_points</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">pts_x</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">pts_y</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+    <span class="c1"># get vertically array</span>
+    <span class="n">x_vert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+    <span class="n">y_vert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">Y</span><span class="p">))</span>
+    <span class="n">z_vert</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="c1"># reference pressure</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span>
+    <span class="c1"># considered frequency</span>
+    <span class="n">omega</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">f</span>
+    <span class="c1"># initialize driving fct. and output array</span>
+    <span class="n">D_opt_LSA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">N</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">P_LSA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">x_vert</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>    
+
+    <span class="c1"># air attenuation</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mf">293.15</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="mf">101.325</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">AirAbsorptionCoefficient</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+
+        <span class="c1"># directivity</span>
+    <span class="k">if</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">directivity</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Measured Loudspeaker Data&#39;</span><span class="p">]:</span>
+        <span class="n">dire_meas_LSA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">dire_meas_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    
+    <span class="c1">######################### SPL CALCULATION #################################</span>
+    <span class="n">x_start</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> <span class="n">x_c_n</span><span class="p">,</span> <span class="n">y_c_n</span><span class="p">,</span> <span class="n">x_S</span><span class="p">,</span> <span class="n">y_S</span> <span class="o">=</span> <span class="n">source_pos</span><span class="p">(</span><span class="n">gamma_n</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">)</span>
+
+    <span class="n">G_LSA_vert</span> <span class="o">=</span> <span class="n">CalcGreenFunctions</span><span class="p">(</span><span class="n">x_vert</span><span class="p">,</span> <span class="n">y_vert</span><span class="p">,</span> <span class="n">z_vert</span><span class="p">,</span> <span class="n">x_c_n</span><span class="p">,</span> <span class="n">y_c_n</span><span class="p">,</span> <span class="mf">0.82</span><span class="p">,</span>\
+                                    <span class="n">PALC_config</span><span class="o">.</span><span class="n">directivity</span><span class="p">,</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">Lambda_y</span><span class="p">,</span> \
+                                    <span class="n">gamma_n</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">omega</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dire_meas_LSA</span><span class="p">,</span> \
+                                    <span class="n">dire_meas_deg</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="mi">0</span> <span class="p">)</span>
+
+    <span class="n">P_LSA</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">G_LSA_vert</span> <span class="o">@</span> <span class="n">D_opt_LSA</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">p_SPL</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">P_LSA</span><span class="p">)</span> <span class="o">/</span> <span class="n">p0</span><span class="p">)</span>
+    
+    <span class="n">p_SPL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">p_SPL</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">p_SPL</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span></div>
+
+
+<div class="viewcode-block" id="getBeamplotRes"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.getBeamplotRes">[docs]</a><span class="k">def</span> <span class="nf">getBeamplotRes</span><span class="p">(</span><span class="n">pBeam</span><span class="p">,</span> <span class="n">mapper</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">,</span> <span class="n">gamma_n</span><span class="p">,</span> <span class="n">plt_ranges</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">ind_f</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the beamplot of a certain frequency regarding the simulated</span>
+<span class="sd">    venue slice. Calls :any:`calcBeamplot`. Called by :any:`get_beamplot`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pBeam : fig [out]</span>
+<span class="sd">        Bokeh beamplot figure.</span>
+<span class="sd">    mapper : LinearColorMapper [out]</span>
+<span class="sd">        Object that maps the Colors of the beamplot. Also used for the Colorbar.</span>
+<span class="sd">    PALC_config : obj [in]</span>
+<span class="sd">        Configuration of PALC algorithm.</span>
+<span class="sd">    SFP_config : obj [in]</span>
+<span class="sd">        Configuration of sound field prediction.</span>
+<span class="sd">    gamma_n : 1D-array</span>
+<span class="sd">        Set of LSA tilt angles in radian.</span>
+<span class="sd">    plt_ranges : obj [out]</span>
+<span class="sd">        Contains ranging information of the bokeh figures.</span>
+<span class="sd">    f : float</span>
+<span class="sd">        Considered frequency bin.</span>
+<span class="sd">    ind_f : int</span>
+<span class="sd">        Index of the frequency bin.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p_SPL : ndarray</span>
+<span class="sd">        Sound pressure levels mapped on the mesh.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Calculation</span>
+    <span class="n">p_SPL</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">calcBeamplot</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">gamma_n</span><span class="p">,</span> <span class="n">plt_ranges</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> \
+                               <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">SFP_config</span><span class="o">.</span><span class="n">dir_meas</span><span class="p">[:,</span><span class="n">ind_f</span><span class="p">]),</span> \
+                               <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">SFP_config</span><span class="o">.</span><span class="n">dir_meas_deg</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">high_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">p_SPL</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">low_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">p_SPL</span> <span class="o">&lt;</span> <span class="mi">50</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">high_ind</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">p_SPL</span><span class="p">[</span><span class="n">high_ind</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">high_ind</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">low_ind</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">p_SPL</span><span class="p">[</span><span class="n">low_ind</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">low_ind</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">50</span>
+    <span class="n">mapper</span><span class="o">.</span><span class="n">low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">p_SPL</span><span class="p">)</span>
+    <span class="n">mapper</span><span class="o">.</span><span class="n">high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">p_SPL</span><span class="p">)</span>   
+    <span class="k">return</span> <span class="n">p_SPL</span></div>
+    
+
+<div class="viewcode-block" id="calcHomogeneity"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calcHomogeneity">[docs]</a><span class="k">def</span> <span class="nf">calcHomogeneity</span><span class="p">(</span><span class="n">Tech_res</span><span class="p">,</span> <span class="n">x_S</span><span class="p">,</span> <span class="n">y_S</span><span class="p">,</span> <span class="n">x_vert</span><span class="p">,</span> <span class="n">y_vert</span><span class="p">,</span> <span class="n">objective</span> <span class="o">=</span> <span class="s1">&#39;0dB&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the homogeneity of a given sound field. Computes also the values</span>
+<span class="sd">    to be visualized in the bar chart (Number of SPL values per audience</span>
+<span class="sd">    positions). Here the output of :any:`calcSFP`. Called by :any:`start_calc`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Tech_res : obj [in, out]</span>
+<span class="sd">        Contains technical measure results. Input: sound field prediction.</span>
+<span class="sd">        Output: Homogeneity.</span>
+<span class="sd">    x_S : float</span>
+<span class="sd">        Center position of the LSA on x-axis.</span>
+<span class="sd">    y_S : float</span>
+<span class="sd">        Center position of the LSA on y-axis.</span>
+<span class="sd">    x_vert : list</span>
+<span class="sd">        Audience positions on x-axis.</span>
+<span class="sd">    y_vert : list</span>
+<span class="sd">        Audience positions on y-axis.</span>
+<span class="sd">    objective : str, optional</span>
+<span class="sd">        Normalization on &#39;0dB&#39;, &#39;3dB&#39; or &#39;6dB&#39; loss over distance doubling.</span>
+<span class="sd">        The default is &#39;0dB&#39;.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># atmospheric pressure</span>
+    <span class="c1"># optional: Optimization on 3dB loss over distance doubling</span>
+    <span class="n">xy_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x_vert</span><span class="o">-</span><span class="n">x_S</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_vert</span><span class="o">-</span><span class="n">y_S</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">objective</span> <span class="o">==</span> <span class="s1">&#39;6dB&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">n_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x_vert</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">-</span><span class="n">x_S</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_vert</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">-</span><span class="n">y_S</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">[</span><span class="n">n</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">p0</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">[</span><span class="n">n</span><span class="p">,:]</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span> \
+                                              <span class="o">*</span> <span class="p">(</span><span class="n">n_dist</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">xy_dist</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">objective</span> <span class="o">==</span> <span class="s1">&#39;3dB&#39;</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">n_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">x_vert</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">-</span><span class="n">x_S</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">y_vert</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">-</span><span class="n">y_S</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">[</span><span class="n">n</span><span class="p">,:]</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">p0</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">[</span><span class="n">n</span><span class="p">,:]</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span> \
+                                              <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">n_dist</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">xy_dist</span><span class="p">)))</span>
+    
+    <span class="c1"># Calculate the quantiles</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">)[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">)[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="n">H</span><span class="p">[:,</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">mquantiles</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">[:,</span><span class="n">n</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span> <span class="n">alphap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">betap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">H</span> <span class="o">=</span> <span class="n">H</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">-</span> <span class="n">H</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span>
+    <span class="n">H_dist_high</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">xy_dist</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">xy_dist</span><span class="p">)))</span>
+    <span class="n">H_dist_high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">H_dist_high</span><span class="p">,</span> <span class="n">H_dist_high</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">H</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">H_dist</span>      <span class="o">=</span> <span class="p">[</span><span class="n">H_dist_high</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">H_dist_high</span><span class="p">]</span>
+    <span class="c1"># Calculate values for bar chart</span>
+    <span class="n">A_mean</span>      <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">p0</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="o">/</span><span class="mi">20</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">p0</span><span class="p">)</span>
+    <span class="n">min_val</span>     <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">A_mean</span><span class="p">))</span>
+    <span class="n">max_val</span>     <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">A_mean</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">min_val</span><span class="p">:</span>
+        <span class="n">max_val</span> <span class="o">=</span> <span class="n">min_val</span> <span class="o">+</span> <span class="mi">5</span>
+    <span class="n">bins_shape</span>  <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_val</span> <span class="o">-</span> <span class="n">min_val</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">hist_bins</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span><span class="p">,</span> <span class="n">bins_shape</span><span class="p">)</span>
+    <span class="n">Tech_res</span><span class="o">.</span><span class="n">update_tech_meas</span><span class="p">(</span><span class="n">H</span><span class="o">=</span><span class="n">H</span><span class="p">,</span> <span class="n">H_dist</span><span class="o">=</span><span class="n">H_dist</span><span class="p">,</span> <span class="n">A_mean</span><span class="o">=</span><span class="n">A_mean</span><span class="p">,</span> <span class="n">hist_bins</span><span class="o">=</span><span class="n">hist_bins</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="calcHistogram"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calcHistogram">[docs]</a><span class="k">def</span> <span class="nf">calcHistogram</span><span class="p">(</span><span class="n">Tech_res</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the Histogram values to be visualized in bokeh. Called by</span>
+<span class="sd">    :any:`start_calc`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Tech_res : obj [in, out]</span>
+<span class="sd">        Technical Measure Results.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">A_Hist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">Tech_res</span><span class="o">.</span><span class="n">A_mean</span><span class="p">,</span> <span class="n">Tech_res</span><span class="o">.</span><span class="n">hist_bins</span><span class="p">)</span>
+    <span class="n">top</span><span class="p">,</span> <span class="n">bin_list</span><span class="p">,</span> <span class="n">x_steps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">A_Hist</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">list</span><span class="p">(</span><span class="n">A_Hist</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">bin_list</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">x_steps</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">bin_list</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">bin_list</span><span class="p">[</span><span class="n">n</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">Tech_res</span><span class="o">.</span><span class="n">update_tech_meas</span><span class="p">(</span><span class="n">Hist_tops</span><span class="o">=</span><span class="n">top</span><span class="p">,</span> <span class="n">Hist_steps</span><span class="o">=</span><span class="n">x_steps</span><span class="p">)</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="calcSPLoverX"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calcSPLoverX">[docs]</a><span class="k">def</span> <span class="nf">calcSPLoverX</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">p_SPL</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the SPL over distance. The distance is measured from the center</span>
+<span class="sd">    of the LSA to the receiver positions. Called by :any:`start_calc` and</span>
+<span class="sd">    :any:`optimize_PALC`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    PALC_plots : obj [in]</span>
+<span class="sd">        Contains data to compute the center of the LSA.</span>
+<span class="sd">    created_pal : obj [in]</span>
+<span class="sd">        Contains data of the receiver positions.</span>
+<span class="sd">    p_SPL : 1D-array</span>
+<span class="sd">        Sound pressure level at each receiver position.</span>
+<span class="sd">    SPLoverX : obj [out]</span>
+<span class="sd">        Contains the SPL over distance output.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    p_SPL_x_vert : 1D-array</span>
+<span class="sd">        SPL value of the receiver positions.</span>
+<span class="sd">    total_dist : 1D-array</span>
+<span class="sd">        Distances between center of LSA and receiver positions.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span> <span class="c1"># atmospheric pressure</span>
+    <span class="c1"># distance source --&gt; receiver</span>
+    <span class="n">total_dist</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(((</span><span class="n">PALC_plots</span><span class="o">.</span><span class="n">x_start</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">PALC_plots</span><span class="o">.</span><span class="n">x_stop</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">xline</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
+                         <span class="p">((</span><span class="n">PALC_plots</span><span class="o">.</span><span class="n">y_start</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">PALC_plots</span><span class="o">.</span><span class="n">y_stop</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mi">2</span> <span class="o">-</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">yline</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="c1"># SPLoverX computation</span>
+    <span class="n">p_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p0</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">p_SPL</span><span class="o">/</span><span class="mi">20</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">p_SPL_x_vert</span> <span class="o">=</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">p_sum</span><span class="p">)</span> <span class="o">/</span> <span class="n">p0</span><span class="p">)</span>
+    <span class="n">p_SPL_x_vert</span> <span class="o">=</span> <span class="n">p_SPL_x_vert</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="n">p_SPL_x_vert</span><span class="p">)</span>
+    <span class="n">SPLoverX</span><span class="o">.</span><span class="n">x</span>   <span class="o">=</span> <span class="n">total_dist</span>
+    <span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL</span> <span class="o">=</span> <span class="n">p_SPL_x_vert</span>
+    <span class="k">return</span> <span class="n">p_SPL_x_vert</span><span class="p">,</span> <span class="n">total_dist</span></div>
+
+
+<div class="viewcode-block" id="calcAcousticContrast"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.calcAcousticContrast">[docs]</a><span class="k">def</span> <span class="nf">calcAcousticContrast</span><span class="p">(</span><span class="n">p_SPL</span><span class="p">,</span> <span class="n">p_SPL_na</span><span class="p">,</span> <span class="n">x_a</span><span class="p">,</span> <span class="n">y_a</span><span class="p">,</span> <span class="n">x_na</span><span class="p">,</span> <span class="n">y_na</span><span class="p">,</span> <span class="n">p0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the acoustic Contrast. In general it shows the relation between</span>
+<span class="sd">    radiated acoustic energy on receiver positions and non-receiver positions.</span>
+<span class="sd">    Not visualized in bokeh, only for manual use without bokeh.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    p_SPL : 2D-array</span>
+<span class="sd">        Sound pressure level at receiver positions. First axis: receiver</span>
+<span class="sd">        positions. Second axis: Frequency</span>
+<span class="sd">    p_SPL_na : 2D-array</span>
+<span class="sd">        Sound pressure level at non-receiver positions. First axis: receiver</span>
+<span class="sd">        positions. Second axis: Frequency</span>
+<span class="sd">    x_a : 1D-array</span>
+<span class="sd">        Receiver positions on x-axis.</span>
+<span class="sd">    y_a : 1D-array</span>
+<span class="sd">        Receiver positions on y-axis.</span>
+<span class="sd">    x_na : 1D-array</span>
+<span class="sd">        Non-receiver positions on x-axis.</span>
+<span class="sd">    y_na : 1D-array</span>
+<span class="sd">        Non-receiver positions on y-axis.</span>
+<span class="sd">    p0 : float</span>
+<span class="sd">        Reference sound pressure.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    L_p_a_na : 1D-array</span>
+<span class="sd">        Acoustic contrast of all considered frequencies.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># convert to sound pressure in Pascal</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">p_SPL</span><span class="o">/</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">p_na</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="p">(</span><span class="n">p_SPL_na</span><span class="o">/</span><span class="mi">20</span><span class="p">)</span>
+    <span class="c1"># Compute Acoustic Contrast</span>
+    <span class="n">L_p_a_na</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">p_SPL</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">p_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">p_na_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">p_na</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">L_p_a_na</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">p_mean</span><span class="o">/</span><span class="n">p_na_mean</span><span class="p">)</span>    
+<span class="c1">#    for n in range(np.shape(p_SPL)[1]):</span>
+<span class="c1">#        L_p_a_na[n] = 10 * np.log10( (1/np.shape(p_SPL)[0] * np.sqrt(np.sum(np.abs(p[:,n])**2, axis=0))**2) / \</span>
+<span class="c1">#                (1/np.shape(p_SPL_na)[0] * np.sqrt(np.sum(np.abs(p_na[:,n])**2, axis=0))**2))</span>
+    <span class="c1">#L_p_a_na = L_p_a_na - np.amin(L_p_a_na)</span>
+        
+    <span class="k">return</span> <span class="n">L_p_a_na</span></div>
+
+  
+<div class="viewcode-block" id="smoothSpectrum"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.smoothSpectrum">[docs]</a><span class="k">def</span> <span class="nf">smoothSpectrum</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">X_f</span><span class="p">,</span> <span class="n">r_oct</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Smoothes a frequency spectrum. Not used in bokeh.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    f : 1D-array</span>
+<span class="sd">        Frequency bins.</span>
+<span class="sd">    X_f : 1D-array</span>
+<span class="sd">        Spectrum to be smoothed.</span>
+<span class="sd">    r_oct : float</span>
+<span class="sd">        Resolution to smooth.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    X_f_out : 1D-array</span>
+<span class="sd">        Smoothed spectrum.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">X_f_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">X_f</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="c1"># standard deviation</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">/</span> <span class="n">r_oct</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="c1"># Gaussian window with the center frequnecy f[n] an dstandard deviation</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span><span class="p">(</span><span class="n">f</span><span class="o">-</span><span class="n">f</span><span class="p">[</span><span class="n">n</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">w</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">X_f_out</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">w</span> <span class="o">*</span> <span class="n">X_f</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">X_f_out</span></div>
+    
+   
+<span class="c1">## Function only to initialize the Circular Piston Directivity Plot</span>
+    
+<div class="viewcode-block" id="init_dir_plot"><a class="viewcode-back" href="../sfp_functions.html#sfp_functions.init_dir_plot">[docs]</a><span class="k">def</span> <span class="nf">init_dir_plot</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initializes the directivity plot in bokeh :any:`pdir`. Avoids error message</span>
+<span class="sd">    that no data is presend to plot. Calls :any:`get_freq_vec`. Called by</span>
+<span class="sd">    :py:doc:`main`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    c0 : float</span>
+<span class="sd">        Speed of sound.</span>
+<span class="sd">    alpha : float</span>
+<span class="sd">        Active radiating factor. Set to 0.82 (Schult et al.)</span>
+<span class="sd">    beta_deg : 1D-array</span>
+<span class="sd">        Radiation angles in degree.</span>
+<span class="sd">    beta : 1D-array</span>
+<span class="sd">        Radiation angles in radian.</span>
+<span class="sd">    f : 1D-array</span>
+<span class="sd">        Frequency bins in Hz.</span>
+<span class="sd">    omega : 1D-array</span>
+<span class="sd">        Frequency bins in radian.</span>
+<span class="sd">    dir_meas : 2D-array</span>
+<span class="sd">        Measured loudspeaker data.</span>
+<span class="sd">    dir_meas_deg : 2D-array</span>
+<span class="sd">        Angle of measured loudspeaker data.</span>
+<span class="sd">    H_post : 2D-array</span>
+<span class="sd">        Directivity.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">c0</span>  <span class="o">=</span> <span class="mf">331.45</span>             <span class="c1"># reference speed of sound in m/s</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.82</span>
+    <span class="n">beta_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span><span class="mi">180</span><span class="p">,</span><span class="mi">181</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta_deg</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">180</span>
+    <span class="c1"># frequencies</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">get_freq_vec</span><span class="p">(</span><span class="n">N_freq</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">step_freq</span><span class="o">=</span><span class="mi">1</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+    <span class="n">omega</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">f</span>
+    <span class="n">dir_meas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="n">dir_meas_deg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]])</span>
+    <span class="n">H_post</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">beta</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">f</span><span class="p">)[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">c0</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta_deg</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">omega</span><span class="p">,</span> <span class="n">dir_meas</span><span class="p">,</span> <span class="n">dir_meas_deg</span><span class="p">,</span> <span class="n">H_post</span></div>
+    
+  
+    
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">sfp_functions</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

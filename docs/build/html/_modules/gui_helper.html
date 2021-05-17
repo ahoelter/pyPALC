@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gui_helper &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <script src="../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_helper</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gui_helper</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: Arne Hoelter</span>
+
+<span class="sd">Functions that help to organize the :doc:`main` and display in the GUI. The</span>
+<span class="sd">functions do not directly correspond to a specific page in the GUI. They</span>
+<span class="sd">are typically called by several functions / callbacks of the :doc:`main` script.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">bokeh.models</span> <span class="kn">import</span> <span class="n">Range1d</span>
+
+<div class="viewcode-block" id="update_text"><a class="viewcode-back" href="../gui_helper.html#gui_helper.update_text">[docs]</a><span class="k">def</span> <span class="nf">update_text</span><span class="p">(</span><span class="n">text_obj</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set text in str-format to an object. The text will be displayed in the GUI.</span>
+<span class="sd">    The text is usually an extra info or an error message, raised by an except</span>
+<span class="sd">    case.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text_obj : obj [out]</span>
+<span class="sd">        Object that contains text to display in the GUI.</span>
+<span class="sd">    text : str</span>
+<span class="sd">        Text to display in the GUI.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">text_obj</span><span class="p">,</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+     
+<div class="viewcode-block" id="venue_slice2CDS"><a class="viewcode-back" href="../gui_helper.html#gui_helper.venue_slice2CDS">[docs]</a><span class="k">def</span> <span class="nf">venue_slice2CDS</span><span class="p">(</span><span class="n">plt_venue_slice_1</span><span class="p">,</span> <span class="n">plt_venue_slice_2</span><span class="p">,</span> \
+                    <span class="n">PALC_plots</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores venue slice data in a ColumnDataSource to plot the data in the</span>
+<span class="sd">    venue slice plot any:`p`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plt_venue_slice_1 : ColumnDataSource [out]</span>
+<span class="sd">        First CDS to visualize the rays of the LSA cabinets to the venue.</span>
+<span class="sd">    plt_venue_slice_2 : ColumnDataSource [out]</span>
+<span class="sd">        Second CDS to visualize the LSA cabinets.</span>
+<span class="sd">    PALC_plots : obj [in]</span>
+<span class="sd">        Contains the plotting data.</span>
+<span class="sd">    Opt_arr : obj [in]</span>
+<span class="sd">        Contains the data of the optimized LSA array by PALC.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">Opt_arr</span> <span class="o">!=</span> <span class="p">[]:</span>
+        <span class="n">plt_venue_slice_1</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x_c_n_unitn</span>      <span class="o">=</span> <span class="n">PALC_plots</span><span class="o">.</span><span class="n">x_c_n_unitn</span><span class="p">,</span> \
+                                     <span class="n">y_c_n_unitn</span>       <span class="o">=</span> <span class="n">PALC_plots</span><span class="o">.</span><span class="n">y_c_n_unitn</span><span class="p">,</span> \
+                                     <span class="n">x_c_n_unitn_psi1</span>  <span class="o">=</span> <span class="n">PALC_plots</span><span class="o">.</span><span class="n">x_c_n_unitn_psi1</span><span class="p">,</span> \
+                                     <span class="n">y_c_n_unitn_psi1</span>  <span class="o">=</span> <span class="n">PALC_plots</span><span class="o">.</span><span class="n">y_c_n_unitn_psi1</span><span class="p">,</span> \
+                                     <span class="n">x_c_n_unitn_psi2</span>  <span class="o">=</span> <span class="n">PALC_plots</span><span class="o">.</span><span class="n">x_c_n_unitn_psi2</span><span class="p">,</span> \
+                                     <span class="n">y_c_n_unitn_psi2</span>  <span class="o">=</span> <span class="n">PALC_plots</span><span class="o">.</span><span class="n">y_c_n_unitn_psi2</span><span class="p">)</span>
+        <span class="n">plt_venue_slice_2</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">seg_pos_x</span>        <span class="o">=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> \
+                                     <span class="n">seg_pos_y</span>         <span class="o">=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> \
+                                     <span class="n">seg_pos_start_x</span>   <span class="o">=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_start</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> \
+                                     <span class="n">seg_pos_start_y</span>   <span class="o">=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_start</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> \
+                                     <span class="n">seg_pos_stop_x</span>    <span class="o">=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_stop</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span> \
+                                     <span class="n">seg_pos_stop_y</span>    <span class="o">=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_stop</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">plt_venue_slice_2</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">seg_pos_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">seg_pos_y</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">seg_pos_start_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">seg_pos_start_y</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">seg_pos_stop_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">seg_pos_stop_y</span><span class="o">=</span><span class="p">[])</span>
+        <span class="n">plt_venue_slice_1</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x_start_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_start_stop</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">x_fin_unitn_start_stop</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">y_fin_unitn_start_stop</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">x_start_unitn_start</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">y_start_unitn_start</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">x_stop_unitn_stop</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">y_stop_unitn_stop</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">x_c_n_unitn</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_c_n_unitn</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">x_c_n_unitn_psi1</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_c_n_unitn_psi1</span><span class="o">=</span><span class="p">[],</span> \
+                                      <span class="n">x_c_n_unitn_psi2</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_c_n_unitn_psi2</span><span class="o">=</span><span class="p">[])</span></div>
+            
+
+<div class="viewcode-block" id="get_p_axis_rng"><a class="viewcode-back" href="../gui_helper.html#gui_helper.get_p_axis_rng">[docs]</a><span class="k">def</span> <span class="nf">get_p_axis_rng</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">plt_ranges</span><span class="p">,</span> <span class="n">p_equal_axis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sets the range and the scaling of the venue slice plot :any:`p`. The</span>
+<span class="sd">    scaling depends on the user selection in CheckBoxGroup widget</span>
+<span class="sd">    :any:`p_equal_axis` and called by :any:`scale_p_axis`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    p : fig [out]</span>
+<span class="sd">        Venue slice figure.</span>
+<span class="sd">    plt_ranges : obj [in] </span>
+<span class="sd">        Contains the ranging data.</span>
+<span class="sd">    p_equal_axis : obj [in]</span>
+<span class="sd">        CheckBoxGroup widget to select scaling type of :any:`p`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">frame_height</span><span class="o">=</span><span class="mi">478</span>
+    <span class="k">if</span> <span class="n">p_equal_axis</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span> <span class="c1"># stretched is active</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">y_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">match_aspect</span><span class="o">=</span><span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">p_equal_axis</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># equal axis const. height is active</span>
+        <span class="n">scaling_factor</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">frame_height</span><span class="o">/</span><span class="n">p</span><span class="o">.</span><span class="n">frame_width</span>
+        <span class="n">axmin</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+        <span class="n">axmax</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">if</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">axmin</span><span class="p">,</span> <span class="n">axmax</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">y_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">axmin</span><span class="o">*</span><span class="n">scaling_factor</span><span class="p">,</span> <span class="n">axmax</span><span class="o">*</span><span class="n">scaling_factor</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">y_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">axmin</span><span class="p">,</span> <span class="n">axmax</span><span class="p">)</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">axmin</span><span class="o">/</span><span class="n">scaling_factor</span><span class="p">,</span> <span class="n">axmax</span><span class="o">/</span><span class="n">scaling_factor</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">match_aspect</span><span class="o">=</span><span class="kc">True</span>
+    <span class="k">elif</span> <span class="n">p_equal_axis</span><span class="o">.</span><span class="n">active</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># equal axis variable height is active</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">y_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>        
+        <span class="n">p</span><span class="o">.</span><span class="n">frame_height</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">frame_width</span><span class="o">*</span><span class="p">((</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_y</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> \
+                                            <span class="p">(</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">plt_ranges</span><span class="o">.</span><span class="n">p_x</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">match_aspect</span><span class="o">=</span><span class="kc">True</span></div>
+        
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_helper</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

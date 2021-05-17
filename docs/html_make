@@ -1,0 +1,7 @@
+# Starts the make.bat file and then replaces the classic.css by a classic.css file in pyPALC style as used in the application
+
+make html
+
+cp source/_static/classic.css build/html/_static/classic.css
+cp source/_static/basic.css build/html/_static/basic.css
+cp source/_static/pygments.css build/html/_static/pygments.css

@@ -1,0 +1,544 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>sfp_functions &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="checkPAL" href="checkPAL.html" />
+    <link rel="prev" title="PALC_opt" href="PALC_opt.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="checkPAL.html" title="checkPAL"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PALC_opt.html" title="PALC_opt"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">sfp_functions</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-sfp_functions">
+<span id="sfp-functions"></span><h1>sfp_functions<a class="headerlink" href="#module-sfp_functions" title="Permalink to this headline">¶</a></h1>
+<p>author: arne Hoelter</p>
+<p>Function to be used to compute the sound field prediction with the
+Complex Directivity Point Source (CDPS)-model.</p>
+<dl class="py function">
+<dt id="sfp_functions.AirAbsorptionCoefficient">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">AirAbsorptionCoefficient</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#AirAbsorptionCoefficient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.AirAbsorptionCoefficient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the air absorption coefficient alpha. Called by
+<a class="reference internal" href="#sfp_functions.calcSFP" title="sfp_functions.calcSFP"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calcSFP</span></code></a> and <a class="reference internal" href="#sfp_functions.calcBeamplot" title="sfp_functions.calcBeamplot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calcBeamplot</span></code></a>.
+Calls <a class="reference internal" href="#sfp_functions.AirAbsorptionRelaxationFrequencies" title="sfp_functions.AirAbsorptionRelaxationFrequencies"><code class="xref any py py-func docutils literal notranslate"><span class="pre">AirAbsorptionRelaxationFrequencies</span></code></a>. Uses the following
+constants:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>p_r        = 101.325*10³ Pa as reference sound pressure</p></li>
+<li><dl class="simple">
+<dt>T0         = 293.15 K       as reference temperature in K for</dt><dd><p>relaxation frequencies and alpha</p>
+</dd>
+</dl>
+</li>
+<li><p>T0_p_sat_r = 273.16 K       as reference temperature in K for p_sat_r</p></li>
+<li><p>c0         = 331.45 m/s     as reference speed of sound</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f</strong> (<em>float</em>) – Frequency in Hz.</p></li>
+<li><p><strong>T</strong> (<em>float</em>) – Temperature in K.</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure in Pa.</p></li>
+<li><p><strong>h</strong> (<em>float</em>) – Relative humidity in percent.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>alpha</strong> (<em>float</em>) – Attenuation coefficient in dB/m.</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Speed of sound.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.AirAbsorptionRelaxationFrequencies">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">AirAbsorptionRelaxationFrequencies</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_r</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#AirAbsorptionRelaxationFrequencies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.AirAbsorptionRelaxationFrequencies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculates the relaxation frequencies for air absorption conforming to
+ISO 9613-1. Called by <a class="reference internal" href="#sfp_functions.AirAbsorptionCoefficient" title="sfp_functions.AirAbsorptionCoefficient"><code class="xref any py py-func docutils literal notranslate"><span class="pre">AirAbsorptionCoefficient</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>float</em>) – Temperature in K.</p></li>
+<li><p><strong>p</strong> (<em>float</em>) – Pressure in Pa.</p></li>
+<li><p><strong>H</strong> (<em>float</em>) – Humidity as molar conentration in percent.</p></li>
+<li><p><strong>T0</strong> (<em>float</em>) – Reference temperature in K, 293.15 K.</p></li>
+<li><p><strong>p_r</strong> (<em>float</em>) – Reference sound pressure in Pa, 101.325*10³ Pa.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>f_rO</strong> (<em>float</em>) – Relaxation frequency of oxygen.</p></li>
+<li><p><strong>f_rN</strong> (<em>float</em>) – Relaxation frequency of nitrogen.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.CalcGreenFunctions">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">CalcGreenFunctions</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_src_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_src_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dire</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lambda_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G_sen</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_meas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_meas_deg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">airloss_alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#CalcGreenFunctions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.CalcGreenFunctions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Green’s function multiplied with the loudspeaker directivity.
+Calls <a class="reference internal" href="#sfp_functions.greens_fct" title="sfp_functions.greens_fct"><code class="xref any py py-func docutils literal notranslate"><span class="pre">greens_fct</span></code></a> and <a class="reference internal" href="#sfp_functions.calc_directivity" title="sfp_functions.calc_directivity"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calc_directivity</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>1D-array</em>) – Receiver positions on x-axis.</p></li>
+<li><p><strong>y</strong> (<em>1D-array</em>) – Receiver positions on y-axis.</p></li>
+<li><p><strong>z</strong> (<em>1D-array</em>) – Receiver positions on z-axis.</p></li>
+<li><p><strong>x_src_l</strong> (<em>1D-array</em>) – Source positions on x-axis.</p></li>
+<li><p><strong>y_src_l</strong> (<em>1D-array</em>) – Source positions on y-axis.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – Active radiation factor. Normally 0.82 (Schultz et al.)</p></li>
+<li><p><strong>dire</strong> (<em>str</em>) – Directivity can be either ‘Circular Piston’, ‘Line Piston’,
+‘Combined Circular/Line’, ‘Measured Loudspeaker Data’ or ‘const’.</p></li>
+<li><p><strong>Lambda_y</strong> (<em>float</em>) – Height of LSA cabinets.</p></li>
+<li><p><strong>gamma_l</strong> (<em>1D-array</em>) – Set of LSA tilt angles in radian.</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Speed of sound.</p></li>
+<li><p><strong>omega</strong> (<em>float</em>) – Radian frequency.</p></li>
+<li><p><strong>G_sen</strong> (<em>float</em>) – Additional factor of the Green’s function.</p></li>
+<li><p><strong>dir_meas</strong> (<em>ndarray</em>) – Measured loudspeaker directivity.</p></li>
+<li><p><strong>dir_meas_deg</strong> (<em>ndarray</em>) – Radiation angles of the measured loudspeaker directivity.</p></li>
+<li><p><strong>airloss_alpha</strong> (<em>1D-array</em>) – Computed air attenuation / absorption.</p></li>
+<li><p><strong>f</strong> (<em>float</em>) – Considered frequency in Hz.</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – Index of considered frequency in actual loop.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>G</strong> – Green’s function multiplied with loudspeaker directivity.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.LinkwitzRileyCrossOver">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">LinkwitzRileyCrossOver</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f_c_m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#LinkwitzRileyCrossOver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.LinkwitzRileyCrossOver" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a Linkwitz-Riley-Crossover filter. The lowpass and highpass are
+of second order butterworth filter. Called by <a class="reference internal" href="#sfp_functions.calc_directivity" title="sfp_functions.calc_directivity"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calc_directivity</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f_c_m</strong> (<em>float</em>) – Cut-off frequency.</p></li>
+<li><p><strong>fs</strong> (<em>float</em>) – Sampling frequency.</p></li>
+<li><p><strong>f</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Considered frequency bins.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>D_xo_low</strong> (<em>1D-array</em>) – Complex frequency response of the Linkwitz-Riley lowpass of
+the selected BP frequencies and the selected sampling frequency.</p></li>
+<li><p><strong>D_xo_high</strong> (<em>1D-array</em>) – Complex frequency response of the Linkwitz-Riley highpass of
+the selected BP frequencies and the selected sampling frequency.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calcAcousticContrast">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcAcousticContrast</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p_SPL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_SPL_na</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_na</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_na</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcAcousticContrast"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcAcousticContrast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the acoustic Contrast. In general it shows the relation between
+radiated acoustic energy on receiver positions and non-receiver positions.
+Not visualized in bokeh, only for manual use without bokeh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>p_SPL</strong> (<em>2D-array</em>) – Sound pressure level at receiver positions. First axis: receiver
+positions. Second axis: Frequency</p></li>
+<li><p><strong>p_SPL_na</strong> (<em>2D-array</em>) – Sound pressure level at non-receiver positions. First axis: receiver
+positions. Second axis: Frequency</p></li>
+<li><p><strong>x_a</strong> (<em>1D-array</em>) – Receiver positions on x-axis.</p></li>
+<li><p><strong>y_a</strong> (<em>1D-array</em>) – Receiver positions on y-axis.</p></li>
+<li><p><strong>x_na</strong> (<em>1D-array</em>) – Non-receiver positions on x-axis.</p></li>
+<li><p><strong>y_na</strong> (<em>1D-array</em>) – Non-receiver positions on y-axis.</p></li>
+<li><p><strong>p0</strong> (<em>float</em>) – Reference sound pressure.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>L_p_a_na</strong> – Acoustic contrast of all considered frequencies.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D-array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calcBeamplot">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcBeamplot</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dire_meas_LSA</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dire_meas_deg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcBeamplot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcBeamplot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calcuates the SPL values to map them on a mesh. This is called beamplot.
+Calls <a class="reference internal" href="#sfp_functions.AirAbsorptionCoefficient" title="sfp_functions.AirAbsorptionCoefficient"><code class="xref any py py-func docutils literal notranslate"><span class="pre">AirAbsorptionCoefficient</span></code></a> and <a class="reference internal" href="#sfp_functions.CalcGreenFunctions" title="sfp_functions.CalcGreenFunctions"><code class="xref any py py-func docutils literal notranslate"><span class="pre">CalcGreenFunctions</span></code></a>. Called
+by <a class="reference internal" href="#sfp_functions.getBeamplotRes" title="sfp_functions.getBeamplotRes"><code class="xref any py py-func docutils literal notranslate"><span class="pre">getBeamplotRes</span></code></a>. The maximum amount of points in the mesh is set
+to 1000. If the app is run locally, the amount of points may be increased.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of the PALC algorithm.</p></li>
+<li><p><strong>gamma_n</strong> (<em>either list</em><em> or </em><em>1D-array</em>) – Set of LSA tilt angles in radian.</p></li>
+<li><p><strong>plt_ranges</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Handles the ranges of bokeh figures.</p></li>
+<li><p><strong>f</strong> (<em>float</em>) – Frequency to be considered in beamplot.</p></li>
+<li><p><strong>dir_meas_LSA</strong> (<em>ndarray</em>) – Measured loudspeaker directivity.</p></li>
+<li><p><strong>dir_meas_deg</strong> (<em>ndarray</em>) – Radiation angles of the measured loudspeaker directivity.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>p_SPL</strong> (<em>2D-array</em>) – Sound pressure level values to be mapped on mesh (X, Y).</p></li>
+<li><p><strong>X</strong> (<em>2D-array</em>) – Mesh of x-axis values.</p></li>
+<li><p><strong>Y</strong> (<em>2D-array</em>) – Mesh of y-axis values</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calcHistogram">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcHistogram</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Tech_res</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcHistogram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcHistogram" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the Histogram values to be visualized in bokeh. Called by
+<a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Tech_res</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Technical Measure Results.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calcHomogeneity">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcHomogeneity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Tech_res</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_S</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_S</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_vert</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_vert</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">objective</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'0dB'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcHomogeneity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcHomogeneity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the homogeneity of a given sound field. Computes also the values
+to be visualized in the bar chart (Number of SPL values per audience
+positions). Here the output of <a class="reference internal" href="#sfp_functions.calcSFP" title="sfp_functions.calcSFP"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calcSFP</span></code></a>. Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Tech_res</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Contains technical measure results. Input: sound field prediction.
+Output: Homogeneity.</p></li>
+<li><p><strong>x_S</strong> (<em>float</em>) – Center position of the LSA on x-axis.</p></li>
+<li><p><strong>y_S</strong> (<em>float</em>) – Center position of the LSA on y-axis.</p></li>
+<li><p><strong>x_vert</strong> (<em>list</em>) – Audience positions on x-axis.</p></li>
+<li><p><strong>y_vert</strong> (<em>list</em>) – Audience positions on y-axis.</p></li>
+<li><p><strong>objective</strong> (<em>str</em><em>, </em><em>optional</em>) – Normalization on ‘0dB’, ‘3dB’ or ‘6dB’ loss over distance doubling.
+The default is ‘0dB’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calcSFP">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcSFP</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gamma_tilt_deg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SFP_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tech_res</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcSFP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcSFP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main function to compute 2D sound field prediction with a 3D transfer
+function. Calls <a class="reference internal" href="#sfp_functions.AirAbsorptionCoefficient" title="sfp_functions.AirAbsorptionCoefficient"><code class="xref any py py-func docutils literal notranslate"><span class="pre">AirAbsorptionCoefficient</span></code></a> and <a class="reference internal" href="#sfp_functions.CalcGreenFunctions" title="sfp_functions.CalcGreenFunctions"><code class="xref any py py-func docutils literal notranslate"><span class="pre">CalcGreenFunctions</span></code></a>.
+Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a> and <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gamma_tilt_deg</strong> (<em>list</em>) – Set of LSA tilt angles in degree.</p></li>
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains the venue slice that shall simulated by the CDPS-model.</p></li>
+<li><p><strong>SFP_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of the sound field prediction.</p></li>
+<li><p><strong>Tech_res</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Stores the results of the sound field prediction.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>x_S</strong> (<em>float</em>) – Center position of the LSA on x-axis.</p></li>
+<li><p><strong>y_S</strong> (<em>float</em>) – Center position of the LSA on y-axis.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calcSPLoverX">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcSPLoverX</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_SPL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcSPLoverX"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcSPLoverX" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the SPL over distance. The distance is measured from the center
+of the LSA to the receiver positions. Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a> and
+<a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_plots</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data to compute the center of the LSA.</p></li>
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of the receiver positions.</p></li>
+<li><p><strong>p_SPL</strong> (<em>1D-array</em>) – Sound pressure level at each receiver position.</p></li>
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains the SPL over distance output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>p_SPL_x_vert</strong> (<em>1D-array</em>) – SPL value of the receiver positions.</p></li>
+<li><p><strong>total_dist</strong> (<em>1D-array</em>) – Distances between center of LSA and receiver positions.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.calc_directivity">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calc_directivity</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dire</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lambda_y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_meas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir_meas_deg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calc_directivity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calc_directivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the LSA cabinets directivity. Possible directivities are Circular
+Piston, Line Piston, Combined Circular / Line Piston, Measured
+Loudspeaker Data or Constant (Monopole). The Crossover frequency is set
+to 1.5 kHz.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dire</strong> (<em>str</em>) – Directivity can be either ‘Circular Piston’, ‘Line Piston’,
+‘Combined Circular/Line’, ‘Measured Loudspeaker Data’ or ‘const’.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – Active radiation factor. Normally 0.82 (Schultz et al.)</p></li>
+<li><p><strong>Lambda_y</strong> (<em>float</em>) – Height of LSA cabinets.</p></li>
+<li><p><strong>beta</strong> (<em>1D-array</em>) – Considered radiation angles.</p></li>
+<li><p><strong>omega</strong> (<em>1D-array</em>) – Considered radian frequencies.</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Speed of sound.</p></li>
+<li><p><strong>f</strong> (<em>1D-array</em>) – Considered frequency bin in Hz.</p></li>
+<li><p><strong>dir_meas</strong> (<em>ndarray</em>) – Measured loudspeaker directivity.</p></li>
+<li><p><strong>dir_meas_deg</strong> (<em>ndarray</em>) – Radiation angles of measured loudspeaker directivity.</p></li>
+<li><p><strong>n</strong> (<em>int</em>) – Index of considered frequency bin in actual loop.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>H_post</strong> – Computed loudspeaker directivity.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.getBeamplotRes">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">getBeamplotRes</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pBeam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SFP_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_ranges</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ind_f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#getBeamplotRes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.getBeamplotRes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the beamplot of a certain frequency regarding the simulated
+venue slice. Calls <a class="reference internal" href="#sfp_functions.calcBeamplot" title="sfp_functions.calcBeamplot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calcBeamplot</span></code></a>. Called by <a class="reference internal" href="main.html#main.get_beamplot" title="main.get_beamplot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_beamplot</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pBeam</strong> (<em>fig</em><em> [</em><em>out</em><em>]</em>) – Bokeh beamplot figure.</p></li>
+<li><p><strong>mapper</strong> (<em>LinearColorMapper</em><em> [</em><em>out</em><em>]</em>) – Object that maps the Colors of the beamplot. Also used for the Colorbar.</p></li>
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of PALC algorithm.</p></li>
+<li><p><strong>SFP_config</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Configuration of sound field prediction.</p></li>
+<li><p><strong>gamma_n</strong> (<em>1D-array</em>) – Set of LSA tilt angles in radian.</p></li>
+<li><p><strong>plt_ranges</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains ranging information of the bokeh figures.</p></li>
+<li><p><strong>f</strong> (<em>float</em>) – Considered frequency bin.</p></li>
+<li><p><strong>ind_f</strong> (<em>int</em>) – Index of the frequency bin.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>p_SPL</strong> – Sound pressure levels mapped on the mesh.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.get_freq_vec">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">get_freq_vec</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_freq</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#get_freq_vec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.get_freq_vec" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute a linear frequency vector. Called by <a class="reference internal" href="#sfp_functions.calcSFP" title="sfp_functions.calcSFP"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calcSFP</span></code></a> and
+<a class="reference internal" href="#sfp_functions.init_dir_plot" title="sfp_functions.init_dir_plot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">init_dir_plot</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N_freq</strong> (<em>int</em>) – Number of frequency bins.</p></li>
+<li><p><strong>step_freq</strong> (<em>int</em>) – Step size of frequency vector.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>f</strong> – Frequency vector.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D-array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.greens_fct">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">greens_fct</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">omega</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#greens_fct"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.greens_fct" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the 3D Green’s function. The acoustic transfer function in air.
+Called by <a class="reference internal" href="#sfp_functions.CalcGreenFunctions" title="sfp_functions.CalcGreenFunctions"><code class="xref any py py-func docutils literal notranslate"><span class="pre">CalcGreenFunctions</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x0</strong> (<em>float</em>) – Source position x-axis.</p></li>
+<li><p><strong>y0</strong> (<em>float</em>) – Source position y-axis.</p></li>
+<li><p><strong>omega</strong> (<em>float</em>) – Discrete radian frequency.</p></li>
+<li><p><strong>c</strong> (<em>float</em>) – Speed of sound.</p></li>
+<li><p><strong>x</strong> (<em>1D-array</em>) – Receiver positions x-axis.</p></li>
+<li><p><strong>y</strong> (<em>1D-array</em>) – Receiver positions y-axis.</p></li>
+<li><p><strong>z</strong> (<em>1D-array</em>) – Receiver positions z-axis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>G</strong> – Computed Green’s function for all receiver positions.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D-array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.init_dir_plot">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">init_dir_plot</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#init_dir_plot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.init_dir_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the directivity plot in bokeh <a class="reference internal" href="main.html#main.pdir" title="main.pdir"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pdir</span></code></a>. Avoids error message
+that no data is presend to plot. Calls <a class="reference internal" href="#sfp_functions.get_freq_vec" title="sfp_functions.get_freq_vec"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_freq_vec</span></code></a>. Called by
+<a class="reference internal" href="main.html"><span class="doc">main</span></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><strong>c0</strong> (<em>float</em>) – Speed of sound.</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – Active radiating factor. Set to 0.82 (Schult et al.)</p></li>
+<li><p><strong>beta_deg</strong> (<em>1D-array</em>) – Radiation angles in degree.</p></li>
+<li><p><strong>beta</strong> (<em>1D-array</em>) – Radiation angles in radian.</p></li>
+<li><p><strong>f</strong> (<em>1D-array</em>) – Frequency bins in Hz.</p></li>
+<li><p><strong>omega</strong> (<em>1D-array</em>) – Frequency bins in radian.</p></li>
+<li><p><strong>dir_meas</strong> (<em>2D-array</em>) – Measured loudspeaker data.</p></li>
+<li><p><strong>dir_meas_deg</strong> (<em>2D-array</em>) – Angle of measured loudspeaker data.</p></li>
+<li><p><strong>H_post</strong> (<em>2D-array</em>) – Directivity.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="sfp_functions.smoothSpectrum">
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">smoothSpectrum</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">X_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r_oct</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#smoothSpectrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.smoothSpectrum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smoothes a frequency spectrum. Not used in bokeh.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f</strong> (<em>1D-array</em>) – Frequency bins.</p></li>
+<li><p><strong>X_f</strong> (<em>1D-array</em>) – Spectrum to be smoothed.</p></li>
+<li><p><strong>r_oct</strong> (<em>float</em>) – Resolution to smooth.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>X_f_out</strong> – Smoothed spectrum.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D-array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PALC_opt.html"
+                        title="previous chapter">PALC_opt</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="checkPAL.html"
+                        title="next chapter">checkPAL</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/sfp_functions.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="checkPAL.html" title="checkPAL"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PALC_opt.html" title="PALC_opt"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">sfp_functions</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

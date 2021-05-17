@@ -1,0 +1,1726 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bokeh.plotting.figure &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/nature.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">bokeh.plotting.figure</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for bokeh.plotting.figure</h1><div class="highlight"><pre>
+<span></span><span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Copyright (c) 2012 - 2020, Anaconda, Inc., and Bokeh Contributors.</span>
+<span class="c1"># All rights reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># The full license is in the file LICENSE.txt, distributed with this software.</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Boilerplate</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="kn">import</span> <span class="nn">logging</span> <span class="c1"># isort:skip</span>
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Imports</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="c1"># Bokeh imports</span>
+<span class="kn">from</span> <span class="nn">..core.enums</span> <span class="kn">import</span> <span class="n">HorizontalLocation</span><span class="p">,</span> <span class="n">MarkerType</span><span class="p">,</span> <span class="n">VerticalLocation</span>
+<span class="kn">from</span> <span class="nn">..core.properties</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Auto</span><span class="p">,</span>
+    <span class="n">Either</span><span class="p">,</span>
+    <span class="n">Enum</span><span class="p">,</span>
+    <span class="n">Instance</span><span class="p">,</span>
+    <span class="n">Int</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">Seq</span><span class="p">,</span>
+    <span class="n">String</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..models</span> <span class="kn">import</span> <span class="n">ColumnDataSource</span><span class="p">,</span> <span class="n">GraphRenderer</span><span class="p">,</span> <span class="n">Plot</span><span class="p">,</span> <span class="n">Title</span><span class="p">,</span> <span class="n">Tool</span><span class="p">,</span> <span class="n">glyphs</span><span class="p">,</span> <span class="n">markers</span>
+<span class="kn">from</span> <span class="nn">..models.tools</span> <span class="kn">import</span> <span class="n">Drag</span><span class="p">,</span> <span class="n">Inspection</span><span class="p">,</span> <span class="n">Scroll</span><span class="p">,</span> <span class="n">Tap</span>
+<span class="kn">from</span> <span class="nn">..transform</span> <span class="kn">import</span> <span class="n">linear_cmap</span>
+<span class="kn">from</span> <span class="nn">..util.options</span> <span class="kn">import</span> <span class="n">Options</span>
+<span class="kn">from</span> <span class="nn">._decorators</span> <span class="kn">import</span> <span class="n">glyph_method</span>
+<span class="kn">from</span> <span class="nn">._graph</span> <span class="kn">import</span> <span class="n">get_graph_kwargs</span>
+<span class="kn">from</span> <span class="nn">._plot</span> <span class="kn">import</span> <span class="n">get_range</span><span class="p">,</span> <span class="n">get_scale</span><span class="p">,</span> <span class="n">process_axis_and_grid</span>
+<span class="kn">from</span> <span class="nn">._stack</span> <span class="kn">import</span> <span class="n">double_stack</span><span class="p">,</span> <span class="n">single_stack</span>
+<span class="kn">from</span> <span class="nn">._tools</span> <span class="kn">import</span> <span class="n">process_active_tools</span><span class="p">,</span> <span class="n">process_tools_arg</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Globals and constants</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="n">DEFAULT_TOOLS</span> <span class="o">=</span> <span class="s2">&quot;pan,wheel_zoom,box_zoom,save,reset,help&quot;</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;Figure&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;figure&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;markers&#39;</span>
+<span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># General API</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="k">class</span> <span class="nc">Figure</span><span class="p">(</span><span class="n">Plot</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39; Create a new Figure for plotting.</span>
+
+<span class="sd">    A subclass of :class:`~bokeh.models.plots.Plot` that simplifies plot</span>
+<span class="sd">    creation with default axes, grids, tools, etc.</span>
+
+<span class="sd">    Figure objects have many glyph methods that can be used to draw</span>
+<span class="sd">    vectorized graphical glyphs:</span>
+
+<span class="sd">    .. hlist::</span>
+<span class="sd">        :columns: 3</span>
+
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.annular_wedge`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.annulus`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.arc`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.asterisk`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.bezier`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.circle`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.circle_cross`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.circle_dot`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.circle_x`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.circle_y`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.cross`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.dash`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.diamond`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.diamond_cross`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.diamond_dot`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.dot`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.ellipse`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.harea`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.hbar`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.hex`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.hex_tile`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.image`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.image_rgba`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.image_url`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.inverted_triangle`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.line`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.multi_line`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.multi_polygons`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.oval`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.patch`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.patches`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.plus`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.quad`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.quadratic`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.ray`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.rect`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.segment`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.square`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.square_cross`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.square_dot`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.square_pin`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.square_x`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.step`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.text`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.triangle`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.triangle_dot`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.triangle_pin`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.varea`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.vbar`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.wedge`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.x`</span>
+<span class="sd">        * :func:`~bokeh.plotting.figure.Figure.y`</span>
+
+<span class="sd">    There is a scatter function that can be parameterized by marker type:</span>
+
+<span class="sd">    * :func:`~bokeh.plotting.figure.Figure.scatter`</span>
+
+<span class="sd">    There are also specialized methods for stacking bars:</span>
+
+<span class="sd">    * bars: :func:`~bokeh.plotting.figure.Figure.hbar_stack`, :func:`~bokeh.plotting.figure.Figure.vbar_stack`</span>
+<span class="sd">    * lines: :func:`~bokeh.plotting.figure.Figure.hline_stack`, :func:`~bokeh.plotting.figure.Figure.vline_stack`</span>
+<span class="sd">    * areas: :func:`~bokeh.plotting.figure.Figure.harea_stack`, :func:`~bokeh.plotting.figure.Figure.varea_stack`</span>
+
+<span class="sd">    As well as one specialized method for making simple hexbin plots:</span>
+
+<span class="sd">    * :func:`~bokeh.plotting.figure.Figure.hexbin`</span>
+
+<span class="sd">    In addition to all the ``Figure`` property attributes, the following</span>
+<span class="sd">    options are also accepted:</span>
+
+<span class="sd">    .. bokeh-options:: FigureOptions</span>
+<span class="sd">        :module: bokeh.plotting.figure</span>
+
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">__subtype__</span> <span class="o">=</span> <span class="s2">&quot;Figure&quot;</span>
+    <span class="n">__view_model__</span> <span class="o">=</span> <span class="s2">&quot;Plot&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="s1">&#39;plot_width&#39;</span> <span class="ow">in</span> <span class="n">kw</span> <span class="ow">and</span> <span class="s1">&#39;width&#39;</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Figure called with both &#39;plot_width&#39; and &#39;width&#39; supplied, supply only one&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;plot_height&#39;</span> <span class="ow">in</span> <span class="n">kw</span> <span class="ow">and</span> <span class="s1">&#39;height&#39;</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Figure called with both &#39;plot_height&#39; and &#39;height&#39; supplied, supply only one&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;height&#39;</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">:</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s1">&#39;plot_height&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;width&#39;</span> <span class="ow">in</span> <span class="n">kw</span><span class="p">:</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s1">&#39;plot_width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">)</span>
+
+        <span class="n">opts</span> <span class="o">=</span> <span class="n">FigureOptions</span><span class="p">(</span><span class="n">kw</span><span class="p">)</span>
+
+        <span class="n">title</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Title</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">title</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span> <span class="o">=</span> <span class="n">get_range</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">x_range</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span> <span class="o">=</span> <span class="n">get_range</span><span class="p">(</span><span class="n">opts</span><span class="o">.</span><span class="n">y_range</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_scale</span> <span class="o">=</span> <span class="n">get_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">x_axis_type</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_scale</span> <span class="o">=</span> <span class="n">get_scale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">y_axis_type</span><span class="p">)</span>
+
+        <span class="n">process_axis_and_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">x_axis_type</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">x_axis_location</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">x_minor_ticks</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">x_axis_label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_range</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">process_axis_and_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">y_axis_type</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">y_axis_location</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">y_minor_ticks</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">y_axis_label</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_range</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">tool_objs</span><span class="p">,</span> <span class="n">tool_map</span> <span class="o">=</span> <span class="n">process_tools_arg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">tools</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">tooltips</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_tools</span><span class="p">(</span><span class="o">*</span><span class="n">tool_objs</span><span class="p">)</span>
+        <span class="n">process_active_tools</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">toolbar</span><span class="p">,</span> <span class="n">tool_map</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">active_drag</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">active_inspect</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">active_scroll</span><span class="p">,</span> <span class="n">opts</span><span class="o">.</span><span class="n">active_tap</span><span class="p">)</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">AnnularWedge</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">annular_wedge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Annulus</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">annulus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.annulus(x=[1, 2, 3], y=[1, 2, 3], color=&quot;#7FC97F&quot;,</span>
+<span class="sd">                     inner_radius=0.2, outer_radius=0.5)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Arc</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">arc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Asterisk</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">asterisk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.asterisk(x=[1,2,3], y=[1,2,3], size=20, color=&quot;#F0027F&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Bezier</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">bezier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Circle</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">circle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    Only one of ``size`` or ``radius`` should be provided. Note that ``radius``</span>
+<span class="sd">    defaults to data units.</span>
+
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.circle(x=[1, 2, 3], y=[1, 2, 3], size=20)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">CircleCross</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">circle_cross</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.circle_cross(x=[1,2,3], y=[4,5,6], size=20,</span>
+<span class="sd">                          color=&quot;#FB8072&quot;, fill_alpha=0.2, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">CircleCross</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">circle_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.circle_dot(x=[1,2,3], y=[4,5,6], size=20,</span>
+<span class="sd">                        color=&quot;#FB8072&quot;, fill_color=None)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">CircleX</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">circle_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.circle_x(x=[1, 2, 3], y=[1, 2, 3], size=20,</span>
+<span class="sd">                      color=&quot;#DD1C77&quot;, fill_alpha=0.2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">CircleX</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">circle_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.circle_y(x=[1, 2, 3], y=[1, 2, 3], size=20,</span>
+<span class="sd">                      color=&quot;#DD1C77&quot;, fill_alpha=0.2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Cross</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">cross</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.cross(x=[1, 2, 3], y=[1, 2, 3], size=20,</span>
+<span class="sd">                   color=&quot;#E6550D&quot;, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Dash</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">dash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.dash(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                  color=&quot;#99D594&quot;, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Diamond</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">diamond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.diamond(x=[1, 2, 3], y=[1, 2, 3], size=20,</span>
+<span class="sd">                     color=&quot;#1C9099&quot;, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">DiamondCross</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">diamond_cross</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.diamond_cross(x=[1, 2, 3], y=[1, 2, 3], size=20,</span>
+<span class="sd">                           color=&quot;#386CB0&quot;, fill_color=None, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">DiamondDot</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">diamond_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.diamond_dot(x=[1, 2, 3], y=[1, 2, 3], size=20,</span>
+<span class="sd">                         color=&quot;#386CB0&quot;, fill_color=None)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Dot</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.dot(x=[1, 2, 3], y=[1, 2, 3], size=20, color=&quot;#386CB0&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">HArea</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">harea</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.harea(x1=[0, 0, 0], x2=[1, 4, 2], y=[1, 2, 3],</span>
+<span class="sd">                   fill_color=&quot;#99D594&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">HBar</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">hbar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.hbar(y=[1, 2, 3], height=0.5, left=0, right=[1,2,3], color=&quot;#CAB2D6&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Ellipse</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ellipse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.ellipse(x=[1, 2, 3], y=[1, 2, 3], width=30, height=20,</span>
+<span class="sd">                     color=&quot;#386CB0&quot;, fill_color=None, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Hex</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">hex</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.hex(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,30], color=&quot;#74ADD1&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Hex</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">hex_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.hex_dot(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,30],</span>
+<span class="sd">                     color=&quot;#74ADD1&quot;, fill_color=None)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">HexTile</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">hex_tile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300, match_aspect=True)</span>
+<span class="sd">        plot.hex_tile(r=[0, 0, 1], q=[1, 2, 2], fill_color=&quot;#74ADD1&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    If both ``palette`` and ``color_mapper`` are passed, a ``ValueError``</span>
+<span class="sd">    exception will be raised. If neither is passed, then the ``Greys9``</span>
+<span class="sd">    palette will be used as a default.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">ImageRGBA</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">image_rgba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    The ``image_rgba`` method accepts images as a two-dimensional array of RGBA</span>
+<span class="sd">    values (encoded as 32-bit integers).</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">ImageURL</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">image_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">InvertedTriangle</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">inverted_triangle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.inverted_triangle(x=[1, 2, 3], y=[1, 2, 3], size=20, color=&quot;#DE2D26&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Line</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        p = figure(title=&quot;line&quot;, plot_width=300, plot_height=300)</span>
+<span class="sd">        p.line(x=[1, 2, 3, 4, 5], y=[6, 7, 2, 4, 5])</span>
+
+<span class="sd">        show(p)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">MultiLine</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">multi_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    For this glyph, the data is not simply an array of scalars, it is an</span>
+<span class="sd">    &quot;array of arrays&quot;.</span>
+
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        p = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        p.multi_line(xs=[[1, 2, 3], [2, 3, 4]], ys=[[6, 7, 2], [4, 5, 7]],</span>
+<span class="sd">                    color=[&#39;red&#39;,&#39;green&#39;])</span>
+
+<span class="sd">        show(p)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">MultiPolygons</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">multi_polygons</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    For this glyph, the data is not simply an array of scalars, it is a</span>
+<span class="sd">    nested array.</span>
+
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        p = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        p.multi_polygons(xs=[[[[1, 1, 2, 2]]], [[[1, 1, 3], [1.5, 1.5, 2]]]],</span>
+<span class="sd">                        ys=[[[[4, 3, 3, 4]]], [[[1, 3, 1], [1.5, 2, 1.5]]]],</span>
+<span class="sd">                        color=[&#39;red&#39;, &#39;green&#39;])</span>
+<span class="sd">        show(p)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Oval</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">oval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.oval(x=[1, 2, 3], y=[1, 2, 3], width=0.2, height=0.4,</span>
+<span class="sd">                  angle=-0.7, color=&quot;#1D91C0&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Patch</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">patch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        p = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        p.patch(x=[1, 2, 3, 2], y=[6, 7, 2, 2], color=&quot;#99d8c9&quot;)</span>
+
+<span class="sd">        show(p)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Patches</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">patches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    For this glyph, the data is not simply an array of scalars, it is an</span>
+<span class="sd">    &quot;array of arrays&quot;.</span>
+
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        p = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        p.patches(xs=[[1,2,3],[4,5,6,5]], ys=[[1,2,1],[4,5,5,4]],</span>
+<span class="sd">                  color=[&quot;#43a2ca&quot;, &quot;#a8ddb5&quot;])</span>
+
+<span class="sd">        show(p)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Plus</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">plus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.plus(x=[1, 2, 3], y=[1, 2, 3], size=20, color=&quot;#DE2D26&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Quad</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">quad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.quad(top=[2, 3, 4], bottom=[1, 2, 3], left=[1, 2, 3],</span>
+<span class="sd">                  right=[1.2, 2.5, 3.7], color=&quot;#B3DE69&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Quadratic</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">quadratic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Ray</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.ray(x=[1, 2, 3], y=[1, 2, 3], length=45, angle=-0.7, color=&quot;#FB8072&quot;,</span>
+<span class="sd">                line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Rect</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">rect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.rect(x=[1, 2, 3], y=[1, 2, 3], width=10, height=20, color=&quot;#CAB2D6&quot;,</span>
+<span class="sd">                  width_units=&quot;screen&quot;, height_units=&quot;screen&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Step</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.step(x=[1, 2, 3, 4, 5], y=[1, 2, 3, 2, 5], color=&quot;#FB8072&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Segment</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">segment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.segment(x0=[1, 2, 3], y0=[1, 2, 3],</span>
+<span class="sd">                     x1=[1, 2, 3], y1=[1.2, 2.5, 3.7],</span>
+<span class="sd">                     color=&quot;#F4A582&quot;, line_width=3)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Square</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.square(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,30], color=&quot;#74ADD1&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">SquareCross</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">square_cross</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.square_cross(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                          color=&quot;#7FC97F&quot;,fill_color=None, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">SquareDot</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">square_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.square_dot(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                        color=&quot;#7FC97F&quot;, fill_color=None)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">SquarePin</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">square_pin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.square_pin(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                        color=&quot;#7FC97F&quot;,fill_color=None, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">SquareX</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">square_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.square_x(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                      color=&quot;#FDAE6B&quot;,fill_color=None, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Text</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">.. note::</span>
+<span class="sd">    The location and angle of the text relative to the ``x``, ``y`` coordinates</span>
+<span class="sd">    is indicated by the alignment and baseline text properties.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Triangle</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">triangle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.triangle(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                      color=&quot;#99D594&quot;, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">TriangleDot</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">triangle_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.triangle_dot(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                          color=&quot;#99D594&quot;, fill_color=None)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">TrianglePin</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">triangle_pin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.triangle_pin(x=[1, 2, 3], y=[1, 2, 3], size=[10,20,25],</span>
+<span class="sd">                      color=&quot;#99D594&quot;, line_width=2)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">VArea</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">varea</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.varea(x=[1, 2, 3], y1=[0, 0, 0], y2=[1, 4, 2],</span>
+<span class="sd">                   fill_color=&quot;#99D594&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">VBar</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">vbar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.vbar(x=[1, 2, 3], width=0.5, bottom=0, top=[1,2,3], color=&quot;#CAB2D6&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">glyphs</span><span class="o">.</span><span class="n">Wedge</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wedge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.wedge(x=[1, 2, 3], y=[1, 2, 3], radius=15, start_angle=0.6,</span>
+<span class="sd">                   end_angle=4.1, radius_units=&quot;screen&quot;, color=&quot;#2b8cbe&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">X</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.x(x=[1, 2, 3], y=[1, 2, 3], size=[10, 20, 25], color=&quot;#fa9fb5&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Y</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Examples:</span>
+
+<span class="sd">    .. bokeh-plot::</span>
+<span class="sd">        :source-position: above</span>
+
+<span class="sd">        from bokeh.plotting import figure, output_file, show</span>
+
+<span class="sd">        plot = figure(plot_width=300, plot_height=300)</span>
+<span class="sd">        plot.y(x=[1, 2, 3], y=[1, 2, 3], size=20, color=&quot;#DE2D26&quot;)</span>
+
+<span class="sd">        show(plot)</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+    <span class="c1"># -------------------------------------------------------------------------</span>
+
+    <span class="nd">@glyph_method</span><span class="p">(</span><span class="n">markers</span><span class="o">.</span><span class="n">Scatter</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">_scatter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">scatter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Creates a scatter plot of the given x and y items.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (str or seq[float]) : values or field names of center x coordinates</span>
+
+<span class="sd">            y (str or seq[float]) : values or field names of center y coordinates</span>
+
+<span class="sd">            size (str or list[float]) : values or field names of sizes in screen units</span>
+
+<span class="sd">            marker (str, or list[str]): values or field names of marker types</span>
+
+<span class="sd">            color (color value, optional): shorthand to set both fill and line color</span>
+
+<span class="sd">            source (:class:`~bokeh.models.sources.ColumnDataSource`) : a user-supplied data source.</span>
+<span class="sd">                An attempt will be made to convert the object to :class:`~bokeh.models.sources.ColumnDataSource`</span>
+<span class="sd">                if needed. If none is supplied, one is created for the user automatically.</span>
+
+<span class="sd">            **kwargs: :ref:`userguide_styling_line_properties` and :ref:`userguide_styling_fill_properties`</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            &gt;&gt;&gt; p.scatter([1,2,3],[4,5,6], marker=&quot;square&quot;, fill_color=&quot;red&quot;)</span>
+<span class="sd">            &gt;&gt;&gt; p.scatter(&quot;data1&quot;, &quot;data2&quot;, marker=&quot;mtype&quot;, source=data_source, ...)</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            When passing ``marker=&quot;circle&quot;`` it is also possible to supply a</span>
+<span class="sd">            ``radius`` value in data-space units. When configuring marker type</span>
+<span class="sd">            from a data source column, *all* markers including circles may only</span>
+<span class="sd">            be configured with ``size`` in screen units.</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">marker_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;marker&quot;</span><span class="p">,</span> <span class="s2">&quot;circle&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">marker_type</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">marker_type</span> <span class="ow">in</span> <span class="n">_MARKER_SHORTCUTS</span><span class="p">:</span>
+            <span class="n">marker_type</span> <span class="o">=</span> <span class="n">_MARKER_SHORTCUTS</span><span class="p">[</span><span class="n">marker_type</span><span class="p">]</span>
+
+        <span class="c1"># The original scatter implementation allowed circle scatters to set a</span>
+        <span class="c1"># radius. We will leave this here for compatibility but note that it</span>
+        <span class="c1"># only works when the marker type is &quot;circle&quot; (and not referencing a</span>
+        <span class="c1"># data source column). Consider deprecating in the future.</span>
+        <span class="k">if</span> <span class="n">marker_type</span> <span class="o">==</span> <span class="s2">&quot;circle&quot;</span> <span class="ow">and</span> <span class="s2">&quot;radius&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">circle</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scatter</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="n">marker_type</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">hexbin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s2">&quot;pointytop&quot;</span><span class="p">,</span> <span class="n">palette</span><span class="o">=</span><span class="s2">&quot;Viridis256&quot;</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aspect_scale</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Perform a simple equal-weight hexagonal binning.</span>
+
+<span class="sd">        A :class:`~bokeh.models.glyphs.HexTile` glyph will be added to display</span>
+<span class="sd">        the binning. The :class:`~bokeh.models.sources.ColumnDataSource` for</span>
+<span class="sd">        the glyph will have columns ``q``, ``r``, and ``count``, where ``q``</span>
+<span class="sd">        and ``r`` are `axial coordinates`_ for a tile, and ``count`` is the</span>
+<span class="sd">        associated bin count.</span>
+
+<span class="sd">        It is often useful to set ``match_aspect=True`` on the associated plot,</span>
+<span class="sd">        so that hexagonal tiles are all regular (i.e. not &quot;stretched&quot;) in</span>
+<span class="sd">        screen space.</span>
+
+<span class="sd">        For more sophisticated use-cases, e.g. weighted binning or individually</span>
+<span class="sd">        scaling hex tiles, use :func:`hex_tile` directly, or consider a higher</span>
+<span class="sd">        level library such as HoloViews.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (array[float]) :</span>
+<span class="sd">                A NumPy array of x-coordinates to bin into hexagonal tiles.</span>
+
+<span class="sd">            y (array[float]) :</span>
+<span class="sd">                A NumPy array of y-coordinates to bin into hexagonal tiles</span>
+
+<span class="sd">            size (float) :</span>
+<span class="sd">                The size of the hexagonal tiling to use. The size is defined as</span>
+<span class="sd">                distance from the center of a hexagon to a corner.</span>
+
+<span class="sd">                In case the aspect scaling is not 1-1, then specifically `size`</span>
+<span class="sd">                is the distance from the center to the &quot;top&quot; corner with the</span>
+<span class="sd">                `&quot;pointytop&quot;` orientation, and the distance from the center to</span>
+<span class="sd">                a &quot;side&quot; corner with the &quot;flattop&quot; orientation.</span>
+
+<span class="sd">            orientation (&quot;pointytop&quot; or &quot;flattop&quot;, optional) :</span>
+<span class="sd">                Whether the hexagonal tiles should be oriented with a pointed</span>
+<span class="sd">                corner on top, or a flat side on top. (default: &quot;pointytop&quot;)</span>
+
+<span class="sd">            palette (str or seq[color], optional) :</span>
+<span class="sd">                A palette (or palette name) to use to colormap the bins according</span>
+<span class="sd">                to count. (default: &#39;Viridis256&#39;)</span>
+
+<span class="sd">                If ``fill_color`` is supplied, it overrides this value.</span>
+
+<span class="sd">            line_color (color, optional) :</span>
+<span class="sd">                The outline color for hex tiles, or None (default: None)</span>
+
+<span class="sd">            fill_color (color, optional) :</span>
+<span class="sd">                An optional fill color for hex tiles, or None. If None, then</span>
+<span class="sd">                the ``palette`` will be used to color map the tiles by</span>
+<span class="sd">                count. (default: None)</span>
+
+<span class="sd">            aspect_scale (float) :</span>
+<span class="sd">                Match a plot&#39;s aspect ratio scaling.</span>
+
+<span class="sd">                When working with a plot with ``aspect_scale != 1``, this</span>
+<span class="sd">                parameter can be set to match the plot, in order to draw</span>
+<span class="sd">                regular hexagons (instead of &quot;stretched&quot; ones).</span>
+
+<span class="sd">                This is roughly equivalent to binning in &quot;screen space&quot;, and</span>
+<span class="sd">                it may be better to use axis-aligned rectangular bins when</span>
+<span class="sd">                plot aspect scales are not one.</span>
+
+<span class="sd">        Any additional keyword arguments are passed to :func:`hex_tile`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">            (Glyphrender, DataFrame)</span>
+<span class="sd">                A tuple with the ``HexTile`` renderer generated to display the</span>
+<span class="sd">                binning, and a Pandas ``DataFrame`` with columns ``q``, ``r``,</span>
+<span class="sd">                and ``count``, where ``q`` and ``r`` are `axial coordinates`_</span>
+<span class="sd">                for a tile, and ``count`` is the associated bin count.</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">            .. bokeh-plot::</span>
+<span class="sd">                :source-position: above</span>
+
+<span class="sd">                import numpy as np</span>
+<span class="sd">                from bokeh.models import HoverTool</span>
+<span class="sd">                from bokeh.plotting import figure, show</span>
+
+<span class="sd">                x = 2 + 2*np.random.standard_normal(500)</span>
+<span class="sd">                y = 2 + 2*np.random.standard_normal(500)</span>
+
+<span class="sd">                p = figure(match_aspect=True, tools=&quot;wheel_zoom,reset&quot;)</span>
+<span class="sd">                p.background_fill_color = &#39;#440154&#39;</span>
+<span class="sd">                p.grid.visible = False</span>
+
+<span class="sd">                p.hexbin(x, y, size=0.5, hover_color=&quot;pink&quot;, hover_alpha=0.8)</span>
+
+<span class="sd">                hover = HoverTool(tooltips=[(&quot;count&quot;, &quot;@c&quot;), (&quot;(q,r)&quot;, &quot;(@q, @r)&quot;)])</span>
+<span class="sd">                p.add_tools(hover)</span>
+
+<span class="sd">                show(p)</span>
+
+<span class="sd">        .. _axial coordinates: https://www.redblobgames.com/grids/hexagons/#coordinates-axial</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="kn">from</span> <span class="nn">..util.hex</span> <span class="kn">import</span> <span class="n">hexbin</span>
+
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">hexbin</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">orientation</span><span class="p">,</span> <span class="n">aspect_scale</span><span class="o">=</span><span class="n">aspect_scale</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">fill_color</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fill_color</span> <span class="o">=</span> <span class="n">linear_cmap</span><span class="p">(</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="n">palette</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">bins</span><span class="o">.</span><span class="n">counts</span><span class="p">))</span>
+
+        <span class="n">source</span> <span class="o">=</span> <span class="n">ColumnDataSource</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">bins</span><span class="o">.</span><span class="n">q</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="n">bins</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">bins</span><span class="o">.</span><span class="n">counts</span><span class="p">))</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hex_tile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="n">orientation</span><span class="p">,</span> <span class="n">aspect_scale</span><span class="o">=</span><span class="n">aspect_scale</span><span class="p">,</span>
+                          <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">line_color</span><span class="o">=</span><span class="n">line_color</span><span class="p">,</span> <span class="n">fill_color</span><span class="o">=</span><span class="n">fill_color</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">bins</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">harea_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``HArea`` renderers for levels stacked left</span>
+<span class="sd">        to right.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stackers (seq[str]) : a list of data source field names to stack</span>
+<span class="sd">                successively for ``x1`` and ``x2`` harea coordinates.</span>
+
+<span class="sd">                Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">                the value of each successive stacker (this is useful with the</span>
+<span class="sd">                special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``harea``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``harea_stack`` will</span>
+<span class="sd">            will create two ``HArea`` renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.harea_stack([&#39;2016&#39;, &#39;2017&#39;], y=&#39;y&#39;, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.harea(x1=stack(),       x2=stack(&#39;2016&#39;),         y=&#39;y&#39;, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.harea(x1=stack(&#39;2016&#39;), x2=stack(&#39;2016&#39;, &#39;2017&#39;), y=&#39;y&#39;, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">double_stack</span><span class="p">(</span><span class="n">stackers</span><span class="p">,</span> <span class="s2">&quot;x1&quot;</span><span class="p">,</span> <span class="s2">&quot;x2&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">harea</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">hbar_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``HBar`` renderers for levels stacked left to right.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stackers (seq[str]) : a list of data source field names to stack</span>
+<span class="sd">                successively for ``left`` and ``right`` bar coordinates.</span>
+
+<span class="sd">                Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">                the value of each successive stacker (this is useful with the</span>
+<span class="sd">                special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``hbar``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``hbar_stack`` will</span>
+<span class="sd">            will create two ``HBar`` renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.hbar_stack([&#39;2016&#39;, &#39;2017&#39;], x=10, width=0.9, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.hbar(bottom=stack(),       top=stack(&#39;2016&#39;),         x=10, width=0.9, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.hbar(bottom=stack(&#39;2016&#39;), top=stack(&#39;2016&#39;, &#39;2017&#39;), x=10, width=0.9, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">double_stack</span><span class="p">(</span><span class="n">stackers</span><span class="p">,</span> <span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hbar</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_line_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``Line`` renderers for lines stacked vertically</span>
+<span class="sd">        or horizontally.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x (seq[str]) :</span>
+
+<span class="sd">            y (seq[str]) :</span>
+
+<span class="sd">        Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">        the value of each successive stacker (this is useful with the</span>
+<span class="sd">        special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``hbar``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``line_stack`` with</span>
+<span class="sd">            stackers for the y-coordinates will will create two ``Line``</span>
+<span class="sd">            renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.line_stack([&#39;2016&#39;, &#39;2017&#39;], x=&#39;x&#39;, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.line(y=stack(&#39;2016&#39;),         x=&#39;x&#39;, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.line(y=stack(&#39;2016&#39;, &#39;2017&#39;), x=&#39;x&#39;, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of x or y may be a list of stackers&quot;</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span>
+            <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">single_stack</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">y</span>
+            <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">single_stack</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">hline_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``Line`` renderers for lines stacked horizontally.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stackers (seq[str]) : a list of data source field names to stack</span>
+<span class="sd">                successively for ``x`` line coordinates.</span>
+
+<span class="sd">        Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">        the value of each successive stacker (this is useful with the</span>
+<span class="sd">        special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``line``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``hline_stack`` with</span>
+<span class="sd">            stackers for the x-coordinates will will create two ``Line``</span>
+<span class="sd">            renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.hline_stack([&#39;2016&#39;, &#39;2017&#39;], y=&#39;y&#39;, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.line(x=stack(&#39;2016&#39;),         y=&#39;y&#39;, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.line(x=stack(&#39;2016&#39;, &#39;2017&#39;), y=&#39;y&#39;, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_line_stack</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">varea_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``VArea`` renderers for levels stacked bottom</span>
+<span class="sd">        to top.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stackers (seq[str]) : a list of data source field names to stack</span>
+<span class="sd">                successively for ``y1`` and ``y1`` varea coordinates.</span>
+
+<span class="sd">                Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">                the value of each successive stacker (this is useful with the</span>
+<span class="sd">                special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``varea``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``varea_stack`` will</span>
+<span class="sd">            will create two ``VArea`` renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.varea_stack([&#39;2016&#39;, &#39;2017&#39;], x=&#39;x&#39;, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.varea(y1=stack(),       y2=stack(&#39;2016&#39;),         x=&#39;x&#39;, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.varea(y1=stack(&#39;2016&#39;), y2=stack(&#39;2016&#39;, &#39;2017&#39;), x=&#39;x&#39;, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">double_stack</span><span class="p">(</span><span class="n">stackers</span><span class="p">,</span> <span class="s2">&quot;y1&quot;</span><span class="p">,</span> <span class="s2">&quot;y2&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">varea</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">vbar_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``VBar`` renderers for levels stacked bottom</span>
+<span class="sd">        to top.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stackers (seq[str]) : a list of data source field names to stack</span>
+<span class="sd">                successively for ``left`` and ``right`` bar coordinates.</span>
+
+<span class="sd">                Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">                the value of each successive stacker (this is useful with the</span>
+<span class="sd">                special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``vbar``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``vbar_stack`` will</span>
+<span class="sd">            will create two ``VBar`` renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.vbar_stack([&#39;2016&#39;, &#39;2017&#39;], x=10, width=0.9, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.vbar(bottom=stack(),       top=stack(&#39;2016&#39;),         x=10, width=0.9, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.vbar(bottom=stack(&#39;2016&#39;), top=stack(&#39;2016&#39;, &#39;2017&#39;), x=10, width=0.9, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">double_stack</span><span class="p">(</span><span class="n">stackers</span><span class="p">,</span> <span class="s2">&quot;bottom&quot;</span><span class="p">,</span> <span class="s2">&quot;top&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vbar</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">vline_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Generate multiple ``Line`` renderers for lines stacked vertically.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            stackers (seq[str]) : a list of data source field names to stack</span>
+<span class="sd">                successively for ``y`` line coordinates.</span>
+
+<span class="sd">        Additionally, the ``name`` of the renderer will be set to</span>
+<span class="sd">        the value of each successive stacker (this is useful with the</span>
+<span class="sd">        special hover variable ``$name``)</span>
+
+<span class="sd">        Any additional keyword arguments are passed to each call to ``line``.</span>
+<span class="sd">        If a keyword value is a list or tuple, then each call will get one</span>
+<span class="sd">        value from the sequence.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list[GlyphRenderer]</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">            Assuming a ``ColumnDataSource`` named ``source`` with columns</span>
+<span class="sd">            *2016* and *2017*, then the following call to ``vline_stack`` with</span>
+<span class="sd">            stackers for the y-coordinates will will create two ``Line``</span>
+<span class="sd">            renderers that stack:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.vline_stack([&#39;2016&#39;, &#39;2017&#39;], x=&#39;x&#39;, color=[&#39;blue&#39;, &#39;red&#39;], source=source)</span>
+
+<span class="sd">            This is equivalent to the following two separate calls:</span>
+
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                p.line(y=stack(&#39;2016&#39;),         x=&#39;x&#39;, color=&#39;blue&#39;, source=source, name=&#39;2016&#39;)</span>
+<span class="sd">                p.line(y=stack(&#39;2016&#39;, &#39;2017&#39;), x=&#39;x&#39;, color=&#39;red&#39;,  source=source, name=&#39;2017&#39;)</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_line_stack</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">stackers</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_source</span><span class="p">,</span> <span class="n">edge_source</span><span class="p">,</span> <span class="n">layout_provider</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Creates a network graph using the given node, edge and layout provider.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            node_source (:class:`~bokeh.models.sources.ColumnDataSource`) : a user-supplied data source</span>
+<span class="sd">                for the graph nodes. An attempt will be made to convert the object to</span>
+<span class="sd">                :class:`~bokeh.models.sources.ColumnDataSource` if needed. If none is supplied, one is created</span>
+<span class="sd">                for the user automatically.</span>
+
+<span class="sd">            edge_source (:class:`~bokeh.models.sources.ColumnDataSource`) : a user-supplied data source</span>
+<span class="sd">                for the graph edges. An attempt will be made to convert the object to</span>
+<span class="sd">                :class:`~bokeh.models.sources.ColumnDataSource` if needed. If none is supplied, one is created</span>
+<span class="sd">                for the user automatically.</span>
+
+<span class="sd">            layout_provider (:class:`~bokeh.models.graphs.LayoutProvider`) : a ``LayoutProvider`` instance to</span>
+<span class="sd">                provide the graph coordinates in Cartesian space.</span>
+
+<span class="sd">            **kwargs: :ref:`userguide_styling_line_properties` and :ref:`userguide_styling_fill_properties`</span>
+
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">kw</span> <span class="o">=</span> <span class="n">get_graph_kwargs</span><span class="p">(</span><span class="n">node_source</span><span class="p">,</span> <span class="n">edge_source</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">graph_renderer</span> <span class="o">=</span> <span class="n">GraphRenderer</span><span class="p">(</span><span class="n">layout_provider</span><span class="o">=</span><span class="n">layout_provider</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">renderers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">graph_renderer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">graph_renderer</span>
+
+<span class="k">def</span> <span class="nf">figure</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Figure</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<span class="n">figure</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Figure</span><span class="o">.</span><span class="vm">__doc__</span>
+
+<span class="n">_MARKER_SHORTCUTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;*&quot;</span>  <span class="p">:</span> <span class="s2">&quot;asterisk&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;+&quot;</span>  <span class="p">:</span> <span class="s2">&quot;cross&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o&quot;</span>  <span class="p">:</span> <span class="s2">&quot;circle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o+&quot;</span> <span class="p">:</span> <span class="s2">&quot;circle_cross&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;o.&quot;</span> <span class="p">:</span> <span class="s2">&quot;circle_dot&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ox&quot;</span> <span class="p">:</span> <span class="s2">&quot;circle_x&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;oy&quot;</span> <span class="p">:</span> <span class="s2">&quot;circle_y&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;-&quot;</span>  <span class="p">:</span> <span class="s2">&quot;dash&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;.&quot;</span>  <span class="p">:</span> <span class="s2">&quot;dot&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;v&quot;</span>  <span class="p">:</span> <span class="s2">&quot;inverted_triangle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;^&quot;</span>  <span class="p">:</span> <span class="s2">&quot;triangle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;^.&quot;</span> <span class="p">:</span> <span class="s2">&quot;triangle_dot&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">markers</span><span class="p">():</span>
+    <span class="sd">&#39;&#39;&#39; Prints a list of valid marker types for scatter()</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Available markers: </span><span class="se">\n\n</span><span class="s2"> - &quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> - &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">MarkerType</span><span class="p">)))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Shortcuts: </span><span class="se">\n\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">%r</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">_MARKER_SHORTCUTS</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Dev API</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="c1"># This class itself is intentionally undocumented (it is used to generate</span>
+<span class="c1"># documentation elsewhere)</span>
+<span class="k">class</span> <span class="nc">FigureOptions</span><span class="p">(</span><span class="n">Options</span><span class="p">):</span>
+
+    <span class="n">tools</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">Seq</span><span class="p">(</span><span class="n">Either</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Tool</span><span class="p">))),</span> <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_TOOLS</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Tools the plot should start with.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">x_range</span> <span class="o">=</span> <span class="n">Any</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Customize the x-range of the plot.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">y_range</span> <span class="o">=</span> <span class="n">Any</span><span class="p">(</span><span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Customize the y-range of the plot.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">x_minor_ticks</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Number of minor ticks between adjacent x-axis major ticks.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">y_minor_ticks</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">Int</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Number of minor ticks between adjacent y-axis major ticks.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">x_axis_location</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="n">VerticalLocation</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;below&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Where the x-axis should be located.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">y_axis_location</span> <span class="o">=</span> <span class="n">Enum</span><span class="p">(</span><span class="n">HorizontalLocation</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Where the y-axis should be located.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">x_axis_label</span> <span class="o">=</span> <span class="n">String</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    A label for the x-axis.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">y_axis_label</span> <span class="o">=</span> <span class="n">String</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    A label for the y-axis.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">active_drag</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Drag</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Which drag tool should initially be active.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">active_inspect</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Inspection</span><span class="p">),</span> <span class="n">Seq</span><span class="p">(</span><span class="n">Instance</span><span class="p">(</span><span class="n">Inspection</span><span class="p">)),</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Which drag tool should initially be active.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">active_scroll</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Scroll</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Which scroll tool should initially be active.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">active_tap</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">String</span><span class="p">,</span> <span class="n">Instance</span><span class="p">(</span><span class="n">Tap</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    Which tap tool should initially be active.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">x_axis_type</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">Enum</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="s2">&quot;datetime&quot;</span><span class="p">,</span> <span class="s2">&quot;mercator&quot;</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    The type of the x-axis.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">y_axis_type</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">Auto</span><span class="p">,</span> <span class="n">Enum</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="s2">&quot;datetime&quot;</span><span class="p">,</span> <span class="s2">&quot;mercator&quot;</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    The type of the y-axis.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">tooltips</span> <span class="o">=</span> <span class="n">Either</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">List</span><span class="p">(</span><span class="n">Tuple</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">)),</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    An optional argument to configure tooltips for the Figure. This argument</span>
+<span class="s2">    accepts the same values as the ``HoverTool.tooltips`` property. If a hover</span>
+<span class="s2">    tool is specified in the ``tools`` argument, this value will override that</span>
+<span class="s2">    hover tools ``tooltips`` value. If no hover tool is specified in the</span>
+<span class="s2">    ``tools`` argument, then passing tooltips here will cause one to be created</span>
+<span class="s2">    and added.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Private API</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+
+<span class="n">_color_fields</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">,</span> <span class="s2">&quot;fill_color&quot;</span><span class="p">,</span> <span class="s2">&quot;line_color&quot;</span><span class="p">}</span>
+<span class="n">_alpha_fields</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;fill_alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;line_alpha&quot;</span><span class="p">}</span>
+
+<span class="c1">#-----------------------------------------------------------------------------</span>
+<span class="c1"># Code</span>
+<span class="c1">#-----------------------------------------------------------------------------</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">bokeh.plotting.figure</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,304 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PALC_opt &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    
+    <script src="_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="sfp_functions" href="sfp_functions.html" />
+    <link rel="prev" title="PALC_functions" href="PALC_functions.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sfp_functions.html" title="sfp_functions"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="PALC_functions.html" title="PALC_functions"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_opt</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-PALC_opt">
+<span id="palc-opt"></span><h1>PALC_opt<a class="headerlink" href="#module-PALC_opt" title="Permalink to this headline">¶</a></h1>
+<p>author: Arne Hoelter</p>
+<p>Contains functions to compute the target slope optimization.</p>
+<dl class="py function">
+<dt id="PALC_opt.calc_SingleValueDiff">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">calc_SingleValueDiff</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean_abs'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#calc_SingleValueDiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.calc_SingleValueDiff" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes a single value difference of the actual PALC results. Called by
+<a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a> and <a class="reference internal" href="#PALC_opt.diff_on_ls" title="PALC_opt.diff_on_ls"><code class="xref any py py-func docutils literal notranslate"><span class="pre">diff_on_ls</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comp</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Computed PALC results in optimization region.</p></li>
+<li><p><strong>opt</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Target slope of optimization.</p></li>
+<li><p><strong>mtype</strong> (<em>str</em><em>, </em><em>optional</em>) – Type of summing up the differences. Possible types are … ‘mean’.
+Default is ‘mean_abs’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>svdiff</strong> – Single value of difference in optimization region.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.diff_on_ls">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">diff_on_ls</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#diff_on_ls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.diff_on_ls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maps diference in optimization region to LSA cabinets. Called by
+<a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – Number of LSA cabinets.</p></li>
+<li><p><strong>opt_ind</strong> (<em>list</em>) – Indices of optimization region.</p></li>
+<li><p><strong>ls_ind</strong> (<em>list</em>) – Indices of venue slice mapped on LSA cabinets.</p></li>
+<li><p><strong>ls_opt_ind</strong> (<em>list</em>) – Indices of optimization region mapped on LSA cabinets.</p></li>
+<li><p><strong>comp</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Computed PALC results in optimization region.</p></li>
+<li><p><strong>opt</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Target Slope of optimization.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>diffLS</strong> – Mean average of difference between target slope and PALC computed
+results regarding each LSA cabinet. If a LSA cabinet does not hit any
+point in the optimization region, the value is set to 100.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.get_diff_optreg">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">get_diff_optreg</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#get_diff_optreg"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.get_diff_optreg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns difference between two arrays of same size. Actually unused.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comp</strong> (<em>ndarray</em>) – Computed results.</p></li>
+<li><p><strong>opt</strong> (<em>ndarray</em>) – Target values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>diff</strong> – Difference between computed and target.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.get_opt_region">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">get_opt_region</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_w</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#get_opt_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.get_opt_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the indices of the user defined optimization region in
+<a class="reference internal" href="main.html#main.pSPLoverX" title="main.pSPLoverX"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSPLoverX</span></code></a>. <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a> and <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Contains SPL over distance data of the PALC computed results. Attribute
+SPL_interp is normalized to the maximum in the optimization
+region.</p></li>
+<li><p><strong>Opt_w</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains SPL over distance data of the optimized results and the target
+slope.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ind</strong> – Indices (int) of the optimization region in center of LSA to receiver
+position distance of the attribute x of <a class="reference internal" href="main.html#main.SPLoverX" title="main.SPLoverX"><code class="xref any py py-data docutils literal notranslate"><span class="pre">SPLoverX</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.get_weight_links">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">get_weight_links</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_links</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#get_weight_links"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.get_weight_links" title="Permalink to this definition">¶</a></dt>
+<dd><p>Init function to return indices of the hinges / links in <a class="reference internal" href="main.html#main.pSPLoverX" title="main.pSPLoverX"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSPLoverX</span></code></a>.
+Necessary for the movable target slope line. Works also if user has moved
+the hinge / link. Called by <a class="reference internal" href="main.html#main.chg_weight_links" title="main.chg_weight_links"><code class="xref any py py-func docutils literal notranslate"><span class="pre">chg_weight_links</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n_links</strong> (<em>int</em>) – Number of hinges / links in the target slope line.</p></li>
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains computed SPL over distance data including distance between
+center of LSA and receiver positions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ind</strong> – Indices (int) where the hinges / links are placed in <a class="reference internal" href="main.html#main.pSPLoverX" title="main.pSPLoverX"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSPLoverX</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.ls2pal">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">ls2pal</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#ls2pal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.ls2pal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maps LSA cabinets to discrete venue points depending on the assumed splay
+angle. Called by <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – Number of LSA cabinets.</p></li>
+<li><p><strong>Opt_arr</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains results of the PALC computation.</p></li>
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Venue information that was drawn by the user.</p></li>
+<li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – ‘tol’ : Tolerance of discrete points to find (default = 10⁻⁵ m).
+‘opt_ind’ : Indices of optimization region in pal / venue slice.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>ls2pal</strong> (<em>list</em>) – Indices of audience line points sorted to the LSA cabinets.</p></li>
+<li><p><strong>ls2pal_opt</strong> (<em>list</em>) – Indices in optimization region sorted to the LSA cabinets.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.opt_weighting">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">opt_weighting</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#opt_weighting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.opt_weighting" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the weighting factors depending on differences at the LSA cabinets
+and weighting factors of the previous loop of target slope optimization.
+The break out condition depends equally on all positions in the
+optimization region and an additional (and optional) function to compute
+a single difference value. . Called by <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>PALC_config</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Configuration of PALC algorithm. The attribute weighting_weights will
+be updated for the next PALC computation.</p></li>
+<li><p><strong>Opt_w</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains information on the optimization target.</p></li>
+<li><p><strong>loop</strong> (<em>int</em>) – Number of actual loop of target slope optimization.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.smooth_1D_list">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">smooth_1D_list</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#smooth_1D_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.smooth_1D_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Smoothes a 1D array with the neighbouring entry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>1D-array</em>) – Array to be smoothed.</p></li>
+<li><p><strong>nbs</strong> (<em>float</em><em>, </em><em>optional</em>) – Weight of the neighbouring point, means
+new[n] = old[n-1]*nbs + old[n]*(1-2*nbs) + old[n+1]*nbs.
+The default is 0.2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Smoothed array.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>1D-array</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="PALC_functions.html"
+                        title="previous chapter">PALC_functions</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="sfp_functions.html"
+                        title="next chapter">sfp_functions</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/PALC_opt.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sfp_functions.html" title="sfp_functions"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="PALC_functions.html" title="PALC_functions"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pyPALC  documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_opt</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

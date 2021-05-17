@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PALC_opt &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <script src="../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_opt</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for PALC_opt</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: Arne Hoelter</span>
+
+<span class="sd">Contains functions to compute the target slope optimization.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.stats.mstats</span> <span class="kn">import</span> <span class="n">mquantiles</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">erf</span>
+
+
+<div class="viewcode-block" id="get_weight_links"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.get_weight_links">[docs]</a><span class="k">def</span> <span class="nf">get_weight_links</span><span class="p">(</span><span class="n">n_links</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Init function to return indices of the hinges / links in :any:`pSPLoverX`.</span>
+<span class="sd">    Necessary for the movable target slope line. Works also if user has moved</span>
+<span class="sd">    the hinge / link. Called by :any:`chg_weight_links`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    n_links : int</span>
+<span class="sd">        Number of hinges / links in the target slope line.</span>
+<span class="sd">    SPLoverX : obj [in]</span>
+<span class="sd">        Contains computed SPL over distance data including distance between</span>
+<span class="sd">        center of LSA and receiver positions.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ind : list</span>
+<span class="sd">        Indices (int) where the hinges / links are placed in :any:`pSPLoverX`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tot_ind</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">SPLoverX</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">n_links</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_links</span><span class="o">+</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">ind</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">tot_ind</span><span class="o">/</span><span class="p">(</span><span class="n">n_links</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span> <span class="n">ind</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">ind</span></div>
+
+
+<div class="viewcode-block" id="get_opt_region"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.get_opt_region">[docs]</a><span class="k">def</span> <span class="nf">get_opt_region</span><span class="p">(</span><span class="n">SPLoverX</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Find the indices of the user defined optimization region in</span>
+<span class="sd">    :any:`pSPLoverX`. :any:`start_calc` and :any:`optimize_PALC`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    SPLoverX : obj [in, out]</span>
+<span class="sd">        Contains SPL over distance data of the PALC computed results. Attribute</span>
+<span class="sd">        SPL_interp is normalized to the maximum in the optimization</span>
+<span class="sd">        region.</span>
+<span class="sd">    Opt_w : obj [in]</span>
+<span class="sd">        Contains SPL over distance data of the optimized results and the target</span>
+<span class="sd">        slope.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ind : list</span>
+<span class="sd">        Indices (int) of the optimization region in center of LSA to receiver</span>
+<span class="sd">        position distance of the attribute x of :any:`SPLoverX`.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ind</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">x_interp</span><span class="p">):</span>
+        <span class="n">ind</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">SPLoverX</span><span class="o">.</span><span class="n">x</span><span class="p">),</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="mi">2</span><span class="p">))))</span><span class="c1">#[0,0])</span>
+    <span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_interp</span> <span class="o">=</span> <span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL</span><span class="p">[</span><span class="n">ind</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ind</span></div>
+
+    
+<div class="viewcode-block" id="get_diff_optreg"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.get_diff_optreg">[docs]</a><span class="k">def</span> <span class="nf">get_diff_optreg</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns difference between two arrays of same size. Actually unused.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    comp : ndarray</span>
+<span class="sd">        Computed results.</span>
+<span class="sd">    opt : ndarray</span>
+<span class="sd">        Target values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    diff : ndarray</span>
+<span class="sd">        Difference between computed and target.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">comp</span> <span class="o">-</span> <span class="n">opt</span></div>
+
+
+<div class="viewcode-block" id="ls2pal"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.ls2pal">[docs]</a><span class="k">def</span> <span class="nf">ls2pal</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Maps LSA cabinets to discrete venue points depending on the assumed splay</span>
+<span class="sd">    angle. Called by :any:`optimize_PALC`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    N : int</span>
+<span class="sd">        Number of LSA cabinets.</span>
+<span class="sd">    Opt_arr : obj [in]</span>
+<span class="sd">        Contains results of the PALC computation.</span>
+<span class="sd">    created_pal : obj [in]</span>
+<span class="sd">        Venue information that was drawn by the user.</span>
+<span class="sd">    **kwargs : dict, optional</span>
+<span class="sd">        &#39;tol&#39; : Tolerance of discrete points to find (default = 10⁻⁵ m).</span>
+<span class="sd">        &#39;opt_ind&#39; : Indices of optimization region in pal / venue slice.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ls2pal : list</span>
+<span class="sd">        Indices of audience line points sorted to the LSA cabinets.</span>
+<span class="sd">    ls2pal_opt : list</span>
+<span class="sd">        Indices in optimization region sorted to the LSA cabinets.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># tolerance (optional input)</span>
+    <span class="k">if</span> <span class="s1">&#39;tol&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;tol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.00001</span>
+    <span class="n">tol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;tol&#39;</span><span class="p">]</span>
+    <span class="c1"># list to store index of pal for each ls</span>
+    <span class="n">ls2pal</span><span class="p">,</span> <span class="n">ls2pal_opt</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="p">[[],[]]</span>
+        <span class="c1"># check x-values</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_stop</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">tol</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">&lt;=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_start</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="n">tol</span><span class="p">:</span>
+                <span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="c1"># check y-values</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">created_pal</span><span class="o">.</span><span class="n">yline</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_stop</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">tol</span> <span class="ow">and</span> <span class="n">val</span> <span class="o">&lt;=</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">seg_pos_start</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">tol</span><span class="p">:</span>
+                <span class="n">ind</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="c1"># check for matching index</span>
+        <span class="n">ls2pal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">ind</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+    <span class="k">if</span> <span class="s1">&#39;opt_ind&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+            <span class="n">ls2pal_opt</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ls2pal</span><span class="p">[</span><span class="n">n</span><span class="p">])</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;opt_ind&#39;</span><span class="p">])))</span>
+        <span class="k">return</span> <span class="n">ls2pal</span><span class="p">,</span> <span class="n">ls2pal_opt</span>
+    <span class="k">return</span> <span class="n">ls2pal</span></div>
+
+
+<div class="viewcode-block" id="diff_on_ls"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.diff_on_ls">[docs]</a><span class="k">def</span> <span class="nf">diff_on_ls</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">opt_ind</span><span class="p">,</span> <span class="n">ls_ind</span><span class="p">,</span> <span class="n">ls_opt_ind</span><span class="p">,</span> <span class="n">comp</span><span class="p">,</span> <span class="n">opt</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Maps diference in optimization region to LSA cabinets. Called by</span>
+<span class="sd">    :any:`optimize_PALC`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    N : int</span>
+<span class="sd">        Number of LSA cabinets.</span>
+<span class="sd">    opt_ind : list</span>
+<span class="sd">        Indices of optimization region.</span>
+<span class="sd">    ls_ind : list</span>
+<span class="sd">        Indices of venue slice mapped on LSA cabinets.</span>
+<span class="sd">    ls_opt_ind : list</span>
+<span class="sd">        Indices of optimization region mapped on LSA cabinets.</span>
+<span class="sd">    comp : list or 1D-array</span>
+<span class="sd">        Computed PALC results in optimization region.</span>
+<span class="sd">    opt : list or 1D-array</span>
+<span class="sd">        Target Slope of optimization.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    diffLS : list</span>
+<span class="sd">        Mean average of difference between target slope and PALC computed</span>
+<span class="sd">        results regarding each LSA cabinet. If a LSA cabinet does not hit any</span>
+<span class="sd">        point in the optimization region, the value is set to 100.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># first list in diff_comp_opt is computed results and secont optization target</span>
+    <span class="n">diffLS</span><span class="p">,</span> <span class="n">diff_comp_opt_LS</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[[],[]]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+        <span class="n">diffLS</span><span class="o">.</span><span class="n">append</span><span class="p">([])</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span><span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">opt_ind</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">ls_opt_ind</span><span class="p">[</span><span class="n">n</span><span class="p">]:</span>
+                <span class="c1">#diffLS[n].append(diff_opt[m])</span>
+                <span class="n">diff_comp_opt_LS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">comp</span><span class="p">[</span><span class="n">m</span><span class="p">])</span>
+                <span class="n">diff_comp_opt_LS</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">opt</span><span class="p">[</span><span class="n">m</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ls_opt_ind</span><span class="p">[</span><span class="n">n</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">diffLS</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">calc_SingleValueDiff</span><span class="p">(</span><span class="n">diff_comp_opt_LS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> \
+                                             <span class="n">diff_comp_opt_LS</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> \
+                                             <span class="n">mtype</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">diffLS</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">return</span> <span class="n">diffLS</span></div>
+
+
+<div class="viewcode-block" id="smooth_1D_list"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.smooth_1D_list">[docs]</a><span class="k">def</span> <span class="nf">smooth_1D_list</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">nbs</span><span class="o">=</span><span class="mf">0.2</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Smoothes a 1D array with the neighbouring entry.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : 1D-array</span>
+<span class="sd">        Array to be smoothed.</span>
+<span class="sd">    nbs : float, optional</span>
+<span class="sd">        Weight of the neighbouring point, means</span>
+<span class="sd">        new[n] = old[n-1]*nbs + old[n]*(1-2*nbs) + old[n+1]*nbs.</span>
+<span class="sd">        The default is 0.2.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    1D-array</span>
+<span class="sd">        Smoothed array.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>
+            <span class="n">s_data</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">n</span><span class="o">+</span><span class="n">row</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span><span class="o">+</span><span class="n">row</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">n</span><span class="o">==</span><span class="mi">0</span> <span class="ow">or</span> <span class="n">n</span><span class="o">==</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="ow">and</span> <span class="n">row</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">s_data</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="n">row</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">nbs</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">row</span><span class="o">==</span><span class="mi">0</span><span class="p">:</span>
+                    <span class="n">s_data</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="n">row</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">nbs</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">s_data</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">n</span><span class="o">+</span><span class="n">row</span><span class="p">]</span><span class="o">*</span><span class="n">nbs</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">s_data</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="opt_weighting"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.opt_weighting">[docs]</a><span class="k">def</span> <span class="nf">opt_weighting</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Updates the weighting factors depending on differences at the LSA cabinets</span>
+<span class="sd">    and weighting factors of the previous loop of target slope optimization.</span>
+<span class="sd">    The break out condition depends equally on all positions in the</span>
+<span class="sd">    optimization region and an additional (and optional) function to compute</span>
+<span class="sd">    a single difference value. . Called by :any:`optimize_PALC`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    PALC_config : obj [in, out]</span>
+<span class="sd">        Configuration of PALC algorithm. The attribute weighting_weights will</span>
+<span class="sd">        be updated for the next PALC computation.</span>
+<span class="sd">    Opt_w : obj [in]</span>
+<span class="sd">        Contains information on the optimization target.</span>
+<span class="sd">    loop : int</span>
+<span class="sd">        Number of actual loop of target slope optimization.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">weighting_weights</span>
+    <span class="n">news</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+    <span class="n">PALC_config</span><span class="o">.</span><span class="n">weighting_weights</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">opt_coeff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="s1">&#39;pyPALC_bokeh/opt_list.csv&#39;</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+    <span class="n">in_opt</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">==</span> <span class="mi">100</span><span class="p">:</span>
+            <span class="c1">#Opt_w.diffLS[n] = 0</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">in_opt</span><span class="p">:</span>
+                <span class="n">coeff</span> <span class="o">=</span> <span class="mf">1.2</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">coeff</span> <span class="o">=</span> <span class="mf">0.8</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">in_opt</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">coeff</span> <span class="o">=</span> <span class="n">opt_coeff</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">opt_coeff</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span><span class="p">[</span><span class="n">n</span><span class="p">])),</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">news</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">news</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">coeff</span>
+        <span class="n">PALC_config</span><span class="o">.</span><span class="n">weighting_weights</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">news</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">*</span> <span class="n">w</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+    <span class="k">return</span></div>
+
+
+<div class="viewcode-block" id="calc_SingleValueDiff"><a class="viewcode-back" href="../PALC_opt.html#PALC_opt.calc_SingleValueDiff">[docs]</a><span class="k">def</span> <span class="nf">calc_SingleValueDiff</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">mtype</span><span class="o">=</span><span class="s1">&#39;mean_abs&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes a single value difference of the actual PALC results. Called by</span>
+<span class="sd">    :any:`optimize_PALC` and :any:`diff_on_ls`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    comp : list or 1D-array</span>
+<span class="sd">        Computed PALC results in optimization region.</span>
+<span class="sd">    opt : list or 1D-array</span>
+<span class="sd">        Target slope of optimization.</span>
+<span class="sd">    mtype : str, optional</span>
+<span class="sd">        Type of summing up the differences. Possible types are ... &#39;mean&#39;.</span>
+<span class="sd">        Default is &#39;mean_abs&#39;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    svdiff : float</span>
+<span class="sd">        Single value of difference in optimization region.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># difference between computed and optimum</span>
+    <span class="n">diff_opt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span>
+    <span class="c1"># different types to compute a single value quality criterion</span>
+    <span class="k">if</span> <span class="n">mtype</span> <span class="o">==</span> <span class="s1">&#39;quantiles&#39;</span><span class="p">:</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">mquantiles</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span> <span class="n">alphap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">betap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">svdiff</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">svdiff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">mtype</span> <span class="o">==</span> <span class="s1">&#39;err_func&#39;</span><span class="p">:</span>
+        <span class="n">r</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">))</span> <span class="c1"># range number of points in opt region</span>
+        <span class="n">r_in</span>    <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">))</span>    <span class="c1"># start of using difference</span>
+        <span class="n">r_out</span>   <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">))</span>    <span class="c1"># end of using difference</span>
+        <span class="n">l</span>       <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.1</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">))</span>   <span class="c1"># transient start of difference usage</span>
+        <span class="n">coeffs</span> <span class="o">=</span> <span class="p">(</span><span class="n">erf</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">/</span><span class="n">l</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="n">r_in</span><span class="p">))</span> <span class="o">-</span> <span class="n">erf</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span><span class="o">/</span><span class="n">l</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">r</span><span class="o">-</span><span class="n">r_out</span><span class="p">)))</span> <span class="o">/</span> <span class="mi">2</span>
+        <span class="c1"># mean</span>
+        <span class="c1">#svdiff = np.mean(np.abs(coeffs * diff_opt))</span>
+        <span class="c1">#quantiles</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">mquantiles</span><span class="p">(</span><span class="n">coeffs</span><span class="o">*</span><span class="n">diff_opt</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">],</span> <span class="n">alphap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">betap</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">svdiff</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">svdiff</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">mtype</span> <span class="o">==</span> <span class="s1">&#39;mean&#39;</span><span class="p">:</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">mtype</span> <span class="o">==</span> <span class="s1">&#39;mean_abs&#39;</span><span class="p">:</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff_opt</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;wrong input&#39;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">svdiff</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_opt</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

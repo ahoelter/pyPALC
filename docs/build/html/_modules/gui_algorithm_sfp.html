@@ -1,0 +1,363 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gui_algorithm_sfp &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <script src="../_static/sidebar.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_algorithm_sfp</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for gui_algorithm_sfp</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: Arne Hoelter</span>
+
+<span class="sd">The module contains functions used in callbacks that belong to the PALC algorithm</span>
+<span class="sd">computation and the sound field prediction by the CDPS-model.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">calcPALC</span>
+<span class="kn">import</span> <span class="nn">PALC_opt</span> <span class="k">as</span> <span class="nn">opt</span>
+<span class="kn">from</span> <span class="nn">PALC_functions</span> <span class="kn">import</span> <span class="n">LSA_visualization</span>
+<span class="kn">from</span> <span class="nn">sfp_functions</span> <span class="kn">import</span> <span class="n">calcSFP</span><span class="p">,</span> <span class="n">calcSPLoverX</span>
+
+
+<div class="viewcode-block" id="optimize_PALC"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC">[docs]</a><span class="k">def</span> <span class="nf">optimize_PALC</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">,</span> <span class="n">PALC_pal</span><span class="p">,</span> <span class="n">PALC_plots</span><span class="p">,</span> \
+                  <span class="n">Opt_arr</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">Tech_res</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">,</span> \
+                  <span class="n">max_loops</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Runs the while loop of target slope optimization. Will return the optimized</span>
+<span class="sd">    weighting factors in :any:`Opt_w`. Called by :any:`start_calc`. Calls mainly</span>
+<span class="sd">    methods of :py:class:`PALC_classes.Opt_weight`, :py:mod:`PALC_opt` and</span>
+<span class="sd">    :py:mod:`sfp_functions`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    PALC_config : obj [in]</span>
+<span class="sd">        Configuration of the PALC algorithm.</span>
+<span class="sd">    SFP_config : obj [in]</span>
+<span class="sd">        Configuration of the sound field prediction.</span>
+<span class="sd">    PALC_pal : obj [in]</span>
+<span class="sd">        Data of the venue slice.</span>
+<span class="sd">    PALC_plots : obj [in, out]</span>
+<span class="sd">        Data to plot the venue slice information.</span>
+<span class="sd">    Opt_arr : obj [out]</span>
+<span class="sd">        Data of the optimized LSA.</span>
+<span class="sd">    created_pal : obj [in]</span>
+<span class="sd">        Venue slice that was drawn by the user.</span>
+<span class="sd">    Tech_res : obj [out]</span>
+<span class="sd">        Technical Measure results depending on the sound field prediction.</span>
+<span class="sd">    SPLoverX : obj [out]</span>
+<span class="sd">        Data of the Sound Pressure Level over Distance.</span>
+<span class="sd">    Opt_w : obj [out]</span>
+<span class="sd">        Optimized weighting data to run the target slope optimization.</span>
+<span class="sd">    max_loops : int, optional</span>
+<span class="sd">        Maximum of loops to compute. The default is 40.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">loop</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="nb">int</span><span class="p">(</span><span class="n">loop</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_loops</span><span class="p">):</span>
+        
+        <span class="n">calcPALC</span><span class="o">.</span><span class="n">calcPALC</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">PALC_pal</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">)</span>
+        <span class="n">x_patches</span><span class="p">,</span> <span class="n">y_patches</span> <span class="o">=</span> <span class="n">LSA_visualization</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">gamma_n</span><span class="p">)</span>
+        <span class="n">PALC_plots</span><span class="o">.</span><span class="n">get_plot_array</span><span class="p">(</span><span class="n">Opt_arr</span><span class="p">)</span>
+        <span class="n">x_S</span><span class="p">,</span> <span class="n">y_S</span> <span class="o">=</span> <span class="n">calcSFP</span><span class="p">(</span><span class="n">Opt_arr</span><span class="o">.</span><span class="n">gamma_tilt_deg</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">,</span> \
+                            <span class="n">Tech_res</span><span class="p">)</span><span class="c1">#, dir_meas_LSA, dir_meas_degree)</span>
+        <span class="n">calcSPLoverX</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">)</span>
+        <span class="c1"># get difference between reference and PALC at optimization points</span>
+        <span class="c1"># indices of optimization region</span>
+        <span class="n">opt_ind</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">get_opt_region</span><span class="p">(</span><span class="n">SPLoverX</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">)</span>
+        
+        <span class="c1"># indices that belong to the loudspeakers</span>
+        <span class="n">ls_ind</span><span class="p">,</span> <span class="n">ls_opt_ind</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">ls2pal</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">opt_ind</span><span class="o">=</span><span class="n">opt_ind</span><span class="p">)</span>
+        <span class="c1"># map values on LS</span>
+        <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">diff_on_ls</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">opt_ind</span><span class="p">,</span> <span class="n">ls_ind</span><span class="p">,</span> <span class="n">ls_opt_ind</span><span class="p">,</span> \
+                                      <span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">[</span><span class="n">opt_ind</span><span class="p">],</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">)</span>
+        <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">smooth_1D_list</span><span class="p">(</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span><span class="p">)</span>
+        <span class="c1"># opt_ind: pal points that belong to opt region</span>
+        <span class="c1"># diff_opt: difference in opt_region</span>
+        <span class="c1"># ls_opt_ind: opt region pal points sorted to loudspeaker</span>
+        <span class="c1"># ls_ind: pal points sorted to loudspeaker </span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loop number is: &#39;</span><span class="p">,</span><span class="n">loop</span><span class="p">)</span>
+        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">calc_SingleValueDiff</span><span class="p">(</span><span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">[</span><span class="n">opt_ind</span><span class="p">],</span> \
+                                          <span class="n">Opt_w</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">,</span> \
+                                          <span class="n">mtype</span><span class="o">=</span><span class="s1">&#39;err_func&#39;</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">shift2psval</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">svdiff</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;mean difference is: &#39;</span><span class="p">,</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">]</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">out</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;lowest 5 weightings: &#39;</span><span class="p">,</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">])</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;lowest 5 diffs: &#39;</span><span class="p">,</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">])</span>
+            <span class="n">calcPALC</span><span class="o">.</span><span class="n">calcPALC</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">PALC_pal</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">)</span>
+            <span class="k">break</span>
+        <span class="c1"># update weighting</span>
+        <span class="n">opt</span><span class="o">.</span><span class="n">opt_weighting</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
+        <span class="n">loop</span> <span class="o">+=</span> <span class="mi">1</span></div>
+        
+ 
+<div class="viewcode-block" id="get_fixed_angle_borders"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.get_fixed_angle_borders">[docs]</a><span class="k">def</span> <span class="nf">get_fixed_angle_borders</span><span class="p">(</span><span class="n">last_pal_sec</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the average / mid and maximum tilt angle for the heighest LSA cabinet.</span>
+<span class="sd">    When functionality of fixing the heighest LSA cabinet on a specific tilt</span>
+<span class="sd">    angle, the borders of the maximum and minimum tilt angle can thus be found.</span>
+<span class="sd">    Called by :any:`use_fixed_angle`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    last_pal_sec : list</span>
+<span class="sd">        Last PAL section, i.e., PALC_pal.pal[-1].</span>
+<span class="sd">    PALC_config : obj [in]</span>
+<span class="sd">        Configuration of the PALC algorithm.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    gamma_tilt_deg : list</span>
+<span class="sd">        Contains average (first entry) and maximum (seconed entry) tilt angle</span>
+<span class="sd">        of the heighest LSA cabinet.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gamma_tilt_deg</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="n">dist_hy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">y_H</span><span class="o">-</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">Lambda_y</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
+                          <span class="p">(</span><span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">x_H</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">dist_an</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">x_H</span><span class="p">)</span>
+        <span class="n">gamma_tilt_deg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">dist_an</span> <span class="o">/</span><span class="n">dist_hy</span><span class="p">)</span> <span class="o">*</span><span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">gamma_tilt_deg</span></div>
+
+        
+<div class="viewcode-block" id="round_fixed_angle"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.round_fixed_angle">[docs]</a><span class="k">def</span> <span class="nf">round_fixed_angle</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">,</span> <span class="n">gui_fixed_first_angle</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Rounds fixed tilt angle of heighest LSA cabinet to min or max value if user</span>
+<span class="sd">    input was out of possible range. Min and max is stored in :any:`Opt_arr`.</span>
+<span class="sd">    :any:`PALC_config` and :any:`gui_fixed_first_angle` is updated. Called by</span>
+<span class="sd">    :any:`get_value`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    PALC_config : obj [in, out]</span>
+<span class="sd">        PALC configuration object.</span>
+<span class="sd">    Opt_arr : obj [in]</span>
+<span class="sd">        Optimized array data object.</span>
+<span class="sd">    gui_fixed_first_angle : obj [out]</span>
+<span class="sd">        TextInput widget that handles the fixed tilt angle of the heighest LSA cabinet.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">fixed_angle</span> <span class="o">&gt;</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">fixed_angle</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> \
+        <span class="n">gui_fixed_first_angle</span><span class="o">.</span><span class="n">disabled</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">PALC_config</span><span class="o">.</span><span class="n">fixed_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Opt_arr</span><span class="o">.</span><span class="n">fixed_angle</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">gui_fixed_first_angle</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Opt_arr</span><span class="o">.</span><span class="n">fixed_angle</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> \
+                                                   <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">elif</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">fixed_angle</span> <span class="o">&lt;</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">fixed_angle</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">and</span> \
+        <span class="n">gui_fixed_first_angle</span><span class="o">.</span><span class="n">disabled</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">PALC_config</span><span class="o">.</span><span class="n">fixed_angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Opt_arr</span><span class="o">.</span><span class="n">fixed_angle</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">gui_fixed_first_angle</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">Opt_arr</span><span class="o">.</span><span class="n">fixed_angle</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> \
+                                                   <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span></div>
+            
+
+<div class="viewcode-block" id="set_beamplot_visibility"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.set_beamplot_visibility">[docs]</a><span class="k">def</span> <span class="nf">set_beamplot_visibility</span><span class="p">(</span><span class="n">gui_which_beam</span><span class="p">,</span> <span class="n">pBeam</span><span class="p">,</span> <span class="n">pBeam_ref</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sets beamplot figures to visible or invisible depending on user input in</span>
+<span class="sd">    :any:`gui_which_beam` widget. Called by :any:`get_beamplot`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gui_which_beam : obj [in]</span>
+<span class="sd">        CheckBoxGroup widget that handles which beamplot is shown.</span>
+<span class="sd">    pBeam : fig [out]</span>
+<span class="sd">        Beamplot figure of PALC results.</span>
+<span class="sd">    pBeam_ref : fig [out]</span>
+<span class="sd">        Beamplot figure of reference array.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gui_which_beam</span><span class="o">.</span><span class="n">active</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">pBeam</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pBeam</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gui_which_beam</span><span class="o">.</span><span class="n">active</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">pBeam_ref</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pBeam_ref</span><span class="o">.</span><span class="n">visible</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+       
+<div class="viewcode-block" id="choose_gap_handling"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.choose_gap_handling">[docs]</a><span class="k">def</span> <span class="nf">choose_gap_handling</span><span class="p">(</span><span class="n">gui_gap_handling</span><span class="p">,</span> <span class="n">gui_strength_smarg</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Enables the Slider widget :any:`gui_strength_smarg` if soft margin is</span>
+<span class="sd">    chosen as the gap handling approach. Otherwise disables the slider.</span>
+<span class="sd">    Called by :any:`get_value`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gui_gap_handling : obj [in]</span>
+<span class="sd">        Select widget of gap handling approach.</span>
+<span class="sd">    gui_strength_smarg : obj [out]</span>
+<span class="sd">        Slider widget of strength of soft margin gap handling approach.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gui_gap_handling</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;Without&quot;</span><span class="p">:</span>
+        <span class="n">gui_strength_smarg</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">gui_strength_smarg</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">elif</span> <span class="n">gui_gap_handling</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;Hard Margin&quot;</span><span class="p">:</span>
+        <span class="n">gui_strength_smarg</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">gui_strength_smarg</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="k">elif</span> <span class="n">gui_gap_handling</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;Soft Margin&quot;</span><span class="p">:</span>
+        <span class="n">gui_strength_smarg</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span></div>
+        
+       
+<div class="viewcode-block" id="update_gh_w_select"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.update_gh_w_select">[docs]</a><span class="k">def</span> <span class="nf">update_gh_w_select</span><span class="p">(</span><span class="n">gui_weighting</span><span class="p">,</span> <span class="n">gui_gap_handling</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ensures that hard margin gap handling approach and target slope weighting</span>
+<span class="sd">    optimization cannot be enabled at same time. Called by :any:`get_value` and</span>
+<span class="sd">    :any:`weighting_select`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gui_weighting : obj [in, out]</span>
+<span class="sd">        Select widget of weighting approach.</span>
+<span class="sd">    gui_gap_handling : obj [in, out]</span>
+<span class="sd">        Select widget of gap handling approach.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gui_weighting</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;Target Slope&#39;</span><span class="p">:</span>
+        <span class="n">gui_gap_handling</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="s1">&#39;Soft Margin&#39;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">gui_gap_handling</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;Hard Margin&#39;</span><span class="p">:</span>
+        <span class="n">gui_weighting</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="s1">&#39;Linear Spacing&#39;</span><span class="p">,</span> \
+                                  <span class="s1">&#39;Logarithmic Spacing&#39;</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">gui_gap_handling</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="s1">&#39;Hard Margin&#39;</span><span class="p">,</span> <span class="s1">&#39;Soft Margin&#39;</span><span class="p">]</span>
+        <span class="n">gui_weighting</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="s1">&#39;Linear Spacing&#39;</span><span class="p">,</span> \
+                                 <span class="s1">&#39;Logarithmic Spacing&#39;</span><span class="p">,</span> <span class="s1">&#39;Target Slope&#39;</span><span class="p">]</span></div>
+            
+<span class="c1">## Function to show weighting possibilities</span>
+<div class="viewcode-block" id="set_weighting_in"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.set_weighting_in">[docs]</a><span class="k">def</span> <span class="nf">set_weighting_in</span><span class="p">(</span><span class="n">gui_weighting</span><span class="p">,</span> <span class="n">weighting_plus</span><span class="p">,</span> <span class="n">weighting_minus</span><span class="p">,</span> \
+                     <span class="n">weighting_step_size</span><span class="p">,</span> <span class="n">gui_weighting_nu</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    If linear or logarithmic spaced weighting is chosen in :any:`gui_weighting`,</span>
+<span class="sd">    enables the weighting Buttons and Sliders :any:`weighting_plus`,</span>
+<span class="sd">    :any:`weighting_minus`, :any:`weighting_step_size` and :any:`gui_weighting_nu`.</span>
+<span class="sd">    Triggered by :any:`weighting_select`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gui_weighting : obj [in]</span>
+<span class="sd">        DESCRIPTION.</span>
+<span class="sd">    weighting_plus : obj [out]</span>
+<span class="sd">        DESCRIPTION.</span>
+<span class="sd">    weighting_minus : obj [out]</span>
+<span class="sd">        DESCRIPTION.</span>
+<span class="sd">    weighting_step_size : obj [out]</span>
+<span class="sd">        DESCRIPTION.</span>
+<span class="sd">    gui_weighting_nu : obj [out]</span>
+<span class="sd">        DESCRIPTION.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">gui_weighting</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="s1">&#39;Target Slope&#39;</span><span class="p">]:</span>
+        <span class="n">weighting_plus</span><span class="o">.</span><span class="n">disabled</span>      <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">weighting_minus</span><span class="o">.</span><span class="n">disabled</span>     <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">weighting_step_size</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">gui_weighting_nu</span><span class="o">.</span><span class="n">disabled</span>    <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">gui_weighting_nu</span><span class="o">.</span><span class="n">value</span>       <span class="o">=</span> <span class="mf">1.00</span>
+    <span class="k">elif</span> <span class="n">gui_weighting</span><span class="o">.</span><span class="n">value</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Linear Spacing&#39;</span><span class="p">,</span> <span class="s1">&#39;Logarithmic Spacing&#39;</span><span class="p">]:</span>
+        <span class="n">weighting_plus</span><span class="o">.</span><span class="n">disabled</span>      <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">weighting_minus</span><span class="o">.</span><span class="n">disabled</span>     <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">weighting_step_size</span><span class="o">.</span><span class="n">disabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">gui_weighting_nu</span><span class="o">.</span><span class="n">disabled</span>    <span class="o">=</span> <span class="kc">False</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">gui_algorithm_sfp</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>

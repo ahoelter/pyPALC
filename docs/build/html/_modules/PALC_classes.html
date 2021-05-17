@@ -1,0 +1,803 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PALC_classes &#8212; pyPALC  documentation</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_classes</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for PALC_classes</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">author: Arne Hoelter</span>
+
+<span class="sd">Definitions of all classes and their methods are in this module. The constructed</span>
+<span class="sd">objects suit for the following aspects:</span>
+<span class="sd">    </span>
+<span class="sd">    * PALC positions, i.e., audience lines, non-audience line and audience</span>
+<span class="sd">      lines that are only used in the sound field prediction</span>
+<span class="sd">    * PALC configuration, i.e., loudspeaker data, array data and algorithm</span>
+<span class="sd">      configuration</span>
+<span class="sd">    * Results of PALC calculation and sound field prediction by the CDPS-model</span>
+<span class="sd">    * Data to visualize the results</span>
+<span class="sd">    * Weighting optimization by a target slope</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">bokeh.models</span> <span class="kn">import</span> <span class="n">Range1d</span>
+
+<div class="viewcode-block" id="PAL"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PAL">[docs]</a><span class="k">class</span> <span class="nc">PAL</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Class that handles the drawn lines by the user &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xline_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">xline_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline_stop</span><span class="o">=</span><span class="p">[],</span> \
+                 <span class="n">slope</span><span class="o">=</span><span class="p">[],</span> <span class="n">b</span><span class="o">=</span><span class="p">[],</span> <span class="n">xline</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline</span><span class="o">=</span><span class="p">[],</span> <span class="n">pal_index</span><span class="o">=</span><span class="p">[],</span> \
+                 <span class="n">plot_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">plot_y</span><span class="o">=</span><span class="p">[],</span> <span class="n">ind_iscut</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span>  <span class="o">=</span> <span class="n">xline_start</span><span class="p">,</span> <span class="n">xline_stop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span>  <span class="o">=</span> <span class="n">yline_start</span><span class="p">,</span> <span class="n">yline_stop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span> <span class="o">=</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">pal_index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline</span>             <span class="o">=</span> <span class="n">xline</span><span class="p">,</span> <span class="n">yline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_y</span>           <span class="o">=</span> <span class="n">plot_x</span><span class="p">,</span> <span class="n">plot_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ind_iscut</span>                     <span class="o">=</span> <span class="n">ind_iscut</span>
+        
+<div class="viewcode-block" id="PAL.append_line"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PAL.append_line">[docs]</a>    <span class="k">def</span> <span class="nf">append_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">x_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">slope_new</span><span class="o">=</span><span class="p">[],</span> \
+                    <span class="n">b_new</span><span class="o">=</span><span class="p">[],</span> <span class="n">eval_points</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Appends a line to the drawn audience lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_start : float, optional</span>
+<span class="sd">            Start point on the x-axis. The default is [].</span>
+<span class="sd">        x_stop : float, optional</span>
+<span class="sd">            Stop point on the x-axis. The default is [].</span>
+<span class="sd">        y_start : float, optional</span>
+<span class="sd">            Start point on the y-axis. The default is [].</span>
+<span class="sd">        y_stop : float, optional</span>
+<span class="sd">            Stop point on the y-axis. The default is [].</span>
+<span class="sd">        slope_new : float, optional</span>
+<span class="sd">            Slope of the new line. The default is [].</span>
+<span class="sd">        b_new : float, optional</span>
+<span class="sd">            Intersection point on the y-axis of the new line. The default is [].</span>
+<span class="sd">        eval_points : float, optional</span>
+<span class="sd">            Number of data points of the new line. The default is 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">,</span> <span class="n">x_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">,</span> <span class="n">y_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="p">,</span> <span class="n">slope_new</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span>           <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="n">b_new</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_x</span>      <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_y</span>      <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">eval_points</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span>   <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">eval_points</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">xline</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_points</span><span class="p">)))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">yline</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_points</span><span class="p">)))</span></div>
+        
+<div class="viewcode-block" id="PAL.remove_last_line"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PAL.remove_last_line">[docs]</a>    <span class="k">def</span> <span class="nf">remove_last_line</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes the last drawn line.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope</span>       <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span>           <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_x</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_x</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_y</span>      <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_y</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">yline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">yline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span></div>
+
+        
+<div class="viewcode-block" id="PAL.insert_previous_line"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PAL.insert_previous_line">[docs]</a>    <span class="k">def</span> <span class="nf">insert_previous_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sel_ind</span><span class="o">=</span><span class="p">[],</span> <span class="n">x_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">x_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">y_start</span><span class="o">=</span><span class="p">[],</span> \
+                             <span class="n">y_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">slope_new</span><span class="o">=</span><span class="p">[],</span> <span class="n">b_new</span><span class="o">=</span><span class="p">[],</span> <span class="n">eval_points</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Inserts a line previous of the selected line.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sel_ind : int, optional</span>
+<span class="sd">            Selected index, where the line shall be inserted previously.</span>
+<span class="sd">            The default is [].</span>
+<span class="sd">        x_start : float, optional</span>
+<span class="sd">            Start point on the x-axis. The default is [].</span>
+<span class="sd">        x_stop : float, optional</span>
+<span class="sd">            Stop point on the x-axis. The default is [].</span>
+<span class="sd">        y_start : float, optional</span>
+<span class="sd">            Start point on the y-axis. The default is [].</span>
+<span class="sd">        y_stop : float, optional</span>
+<span class="sd">            Stop point on the y-axis. The default is [].</span>
+<span class="sd">        slope_new : float, optional</span>
+<span class="sd">            Slope of the new line. The default is [].</span>
+<span class="sd">        b_new : float, optional</span>
+<span class="sd">            Intersection point on the y-axis of the new line. The default is [].</span>
+<span class="sd">        eval_points : float, optional</span>
+<span class="sd">            Number of data points of the new line. The default is 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">,</span> <span class="n">x_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">,</span> <span class="n">y_start</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">,</span> <span class="n">slope_new</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span>           <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">,</span> <span class="n">b_new</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_x</span>      <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_y</span>      <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">eval_points</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">sel_ind</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_points</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">yline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_points</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">,</span> <span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span> <span class="o">+</span> <span class="n">eval_points</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="c1"># insert the new value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_points</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">yline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">eval_points</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">,</span> <span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span> <span class="o">+</span> <span class="n">eval_points</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span> <span class="c1"># insert the new value</span>
+            <span class="c1"># for pal_ind: 2. add number of discretization points to the shifted values</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sel_ind</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">+</span> <span class="n">eval_points</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span></div>
+            
+            
+<div class="viewcode-block" id="PAL.remove_selected_line"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PAL.remove_selected_line">[docs]</a>    <span class="k">def</span> <span class="nf">remove_selected_line</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sel_ind</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes the selected line.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sel_ind : int, optional</span>
+<span class="sd">            Index of the selected line. The default is [].</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_start</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_start</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">slope</span>       <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span>           <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">,</span> <span class="n">sel_ind</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sel_ind</span> <span class="o">!=</span> <span class="p">[]:</span> <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_x</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_y</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">sel_ind</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">yline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">yline</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">yline</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="p">]:</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sel_ind</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">sel_ind</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">]))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal_index</span><span class="p">,</span> <span class="n">sel_ind</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span></div></div>
+        
+<div class="viewcode-block" id="PALC_compatible_PAL"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_compatible_PAL">[docs]</a><span class="k">class</span> <span class="nc">PALC_compatible_PAL</span><span class="p">(</span><span class="n">PAL</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Class that contains data of the drawn lines in a compatible format to</span>
+<span class="sd">        compute the PALC algorithm. The lines depend on an object of the class</span>
+<span class="sd">        :py:class:`PAL`.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xline_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">xline_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">slope</span><span class="o">=</span><span class="p">[],</span> \
+                 <span class="n">b</span><span class="o">=</span><span class="p">[],</span> <span class="n">xline</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline</span><span class="o">=</span><span class="p">[],</span> <span class="n">pal_index</span><span class="o">=</span><span class="p">[],</span> <span class="n">plot_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">plot_y</span><span class="o">=</span><span class="p">[],</span> <span class="n">pal</span><span class="o">=</span><span class="p">[],</span> \
+                 <span class="n">pal_no_nal</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="n">PAL</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xline_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">xline_stop</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline_start</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline_stop</span><span class="o">=</span><span class="p">[],</span> \
+                     <span class="n">slope</span><span class="o">=</span><span class="p">[],</span> <span class="n">b</span><span class="o">=</span><span class="p">[],</span> <span class="n">xline</span><span class="o">=</span><span class="p">[],</span> <span class="n">yline</span><span class="o">=</span><span class="p">[],</span> <span class="n">pal_index</span><span class="o">=</span><span class="p">[],</span> <span class="n">plot_x</span><span class="o">=</span><span class="p">[],</span> <span class="n">plot_y</span><span class="o">=</span><span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal</span>        <span class="o">=</span> <span class="n">pal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal_no_nal</span> <span class="o">=</span> <span class="n">pal_no_nal</span>
+        
+<div class="viewcode-block" id="PALC_compatible_PAL.append_pal"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_compatible_PAL.append_pal">[docs]</a>    <span class="k">def</span> <span class="nf">append_pal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fir_arr_x</span><span class="p">,</span> <span class="n">sec_arr_x</span><span class="p">,</span> <span class="n">fir_arr_y</span><span class="p">,</span> <span class="n">sec_arr_y</span><span class="p">,</span> <span class="n">fir_ind</span><span class="p">,</span> <span class="n">sec_ind</span><span class="p">,</span> <span class="n">m</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Appends a polygonal audience line.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fir_arr_x : ndarray</span>
+<span class="sd">            First array in x-direction.</span>
+<span class="sd">        sec_arr_x : ndarray</span>
+<span class="sd">            Second array in x-direction.</span>
+<span class="sd">        fir_arr_y : ndarray</span>
+<span class="sd">            First array in y-direction.</span>
+<span class="sd">        sec_arr_y : ndarray</span>
+<span class="sd">            Second array in y-direction.</span>
+<span class="sd">        fir_ind : int</span>
+<span class="sd">            Index of first array.</span>
+<span class="sd">        sec_ind : int</span>
+<span class="sd">            Index of second array.</span>
+<span class="sd">        m : int</span>
+<span class="sd">            Index in PALC compatible array.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="n">sec_ind</span> <span class="o">-</span> <span class="n">fir_ind</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal</span><span class="p">[</span><span class="n">m</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fir_arr_x</span><span class="p">,</span> <span class="n">sec_arr_x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pal</span><span class="p">[</span><span class="n">m</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fir_arr_y</span><span class="p">,</span> <span class="n">sec_arr_y</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="PALC_compatible_PAL.create_pal_without_nal"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_compatible_PAL.create_pal_without_nal">[docs]</a>    <span class="k">def</span> <span class="nf">create_pal_without_nal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s_nal</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates polygonal audience lines without non-audience lines.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        s_nal : ndarray</span>
+<span class="sd">            Array of non-audience lines.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pal</span> <span class="o">==</span> <span class="p">[]:</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># create list of non-audience lines</span>
+            <span class="n">nal</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">s_nal</span><span class="o">.</span><span class="n">xline_start</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="n">nal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">s_nal</span><span class="o">.</span><span class="n">xline_start</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">s_nal</span><span class="o">.</span><span class="n">yline_start</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">0</span><span class="p">],</span> \
+                                     <span class="p">[</span><span class="n">s_nal</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">s_nal</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="mi">0</span><span class="p">]]))</span>
+            <span class="c1"># create list of pal without non-audience lines</span>
+            <span class="n">isnal</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal</span><span class="p">)):</span>
+                <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nal</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">==</span> <span class="n">nal</span><span class="p">[</span><span class="n">n</span><span class="p">]):</span>
+                        <span class="n">isnal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">m</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">isnal</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">pal_no_nal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pal</span><span class="p">[</span><span class="n">m</span><span class="p">])</span></div></div>
+                        
+            
+
+<div class="viewcode-block" id="PALC_configuration"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_configuration">[docs]</a><span class="k">class</span> <span class="nc">PALC_configuration</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Class to create a configuration object of the PALC algorithm. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Lambda_gap</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">Lambda_y</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">x_H</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y_H</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">constraint</span><span class="o">=</span><span class="s1">&#39;PALC 2&#39;</span><span class="p">,</span> <span class="n">use_gamma_LSA</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">gamma_LSA</span><span class="o">=</span><span class="p">[],</span> \
+                 <span class="n">use_weighting</span><span class="o">=</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="n">weighting_nu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">weighting_factors</span><span class="o">=</span><span class="p">[],</span> <span class="n">N</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">gap_handling</span><span class="o">=</span><span class="s1">&#39;Without&#39;</span><span class="p">,</span> <span class="n">strength_sm</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> \
+                 <span class="n">last_angle_hm</span><span class="o">=</span><span class="p">[],</span> <span class="n">gap_weights</span><span class="o">=</span><span class="p">[],</span> <span class="n">weighting_weights</span><span class="o">=</span><span class="p">[],</span> <span class="n">use_fixed_angle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fixed_angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> \
+                 <span class="n">directivity</span> <span class="o">=</span> <span class="s1">&#39;Circular Piston&#39;</span><span class="p">,</span> <span class="n">psi_n</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0524</span><span class="p">],</span> <span class="n">gamma_n</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_H</span> <span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lambda_gap</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lambda_y</span> <span class="o">=</span> <span class="n">x_H</span><span class="p">,</span> <span class="n">y_H</span><span class="p">,</span> <span class="n">Lambda_gap</span><span class="p">,</span> <span class="n">Lambda_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span>            <span class="o">=</span> <span class="n">tolerance</span><span class="p">,</span> <span class="n">psi_n</span><span class="p">,</span> <span class="n">gamma_n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constraint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">directivity</span>           <span class="o">=</span> <span class="n">constraint</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">directivity</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_weighting</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_nu</span>               <span class="o">=</span> <span class="n">use_weighting</span><span class="p">,</span> <span class="n">weighting_nu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weighting_factors</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_weights</span>      <span class="o">=</span> <span class="n">weighting_factors</span><span class="p">,</span> <span class="n">weighting_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gap_weights</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span> <span class="n">gap_handling</span>                <span class="o">=</span> <span class="n">gap_weights</span><span class="p">,</span> <span class="n">gap_handling</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">strength_sm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_angle_hm</span>                <span class="o">=</span> <span class="n">strength_sm</span><span class="p">,</span> <span class="n">last_angle_hm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_fixed_angle</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixed_angle</span>              <span class="o">=</span> <span class="n">use_fixed_angle</span><span class="p">,</span> <span class="n">fixed_angle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_gamma_LSA</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_LSA</span>                  <span class="o">=</span> <span class="n">use_gamma_LSA</span><span class="p">,</span> <span class="n">gamma_LSA</span>
+
+<div class="viewcode-block" id="PALC_configuration.store_config"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_configuration.store_config">[docs]</a>    <span class="k">def</span> <span class="nf">store_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">new_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Writes configuration input to the attributes of the object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        *new_input : list</span>
+<span class="sd">            First entry contains a list of attributes to update / store.</span>
+<span class="sd">            Second entry contains the list with corresponding data / values.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Error message if storage failed.</span>
+<span class="sd">        str</span>
+<span class="sd">            Info message if storage failed.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># convert to PALC compatible dtypes</span>
+        <span class="k">if</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;x_H&#39;</span><span class="p">,</span> <span class="s1">&#39;y_H&#39;</span><span class="p">,</span> <span class="s1">&#39;fixed_angle&#39;</span><span class="p">,</span> <span class="s1">&#39;Lambda_gap&#39;</span><span class="p">,</span> <span class="s1">&#39;Lambda_y&#39;</span><span class="p">,</span> <span class="s1">&#39;tolerance&#39;</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>               
+                <span class="n">val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_input</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;Error: only numbers are allowed. Set to Default&#39;</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="s1">&#39;psi_n&#39;</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;N&#39;</span><span class="p">]:</span> 
+                    <span class="n">val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">new_input</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;psi_n&#39;</span><span class="p">]:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">new_input</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">num</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">0.0428</span><span class="p">,</span> <span class="mf">0.7147</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">weighting_factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+                <span class="c1"># more than one LS necessary and maximum of 30</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;Error: number of LS must be bigger than 0. Set to default&#39;</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">val</span> <span class="o">&gt;</span> <span class="mi">30</span><span class="p">:</span> <span class="k">return</span> <span class="s1">&#39;Error: maximum amount of LS is 30. Set to default&#39;</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;psi_n&#39;</span><span class="p">]:</span> <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="kc">None</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s1">&#39;Error: only numbers are allowed. Set to default&#39;</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;strength_sm&#39;</span><span class="p">,</span> <span class="s1">&#39;fixed_angle&#39;</span><span class="p">]:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_input</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="ow">and</span> <span class="s1">&#39;val&#39;</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>            
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error: PALC_config has no attribute &#39;</span> <span class="o">+</span> <span class="n">new_input</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        
+        <span class="c1"># array must be smaller than y_H</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Lambda_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lambda_gap</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_H</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_H</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Lambda_y</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Lambda_gap</span><span class="p">),</span> \
+                                <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s1">&#39;Warning: loudspeaker array is too long for the mounting height. Changed (14.)&#39;</span><span class="p">,</span> <span class="s1">&#39;too low&#39;</span>
+        
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="kc">None</span></div>
+    
+<div class="viewcode-block" id="PALC_configuration.get_initial_weights"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_configuration.get_initial_weights">[docs]</a>    <span class="k">def</span> <span class="nf">get_initial_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the weighting factors before starting the PALC algorithm.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Reset gap_weights</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gap_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="c1"># Set weights depending on initial weighting_nu</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_weighting</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Linear Spacing&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weighting_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_nu</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_weighting</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Logarithmic Spacing&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weighting_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">geomspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_nu</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">weighting_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="c1"># Set initial weighting factors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weighting_factors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">weighting_weights</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap_weights</span></div></div>
+        
+        
+<div class="viewcode-block" id="SFP_configuration"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.SFP_configuration">[docs]</a><span class="k">class</span> <span class="nc">SFP_configuration</span><span class="p">(</span><span class="n">PALC_configuration</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Child class of PALC_configuration, contains data that are additionally</span>
+<span class="sd">        needed for the sound field prediction. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">directivity</span><span class="o">=</span><span class="s1">&#39;Circular Piston&#39;</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">Lambda_gap</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> \
+                 <span class="n">Lambda_y</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">x_H</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y_H</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dir_meas</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">120</span><span class="p">]),</span> \
+                 <span class="n">dir_meas_deg</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span><span class="mi">120</span><span class="p">]),</span> \
+                 <span class="n">dir_meas_amp</span><span class="o">=</span><span class="p">[],</span> <span class="n">gamma_n</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">f</span><span class="o">=</span><span class="p">[],</span> <span class="n">plot_dir_amp</span><span class="o">=</span><span class="p">[],</span> \
+                 <span class="n">plot_dir_amp_meas</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">],[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">plot_beta_meas</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir_meas</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">f</span>                <span class="o">=</span> <span class="n">dir_meas</span><span class="p">,</span> <span class="n">f</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">dir_meas_deg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dir_meas_amp</span> <span class="o">=</span> <span class="n">dir_meas_deg</span><span class="p">,</span> <span class="n">dir_meas_amp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_dir_amp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_dir_amp_meas</span> <span class="o">=</span> <span class="n">plot_dir_amp</span><span class="p">,</span> <span class="n">plot_dir_amp_meas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_beta_meas</span> <span class="o">=</span> <span class="n">plot_beta_meas</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SFP_configuration</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="SFP_configuration.get_plot_dir_amp"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.SFP_configuration.get_plot_dir_amp">[docs]</a>    <span class="k">def</span> <span class="nf">get_plot_dir_amp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">H_post</span><span class="p">,</span> <span class="n">f2plot</span><span class="p">,</span> <span class="n">meas</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the amplitude of the directivity to plot in :any:`pdir`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        H_post : ndarray</span>
+<span class="sd">            (Complex) directivity data.</span>
+<span class="sd">        f2plot : int</span>
+<span class="sd">            frequency to plot.</span>
+<span class="sd">        meas : bool, optional</span>
+<span class="sd">            Must be True if measured loudspeaker data are used. The default</span>
+<span class="sd">            is False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_dir_amp</span><span class="p">,</span> <span class="n">ind_f</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">meas</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_dir_amp_meas</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># get amplitude values</span>
+        <span class="n">amplitude</span> <span class="o">=</span> <span class="mi">20</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">H_post</span><span class="p">))</span>
+        <span class="c1"># get amplitudes for frequencies to plot</span>
+        <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f2plot</span><span class="p">):</span>
+            <span class="n">ind_f</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="o">-</span><span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">argmin</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">meas</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot_dir_amp_meas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">amplitude</span><span class="p">[:,</span><span class="n">ind_f</span><span class="p">[</span><span class="n">ind</span><span class="p">]]</span><span class="o">.</span><span class="n">transpose</span><span class="p">()))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot_dir_amp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">amplitude</span><span class="p">[:,</span><span class="n">ind_f</span><span class="p">[</span><span class="n">ind</span><span class="p">]]</span><span class="o">.</span><span class="n">transpose</span><span class="p">()))</span></div></div>
+
+        
+        
+<div class="viewcode-block" id="Plot_ranges"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Plot_ranges">[docs]</a><span class="k">class</span> <span class="nc">Plot_ranges</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Class to create objects that contain ranges of bokeh figures. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_x</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">2.5</span><span class="p">],</span><span class="n">p_y</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">2.5</span><span class="p">],</span> <span class="n">bar_range</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> \
+                 <span class="n">bartop</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">h_x</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">h_y</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> <span class="n">sfp_y</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span> \
+                 <span class="n">SPLoverX_y</span><span class="o">=</span><span class="p">[</span><span class="mf">0.3</span><span class="p">,</span><span class="mi">15</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_y</span>          <span class="o">=</span> <span class="n">p_x</span><span class="p">,</span> <span class="n">p_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bar_range</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bartop</span> <span class="o">=</span> <span class="n">bar_range</span><span class="p">,</span> <span class="n">bartop</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sfp_y</span>        <span class="o">=</span> <span class="n">h_y</span><span class="p">,</span> <span class="n">sfp_y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPLoverX_y</span>             <span class="o">=</span> <span class="n">SPLoverX_y</span>
+    
+<div class="viewcode-block" id="Plot_ranges.update_range"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Plot_ranges.update_range">[docs]</a>    <span class="k">def</span> <span class="nf">update_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_axis</span><span class="p">,</span> <span class="n">overlap</span><span class="p">,</span> <span class="o">*</span><span class="n">plot_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the range of bokeh figures.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        plot_axis : str</span>
+<span class="sd">            Figure and axis information.</span>
+<span class="sd">        overlap : list</span>
+<span class="sd">            Overlap to max and min value on considered axis.</span>
+<span class="sd">        *plot_data : list</span>
+<span class="sd">            List with all data points to consider.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        new_range : obj</span>
+<span class="sd">            Range1d object to be used on bokeh figures.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># number of inputs</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_data</span><span class="p">)</span>
+        <span class="c1"># initialize list outputs</span>
+        <span class="n">axmin</span><span class="p">,</span> <span class="n">axmax</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="c1"># get min and max values of input array</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+            <span class="n">axmin</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+            <span class="n">axmax</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="n">n</span><span class="p">]))</span>
+        <span class="c1"># write min and max value of previously detected min and max to attribute</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_axis</span><span class="p">,</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">axmin</span><span class="p">)</span><span class="o">+</span><span class="n">overlap</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">max</span><span class="p">(</span><span class="n">axmax</span><span class="p">)</span><span class="o">+</span><span class="n">overlap</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="c1"># write new range to bokeh Range1d object and return</span>
+        <span class="k">if</span> <span class="n">plot_axis</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;bartop&#39;</span><span class="p">]:</span>
+            <span class="n">new_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_axis</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_range</span> <span class="o">=</span> <span class="n">Range1d</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_axis</span><span class="p">)[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plot_axis</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">new_range</span></div></div>
+    
+<div class="viewcode-block" id="PALC_plotting"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_plotting">[docs]</a><span class="k">class</span> <span class="nc">PALC_plotting</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Class to create objects that contain data for visualization in bokeh</span>
+<span class="sd">        figures. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_c_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_c_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_stop</span>             <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_stop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_fin_unitn</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_start_b</span><span class="p">,</span> <span class="n">x_stop_b</span><span class="p">,</span> <span class="n">y_start_b</span><span class="p">,</span> <span class="n">y_stop_b</span>                 <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_stop_unitn_stop</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_c_n_unitn</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_c_n_unitn</span>    <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_c_n_unitn_psi1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_c_n_unitn_psi1</span>                  <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_c_n_unitn_psi2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_c_n_unitn_psi2</span>                  <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+<div class="viewcode-block" id="PALC_plotting.update_plot_array"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_plotting.update_plot_array">[docs]</a>    <span class="k">def</span> <span class="nf">update_plot_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">new_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the data of attributes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        **new_input : dict</span>
+<span class="sd">            Key = value pair that shall be stored.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_input</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span></div>
+                
+<div class="viewcode-block" id="PALC_plotting.get_plot_array"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.PALC_plotting.get_plot_array">[docs]</a>    <span class="k">def</span> <span class="nf">get_plot_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Includes the results of the PALC optimization to plot them in a</span>
+<span class="sd">        bokeh figure.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        Opt_arr : obj [in]</span>
+<span class="sd">            Data of the optimized array by PALC.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;x_c_n_unitn&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_c_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn</span><span class="p">)))</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;y_c_n_unitn&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_c_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_fin_unitn</span><span class="p">)))</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;x_c_n_unitn_psi1&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_c_n</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">x_fin_unitn_psi_1</span><span class="p">)))</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;y_c_n_unitn_psi1&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_c_n</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">y_fin_unitn_psi_1</span><span class="p">)))</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;x_c_n_unitn_psi2&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_c_n</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">x_fin_unitn_psi_2</span><span class="p">)))</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;y_c_n_unitn_psi2&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_c_n</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">y_fin_unitn_psi_2</span><span class="p">)))</span></div></div>
+
+<div class="viewcode-block" id="Array_opt"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Array_opt">[docs]</a><span class="k">class</span> <span class="nc">Array_opt</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Class to create an object with optimized array data. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gamma_tilt_deg</span><span class="o">=</span><span class="p">[]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_tilt_deg</span>    <span class="o">=</span> <span class="p">[],</span> <span class="n">gamma_tilt_deg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma_tilt_deg_diff</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Gamma_aud</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">thr_dist</span>        <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_iter</span>                        <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># deg_opt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lin_eq_n_psi_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lin_eq_n_psi_2</span>            <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn_psi_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn_psi_2</span>      <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_fin_unitn_psi_1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_fin_unitn_psi_2</span>      <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seg_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seg_pos_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">seg_pos_stop</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="c1"># fixed first angle (max, mid, min)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixed_angle</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_tilt_deg</span> <span class="o">!=</span> <span class="p">[]</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_tilt_deg</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span>
+
+
+<div class="viewcode-block" id="Array_opt.update_opt_array"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Array_opt.update_opt_array">[docs]</a>    <span class="k">def</span> <span class="nf">update_opt_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_c_n</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">y_c_n</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">new_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the optimized array object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        x_c_n : float, optional</span>
+<span class="sd">            Center of rays at receiver positions on x-axis. The default is None.</span>
+<span class="sd">        y_c_n : float, optional</span>
+<span class="sd">            Center of rays at receiver positions on y-axis. The default is None.</span>
+<span class="sd">        **new_input : dict</span>
+<span class="sd">            Key = value pair that shall be stored.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_input</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">x_c_n</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;psi_n&#39;</span> <span class="ow">in</span> <span class="n">new_input</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lin_eq_n_psi_1</span> <span class="o">=</span> <span class="n">y_c_n</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_c_n</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn_psi_1</span> <span class="o">=</span> <span class="n">new_input</span><span class="p">[</span><span class="s1">&#39;x_a_t_n&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_fin_unitn_psi_1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">)</span> \
+                                     <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn_psi_1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lin_eq_n_psi_1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lin_eq_n_psi_2</span> <span class="o">=</span> <span class="n">y_c_n</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">)</span> <span class="o">*</span> <span class="n">x_c_n</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn_psi_2</span> <span class="o">=</span> <span class="n">new_input</span><span class="p">[</span><span class="s1">&#39;x_a_b_n&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_fin_unitn_psi_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tan</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">gamma_n</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">psi_n</span><span class="p">)</span> \
+                                     <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_fin_unitn_psi_2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lin_eq_n_psi_2</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seg_pos</span> <span class="o">=</span> <span class="n">new_input</span><span class="p">[</span><span class="s1">&#39;x_a_c_n&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seg_pos_start</span> <span class="o">=</span> <span class="n">new_input</span><span class="p">[</span><span class="s1">&#39;x_a_t_n&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seg_pos_stop</span> <span class="o">=</span> <span class="n">new_input</span><span class="p">[</span><span class="s1">&#39;x_a_b_n&#39;</span><span class="p">]</span></div></div>
+            
+<div class="viewcode-block" id="Technical_meas_results"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Technical_meas_results">[docs]</a><span class="k">class</span> <span class="nc">Technical_meas_results</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Class to create objects that contain the results of the technical</span>
+<span class="sd">        measures based on the sound field prediction. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_SPL</span>              <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">H</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">H_dist</span>             <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">A_mean</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hist_bins</span>     <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Hist_tops</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Hist_steps</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_SPL_beam</span>                 <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1">#for plotting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plot_f</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_p_SPL</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        
+    
+<div class="viewcode-block" id="Technical_meas_results.update_tech_meas"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Technical_meas_results.update_tech_meas">[docs]</a>    <span class="k">def</span> <span class="nf">update_tech_meas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">new_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Updates the technical measures. </span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        **new_input : dict</span>
+<span class="sd">            Key = value pair that shall be stored.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">new_input</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;f&#39;</span> <span class="ow">in</span> <span class="n">new_input</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="s1">&#39;p_SPL&#39;</span> <span class="ow">in</span> <span class="n">new_input</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_p_SPL</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot_f</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">new_input</span><span class="p">[</span><span class="s1">&#39;p_SPL&#39;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot_p_SPL</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">[</span><span class="n">n</span><span class="p">,:]))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">plot_f</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">))</span></div></div>
+
+<div class="viewcode-block" id="Opt_weight"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight">[docs]</a><span class="k">class</span> <span class="nc">Opt_weight</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; Class to optimize PALC by the target slope optimization. &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SPL_interp</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPL</span>   <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_interp</span>      <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPL_interp</span>    <span class="o">=</span> <span class="n">SPL_interp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">init</span>          <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_v</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_v</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffLS</span>        <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffps</span>        <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n-1&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;lowest&#39;</span><span class="p">:[]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span>          <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n-1&#39;</span><span class="p">:[],</span> <span class="s1">&#39;lowest&#39;</span><span class="p">:[]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is2update</span>     <span class="o">=</span> <span class="mi">0</span>
+        
+<div class="viewcode-block" id="Opt_weight.calc_init"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight.calc_init">[docs]</a>    <span class="k">def</span> <span class="nf">calc_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the target slope optimization before starting the</span>
+<span class="sd">        optimization.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffLS</span>        <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffps</span>      <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n-1&#39;</span><span class="p">:</span><span class="mi">100</span><span class="p">,</span> <span class="s1">&#39;lowest&#39;</span><span class="p">:[]}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span>          <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n-1&#39;</span><span class="p">:[],</span> <span class="s1">&#39;lowest&#39;</span><span class="p">:[]}</span></div>
+        
+<div class="viewcode-block" id="Opt_weight.CDS2obj"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight.CDS2obj">[docs]</a>    <span class="k">def</span> <span class="nf">CDS2obj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">CDS</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Stores data from a ColumnDataSource in the object when the keys are</span>
+<span class="sd">        identic.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        CDS : ColumnDataSource</span>
+<span class="sd">            ColumnDataSource that contain the data.</span>
+<span class="sd">        keys : str</span>
+<span class="sd">            Key to write into the object.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">CDS</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">])</span></div>
+        
+        
+<div class="viewcode-block" id="Opt_weight.maxonref"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight.maxonref">[docs]</a>    <span class="k">def</span> <span class="nf">maxonref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes all data on a given reference value.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ref : float, optional</span>
+<span class="sd">            Value on which data shall be normalized. The default is 0.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">shift</span>           <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">)</span><span class="o">-</span><span class="n">ref</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPL</span>        <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPL</span> <span class="o">-</span> <span class="n">shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPL_interp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPL_interp</span> <span class="o">-</span> <span class="n">shift</span></div>
+
+
+<div class="viewcode-block" id="Opt_weight.shift2psval"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight.shift2psval">[docs]</a>    <span class="k">def</span> <span class="nf">shift2psval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">diff_opt</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Shifts the actual value to a list that stores the past value. These are</span>
+<span class="sd">        used to check if the actual loop improved that the difference between</span>
+<span class="sd">        target and computation result.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        PALC_config : obj [in, out]</span>
+<span class="sd">            Contains the configuration of the PALC algorithm.</span>
+<span class="sd">        diff_opt : float</span>
+<span class="sd">            Single value of the optimized PALC computation.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True, if diff_opt was 5 times higher than past value. Then break</span>
+<span class="sd">            of while optimization loop. Otherwise False.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">diff_opt</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">diff_opt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">weighting_weights</span><span class="p">[:])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="n">low_ind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">])</span>
+            <span class="n">PALC_config</span><span class="o">.</span><span class="n">weighting_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">][</span><span class="n">low_ind</span><span class="p">][:]</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+            
+
+<div class="viewcode-block" id="Opt_weight.resort_opt_region"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight.resort_opt_region">[docs]</a>    <span class="k">def</span> <span class="nf">resort_opt_region</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resorts the target slope hinge points, so that the x-axis / SPL pairs</span>
+<span class="sd">        begin with lowest x-axis values.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sort_key</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;SPL&#39;</span><span class="p">,</span> <span class="s1">&#39;x_v&#39;</span><span class="p">,</span> <span class="s1">&#39;y_v&#39;</span><span class="p">]:</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">key</span><span class="p">))[</span><span class="n">sort_key</span><span class="p">]))</span></div>
+            
+<div class="viewcode-block" id="Opt_weight.interpolate_SPL"><a class="viewcode-back" href="../PALC_classes.html#PALC_classes.Opt_weight.interpolate_SPL">[docs]</a>    <span class="k">def</span> <span class="nf">interpolate_SPL</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Interpolates the drawn target slope line on the discrete distance</span>
+<span class="sd">        points, that are used von SPL over distance calculation of the</span>
+<span class="sd">        computed results.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">,</span> <span class="n">ap</span><span class="p">,</span> <span class="n">ind</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)):</span>
+            <span class="n">ind</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_interp</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">ap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">list</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">SPL</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">SPL</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">*</span> \
+                                   <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_interp</span><span class="p">[</span><span class="n">ind</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span><span class="n">ind</span><span class="p">[</span><span class="n">n</span><span class="p">]])</span><span class="o">-</span> \
+                                    <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">SPL</span><span class="p">[</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">ap</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">SPL</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPL_interp</span><span class="o">.</span><span class="n">extend</span><span class="p">,</span> <span class="n">ap</span><span class="p">))</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pyPALC  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">PALC_classes</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Arne Hoelter.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>
