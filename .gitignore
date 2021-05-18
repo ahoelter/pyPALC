@@ -1,5 +1,9 @@
 __pycache__
 
 /10_Doxygen/*
+/static/css/*
+/static/js/*
+/static/lib/*
+
 
 *.swp
