@@ -67,7 +67,7 @@ def help_text():
     page3_3 = "14. Enter the <b>y-coordinate</b> of the top front edge of the array's top loudspeaker cabinet in meter."
     page3_4 = "15. Enter the <b>gap</b> between the loudspeaker cabinets within the array in meter."
     page3_5 = "16. Choose if the calculation is performed with a <b>set of discrete tilt angles</b> in degree."
-    page3_6 = "17. Enabled if (15.) is set to 'Yes'. Enter a <b>set of discrete tilt angles</b> that will be used for the line array curving. The value separator is ',' and the decimal separator is '.', e.g., [0,1,2.5,3,5]. This means the possible inter cabinet tilt angles are 0 deg, 1 deg, 2.5 deg, 3 deg and 5 deg."
+    page3_6 = "17. Enabled if (15.) is set to 'Yes'. Enter a <b>set of discrete tilt angles</b> that will be used for the line array curving. The value separator is ',' and the decimal separator is '.', e.g., [0,1,2.5,3,5]. This means the possible inter cabinet tilt angles are 0 deg, 1 deg, 2.5 deg, 3 deg and 5 deg. <br> <b>Note:</b> In most cases it is necessary to increase the abortion tolerance in (23.)!"
     page3_col0 = Div(text = page3_info + llspace + page3_1 + lspace + page3_2 + lspace + page3_3, width=350)  
     page3_col1 = Div(text = empty_head + llspace + page3_4 + lspace + page3_5 + lspace + page3_6, width=350)
     

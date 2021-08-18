@@ -97,7 +97,7 @@ def read_dir_data(SFP_config, new):
     # get an array of corresponding degree and frequency and delete these "header" and "index" from the directivity array
     # and write it once for whole data in dictionary and second just for the frequencies to be plotted in another dictionary
     # initialize the considered frequency bins
-    SFP_config.f = get_freq_vec(N_freq=120, step_freq=1/12)          
+    SFP_config.f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])          
     # cut the degree and frequency vector out of the directivity array
     degree = np.real(directivity[1:,0]).astype(float)
     SFP_config.plot_beta_meas = list(degree)      

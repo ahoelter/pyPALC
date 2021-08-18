@@ -52,6 +52,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">import</span> <span class="nn">calcPALC</span>
+<span class="kn">import</span> <span class="nn">PALC_classes</span>
 <span class="kn">import</span> <span class="nn">PALC_opt</span> <span class="k">as</span> <span class="nn">opt</span>
 <span class="kn">from</span> <span class="nn">PALC_functions</span> <span class="kn">import</span> <span class="n">LSA_visualization</span>
 <span class="kn">from</span> <span class="nn">sfp_functions</span> <span class="kn">import</span> <span class="n">calcSFP</span><span class="p">,</span> <span class="n">calcSPLoverX</span>
@@ -59,7 +60,7 @@
 
 <div class="viewcode-block" id="optimize_PALC"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC">[docs]</a><span class="k">def</span> <span class="nf">optimize_PALC</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">,</span> <span class="n">PALC_pal</span><span class="p">,</span> <span class="n">PALC_plots</span><span class="p">,</span> \
                   <span class="n">Opt_arr</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">Tech_res</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">,</span> \
-                  <span class="n">max_loops</span><span class="o">=</span><span class="mi">40</span><span class="p">):</span>
+                  <span class="n">max_loops</span><span class="o">=</span><span class="mi">80</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Runs the while loop of target slope optimization. Will return the optimized</span>
 <span class="sd">    weighting factors in :any:`Opt_w`. Called by :any:`start_calc`. Calls mainly</span>
@@ -96,41 +97,45 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">loop</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">while</span> <span class="nb">int</span><span class="p">(</span><span class="n">loop</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_loops</span><span class="p">):</span>
-        
         <span class="n">calcPALC</span><span class="o">.</span><span class="n">calcPALC</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">PALC_pal</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">)</span>
         <span class="n">x_patches</span><span class="p">,</span> <span class="n">y_patches</span> <span class="o">=</span> <span class="n">LSA_visualization</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">gamma_n</span><span class="p">)</span>
         <span class="n">PALC_plots</span><span class="o">.</span><span class="n">get_plot_array</span><span class="p">(</span><span class="n">Opt_arr</span><span class="p">)</span>
         <span class="n">x_S</span><span class="p">,</span> <span class="n">y_S</span> <span class="o">=</span> <span class="n">calcSFP</span><span class="p">(</span><span class="n">Opt_arr</span><span class="o">.</span><span class="n">gamma_tilt_deg</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">SFP_config</span><span class="p">,</span> \
                             <span class="n">Tech_res</span><span class="p">)</span><span class="c1">#, dir_meas_LSA, dir_meas_degree)</span>
-        <span class="n">calcSPLoverX</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">)</span>
+        <span class="n">calcSPLoverX</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">Tech_res</span><span class="o">.</span><span class="n">p_SPL</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">,</span> <span class="n">SFP_config</span><span class="o">.</span><span class="n">freq_range</span><span class="p">)</span>
+        
         <span class="c1"># get difference between reference and PALC at optimization points</span>
         <span class="c1"># indices of optimization region</span>
         <span class="n">opt_ind</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">get_opt_region</span><span class="p">(</span><span class="n">SPLoverX</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">)</span>
         
+        <span class="c1"># shift Opt_w SPL at x_ref on SPLoverX</span>
+        <span class="n">opt</span><span class="o">.</span><span class="n">shift2ref</span><span class="p">(</span><span class="n">Opt_w</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">,</span> <span class="n">opt_ind</span><span class="p">,</span> <span class="p">[])</span>
         <span class="c1"># indices that belong to the loudspeakers</span>
         <span class="n">ls_ind</span><span class="p">,</span> <span class="n">ls_opt_ind</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">ls2pal</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">,</span> <span class="n">opt_ind</span><span class="o">=</span><span class="n">opt_ind</span><span class="p">)</span>
         <span class="c1"># map values on LS</span>
-        <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">diff_on_ls</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">opt_ind</span><span class="p">,</span> <span class="n">ls_ind</span><span class="p">,</span> <span class="n">ls_opt_ind</span><span class="p">,</span> \
-                                      <span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">[</span><span class="n">opt_ind</span><span class="p">],</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">)</span>
+        <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span><span class="p">,</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffgradLS</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">diff_on_ls</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">opt_ind</span><span class="p">,</span> \
+                                                        <span class="n">ls_ind</span><span class="p">,</span> <span class="n">ls_opt_ind</span><span class="p">,</span> \
+                                                        <span class="n">Opt_w</span><span class="p">,</span> <span class="n">SPLoverX</span><span class="p">)</span>
         <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">smooth_1D_list</span><span class="p">(</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">diffLS</span><span class="p">)</span>
         <span class="c1"># opt_ind: pal points that belong to opt region</span>
         <span class="c1"># diff_opt: difference in opt_region</span>
         <span class="c1"># ls_opt_ind: opt region pal points sorted to loudspeaker</span>
         <span class="c1"># ls_ind: pal points sorted to loudspeaker </span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;loop number is: &#39;</span><span class="p">,</span><span class="n">loop</span><span class="p">)</span>
-        <span class="n">svdiff</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">calc_SingleValueDiff</span><span class="p">(</span><span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">[</span><span class="n">opt_ind</span><span class="p">],</span> \
-                                          <span class="n">Opt_w</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">,</span> \
-                                          <span class="n">mtype</span><span class="o">=</span><span class="s1">&#39;err_func&#39;</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">shift2psval</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">svdiff</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;mean difference is: &#39;</span><span class="p">,</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;n-1&#39;</span><span class="p">]</span> <span class="p">)</span>
+        <span class="c1"># removed opt_ind behind, change mean of SPL_interp</span>
+        <span class="n">svdiff</span><span class="p">,</span> <span class="n">svgrad</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">calc_SingleValueDiff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">,</span> \
+                                                            <span class="n">SPLoverX</span><span class="o">.</span><span class="n">SPL_grad</span><span class="p">]),</span> \
+                                                  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">SPL_interp</span><span class="p">,</span> \
+                                                            <span class="n">Opt_w</span><span class="o">.</span><span class="n">SPL_grad</span><span class="p">]),</span> \
+                                                  <span class="n">mtype</span><span class="o">=</span><span class="s1">&#39;quantiles&#39;</span><span class="p">,</span> <span class="n">ef</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">svtot</span> <span class="o">=</span> <span class="n">svdiff</span> <span class="o">*</span> <span class="n">svgrad</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">Opt_w</span><span class="o">.</span><span class="n">shift2psval</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">svtot</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="o">.</span><span class="n">num_iter</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">out</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;lowest 5 weightings: &#39;</span><span class="p">,</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">w_ps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">])</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;lowest 5 diffs: &#39;</span><span class="p">,</span><span class="n">Opt_w</span><span class="o">.</span><span class="n">diffps</span><span class="p">[</span><span class="s1">&#39;lowest&#39;</span><span class="p">])</span>
             <span class="n">calcPALC</span><span class="o">.</span><span class="n">calcPALC</span><span class="p">(</span><span class="n">PALC_plots</span><span class="p">,</span> <span class="n">PALC_pal</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_arr</span><span class="p">)</span>
             <span class="k">break</span>
         <span class="c1"># update weighting</span>
         <span class="n">opt</span><span class="o">.</span><span class="n">opt_weighting</span><span class="p">(</span><span class="n">PALC_config</span><span class="p">,</span> <span class="n">Opt_w</span><span class="p">,</span> <span class="n">loop</span><span class="p">)</span>
-        <span class="n">loop</span> <span class="o">+=</span> <span class="mi">1</span></div>
+        <span class="n">loop</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">opt_ind</span></div>
         
  
 <div class="viewcode-block" id="get_fixed_angle_borders"><a class="viewcode-back" href="../gui_algorithm_sfp.html#gui_algorithm_sfp.get_fixed_angle_borders">[docs]</a><span class="k">def</span> <span class="nf">get_fixed_angle_borders</span><span class="p">(</span><span class="n">last_pal_sec</span><span class="p">,</span> <span class="n">PALC_config</span><span class="p">):</span>
@@ -159,7 +164,10 @@
         <span class="n">dist_hy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">y_H</span><span class="o">-</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">Lambda_y</span><span class="p">))</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> \
                           <span class="p">(</span><span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">x_H</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">dist_an</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">PALC_config</span><span class="o">.</span><span class="n">x_H</span><span class="p">)</span>
-        <span class="n">gamma_tilt_deg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">dist_an</span> <span class="o">/</span><span class="n">dist_hy</span><span class="p">)</span> <span class="o">*</span><span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">PALC_config</span><span class="o">.</span><span class="n">y_H</span> <span class="o">&lt;</span> <span class="n">last_pal_sec</span><span class="p">[</span><span class="n">n</span><span class="p">,</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">gamma_tilt_deg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">dist_an</span> <span class="o">/</span><span class="n">dist_hy</span><span class="p">)</span> <span class="o">*</span><span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gamma_tilt_deg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arccos</span><span class="p">(</span><span class="n">dist_an</span> <span class="o">/</span><span class="n">dist_hy</span><span class="p">)</span> <span class="o">*</span><span class="p">(</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">),</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">gamma_tilt_deg</span></div>
 
         
@@ -293,15 +301,15 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    gui_weighting : obj [in]</span>
-<span class="sd">        DESCRIPTION.</span>
+<span class="sd">        Widget to select weighting approach.</span>
 <span class="sd">    weighting_plus : obj [out]</span>
-<span class="sd">        DESCRIPTION.</span>
+<span class="sd">        Widget to increase weighting.</span>
 <span class="sd">    weighting_minus : obj [out]</span>
-<span class="sd">        DESCRIPTION.</span>
+<span class="sd">        Widget to decrease weighting.</span>
 <span class="sd">    weighting_step_size : obj [out]</span>
-<span class="sd">        DESCRIPTION.</span>
+<span class="sd">        Widget to adjust weighting step size.DESCRIPTION</span>
 <span class="sd">    gui_weighting_nu : obj [out]</span>
-<span class="sd">        DESCRIPTION.</span>
+<span class="sd">        Widget to define nu for weighting strength.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>

@@ -10,6 +10,7 @@ computation and the sound field prediction by the CDPS-model.
 import numpy as np
 
 import calcPALC
+import PALC_classes
 import PALC_opt as opt
 from PALC_functions import LSA_visualization
 from sfp_functions import calcSFP, calcSPLoverX
@@ -17,7 +18,7 @@ from sfp_functions import calcSFP, calcSPLoverX
 
 def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
                   Opt_arr, created_pal, Tech_res, SPLoverX, Opt_w, \
-                  max_loops=40):
+                  max_loops=80):
     """
     Runs the while loop of target slope optimization. Will return the optimized
     weighting factors in :any:`Opt_w`. Called by :any:`start_calc`. Calls mainly
@@ -54,41 +55,45 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
     """
     loop = 0
     while int(loop) < int(max_loops):
-        
         calcPALC.calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
         x_patches, y_patches = LSA_visualization(PALC_plots, PALC_config, Opt_arr.gamma_n)
         PALC_plots.get_plot_array(Opt_arr)
         x_S, y_S = calcSFP(Opt_arr.gamma_tilt_deg, created_pal, SFP_config, \
                             Tech_res)#, dir_meas_LSA, dir_meas_degree)
-        calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX)
+        calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX, SFP_config.freq_range)
+        
         # get difference between reference and PALC at optimization points
         # indices of optimization region
         opt_ind = opt.get_opt_region(SPLoverX, Opt_w)
         
+        # shift Opt_w SPL at x_ref on SPLoverX
+        opt.shift2ref(Opt_w, SPLoverX, opt_ind, [])
         # indices that belong to the loudspeakers
         ls_ind, ls_opt_ind = opt.ls2pal(PALC_config.N, Opt_arr, created_pal, opt_ind=opt_ind)
         # map values on LS
-        Opt_w.diffLS = opt.diff_on_ls(PALC_config.N, opt_ind, ls_ind, ls_opt_ind, \
-                                      SPLoverX.SPL_interp[opt_ind], Opt_w.SPL_interp)
+        Opt_w.diffLS, Opt_w.diffgradLS = opt.diff_on_ls(PALC_config.N, opt_ind, \
+                                                        ls_ind, ls_opt_ind, \
+                                                        Opt_w, SPLoverX)
         Opt_w.diffLS = opt.smooth_1D_list(Opt_w.diffLS)
         # opt_ind: pal points that belong to opt region
         # diff_opt: difference in opt_region
         # ls_opt_ind: opt region pal points sorted to loudspeaker
         # ls_ind: pal points sorted to loudspeaker 
-        print('loop number is: ',loop)
-        svdiff = opt.calc_SingleValueDiff(SPLoverX.SPL_interp[opt_ind], \
-                                          Opt_w.SPL_interp, \
-                                          mtype='err_func')
-        out = Opt_w.shift2psval(PALC_config, svdiff)
-        print('mean difference is: ', Opt_w.diffps['n-1'] )
+        # removed opt_ind behind, change mean of SPL_interp
+        svdiff, svgrad = opt.calc_SingleValueDiff(np.array([SPLoverX.SPL_interp, \
+                                                            SPLoverX.SPL_grad]), \
+                                                  np.array([Opt_w.SPL_interp, \
+                                                            Opt_w.SPL_grad]), \
+                                                  mtype='quantiles', ef=True)
+        svtot = svdiff * svgrad
+        out = Opt_w.shift2psval(PALC_config, svtot, Opt_arr.num_iter)
         if out:
-            print('lowest 5 weightings: ',Opt_w.w_ps['lowest'])
-            print('lowest 5 diffs: ',Opt_w.diffps['lowest'])
             calcPALC.calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
             break
         # update weighting
         opt.opt_weighting(PALC_config, Opt_w, loop)
         loop += 1
+    return opt_ind
         
  
 def get_fixed_angle_borders(last_pal_sec, PALC_config):
@@ -117,7 +122,10 @@ def get_fixed_angle_borders(last_pal_sec, PALC_config):
         dist_hy = np.sqrt((last_pal_sec[n,1]-(PALC_config.y_H-PALC_config.Lambda_y))**2 + \
                           (last_pal_sec[n,0]-PALC_config.x_H)**2)
         dist_an = np.abs(last_pal_sec[n,0]-PALC_config.x_H)
-        gamma_tilt_deg.append(np.round(np.arccos(dist_an /dist_hy) *(180/np.pi), decimals=2))
+        if PALC_config.y_H < last_pal_sec[n,1]:
+            gamma_tilt_deg.append(np.round(-np.arccos(dist_an /dist_hy) *(180/np.pi), decimals=2))
+        else:
+            gamma_tilt_deg.append(np.round(np.arccos(dist_an /dist_hy) *(180/np.pi), decimals=2))
     return gamma_tilt_deg
 
         
@@ -251,15 +259,15 @@ def set_weighting_in(gui_weighting, weighting_plus, weighting_minus, \
     Parameters
     ----------
     gui_weighting : obj [in]
-        DESCRIPTION.
+        Widget to select weighting approach.
     weighting_plus : obj [out]
-        DESCRIPTION.
+        Widget to increase weighting.
     weighting_minus : obj [out]
-        DESCRIPTION.
+        Widget to decrease weighting.
     weighting_step_size : obj [out]
-        DESCRIPTION.
+        Widget to adjust weighting step size.DESCRIPTION
     gui_weighting_nu : obj [out]
-        DESCRIPTION.
+        Widget to define nu for weighting strength.
 
     Returns
     -------

@@ -307,7 +307,7 @@ Called by <a class="reference internal" href="main.html#main.start_calc" title="
 
 <dl class="py function">
 <dt id="sfp_functions.calcSPLoverX">
-<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcSPLoverX</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_SPL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcSPLoverX"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcSPLoverX" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">calcSPLoverX</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">PALC_plots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_SPL</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_range</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#calcSPLoverX"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.calcSPLoverX" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes the SPL over distance. The distance is measured from the center
 of the LSA to the receiver positions. Called by <a class="reference internal" href="main.html#main.start_calc" title="main.start_calc"><code class="xref any py py-func docutils literal notranslate"><span class="pre">start_calc</span></code></a> and
 <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
@@ -318,6 +318,7 @@ of the LSA to the receiver positions. Called by <a class="reference internal" hr
 <li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains data of the receiver positions.</p></li>
 <li><p><strong>p_SPL</strong> (<em>1D-array</em>) – Sound pressure level at each receiver position.</p></li>
 <li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>out</em><em>]</em>) – Contains the SPL over distance output.</p></li>
+<li><p><strong>freq_range</strong> (<em>tuple</em><em> or </em><em>list</em><em> [</em><em>in</em><em>]</em>) – Frequency range to be considered, contains (start,stop) in Hz.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -391,7 +392,7 @@ venue slice. Calls <a class="reference internal" href="#sfp_functions.calcBeampl
 
 <dl class="py function">
 <dt id="sfp_functions.get_freq_vec">
-<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">get_freq_vec</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_freq</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#get_freq_vec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.get_freq_vec" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">sfp_functions.</span></code><code class="sig-name descname"><span class="pre">get_freq_vec</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N_freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_range</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sfp_functions.html#get_freq_vec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sfp_functions.get_freq_vec" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute a linear frequency vector. Called by <a class="reference internal" href="#sfp_functions.calcSFP" title="sfp_functions.calcSFP"><code class="xref any py py-func docutils literal notranslate"><span class="pre">calcSFP</span></code></a> and
 <a class="reference internal" href="#sfp_functions.init_dir_plot" title="sfp_functions.init_dir_plot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">init_dir_plot</span></code></a>.</p>
 <dl class="field-list simple">
@@ -399,6 +400,7 @@ venue slice. Calls <a class="reference internal" href="#sfp_functions.calcBeampl
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>N_freq</strong> (<em>int</em>) – Number of frequency bins.</p></li>
 <li><p><strong>step_freq</strong> (<em>int</em>) – Step size of frequency vector.</p></li>
+<li><p><strong>freq_range</strong> (<em>tuple</em><em> or </em><em>list</em>) – Contains start and stop frequency of frequncy vector</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

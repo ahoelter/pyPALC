@@ -14,6 +14,8 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     
+    <script src="../_static/sidebar.js"></script>
+    
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" /> 
   </head><body>
@@ -137,8 +139,8 @@
 
 <div class="viewcode-block" id="pal_draw_condition_3"><a class="viewcode-back" href="../checkPAL.html#checkPAL.pal_draw_condition_3">[docs]</a><span class="k">def</span> <span class="nf">pal_draw_condition_3</span><span class="p">(</span><span class="n">x_start</span><span class="p">,</span> <span class="n">x_stop</span><span class="p">,</span> <span class="n">y_start</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">,</span> <span class="n">slope</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">created_pal</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Third draw condition of polygonal audience lines. No point of intersection</span>
-<span class="sd">    shall be in the range of a line.</span>
+<span class="sd">    Third draw condition of polygonal audience lines. No overlay of audience lines.</span>
+<span class="sd">    Also to avoid double clicking at line creation</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -166,8 +168,13 @@
     <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline_start</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
         <span class="n">xy_s2</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">_</span><span class="p">,</span><span class="n">px</span> <span class="o">=</span> <span class="n">calc_intersection_PAL</span><span class="p">([</span><span class="n">x_start</span><span class="p">,</span> <span class="n">y_start</span><span class="p">],</span> <span class="p">[</span><span class="n">x_stop</span><span class="p">,</span> <span class="n">y_stop</span><span class="p">],</span> \
                                       <span class="p">[</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline_start</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">yline_start</span><span class="p">[</span><span class="n">n</span><span class="p">]],</span> <span class="p">[</span><span class="n">created_pal</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">yline_stop</span><span class="p">[</span><span class="n">n</span><span class="p">]])</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">px</span> <span class="ow">and</span> <span class="n">b</span> <span class="o">==</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="ow">and</span> <span class="n">x_start</span> <span class="o">&lt;</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">[</span><span class="n">n</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="kc">False</span>
+        <span class="c1"># check if overlay exists</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">px</span> <span class="ow">and</span> <span class="n">b</span> <span class="o">==</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="n">n</span><span class="p">]:</span>
+            <span class="c1"># check if line is before or behind of tested line</span>
+            <span class="k">if</span> <span class="n">x_start</span> <span class="o">&gt;=</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">xline_stop</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="ow">or</span> <span class="n">x_stop</span> <span class="o">&lt;=</span> <span class="n">created_pal</span><span class="o">.</span><span class="n">xline_start</span><span class="p">[</span><span class="n">n</span><span class="p">]:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">pass</span>
             <span class="c1">#condition_3 = True        </span>

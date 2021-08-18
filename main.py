@@ -30,7 +30,7 @@ import calcPALC
 import checkPAL
 import PALC_classes
 from PALC_functions import calc_diff_tilt_angles, LSA_visualization
-from PALC_opt import get_opt_region, get_weight_links
+from PALC_opt import get_opt_region, get_weight_links, shift2ref, shift_ref_on_zero
 from sfp_functions import calcSFP, calcHomogeneity, calc_directivity 
 from sfp_functions import init_dir_plot, calcSPLoverX, calcHistogram, getBeamplotRes
 from gui_help_text import help_text
@@ -54,7 +54,7 @@ from bokeh.models import LinearColorMapper, FuncTickFormatter
 from bokeh.models.widgets import Slider, TextInput, Button, Toggle, FileInput
 from bokeh.models.widgets import RadioButtonGroup, Select, Paragraph, DataTable
 from bokeh.models.widgets import TableColumn, Div, Panel, Tabs, TextAreaInput
-from bokeh.models.widgets import RadioGroup, CheckboxGroup
+from bokeh.models.widgets import RadioGroup, CheckboxGroup, RangeSlider, Paragraph
 from bokeh.models.tools import PointDrawTool
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
@@ -88,6 +88,8 @@ Opt_w          = PALC_classes.Opt_weight()
 """Data needed for the target slope optimization of PALC (SPL over distance)"""
 SPLoverX       = PALC_classes.Opt_weight(SPL_interp = [0])
 """Result data of SPL over distance computation"""
+SPLoverX_ref   = PALC_classes.Opt_weight(SPL_interp = [0])
+"""Result data of SPL over distance computation of reference LSA"""
 ############ Set up dictionaries for user interaction with the GUI ############
 x_init = np.array([0, 0]).astype(float)
 chg_N = np.array([0])
@@ -153,9 +155,14 @@ directivity_dict_plt = ColumnDataSource(data=dict(amplitude_100=p_SPL, \
 SPLoverX_dict = ColumnDataSource(data=dict(SPL=p_SPL, x=x_vert, x_v=x_vert, \
                                            y_v=x_vert))
 """Contains the SPL values over distance between LSA reference point and the
-   receiver positions normalized on 0 dB (if target slope, optimization region is used."""
+   receiver positions normalized on 0 dB (if target slope, optimization region is used)."""
+SPLoverX_ref_dict = ColumnDataSource(data=dict(SPL=p_SPL, x=x_vert, x_v=x_vert, \
+                                           y_v=x_vert))
+"""Contains the SPL values over distance between LSA reference point and the
+   receiver positions normalized on 0 dB of reference LSA."""    
 Opt_SPLoverX_dict = ColumnDataSource(data=dict(SPL=p_SPL, x=x_vert, x_v=[0,0], \
                                                y_v=[0,0]))
+Opt_refpoint_dict = ColumnDataSource(data=dict(x_ref=[10],SPL=[0],x_v=[0],y_v=[0]))
 """Contains SPL and distance values on the hinges of the target slope."""
 SPLoverX_optreg = ColumnDataSource(data=dict(x=[0,0,0,0], y=[0,0,0,0]))
 """Contains edges of the drawn polygon which indicates the optimization region"""
@@ -443,7 +450,7 @@ def check_PAL():
             Opt_w.init = False
             weighting_select(0,0,0)
             #np.shape(created_pal.xline)[0]
-        weight_links = np.arange(np.shape(created_pal.xline_start)[0])
+        weight_links = np.arange(np.shape(created_pal.xline_start)[0]+1)
         gui_opt_weight_link.options = [str(n) for n in list(weight_links)]
         gui_opt_weight_link.value = '0'
     except:
@@ -469,7 +476,7 @@ def change_start_pal_button(has_pal):
         gui_start.disabled = False
         check_PAL_button.button_type = "success"
         check_PAL_button.label = "8. Venue is PALC compatible!"
-        p.legend.visible = True
+        p.legend.visible = False
         gui_use_fixed_angles.disabled = False
     else:
         gui_start.disabled = True
@@ -517,7 +524,7 @@ def upload_directivity(attr, old, new):
 #%%#### CALLBACKS SPECIFICALLY USED IN PAGE 3. ARRAY CONFIGURATION ############
 
 ## Callback to disable and enable field of discrete tilt angles and 
-# shows a default exampl  
+# shows a default example
 def choose_dangles(attr, old, new):
     """
     If discrete angles are used, text input field to insert a set of discrete
@@ -727,7 +734,7 @@ def adjust_weighting_minus():
     """
     gui_weighting_nu.value -= float(weighting_step_size.value)
 
-## Stores the weighting strength in object PALC_config.weighting_nu    
+
 def store_weighting_nu(attr, old, new):
     """
     Stores actual value to calculate weighting factors (nu). Triggered by
@@ -821,24 +828,23 @@ def start_calc(arg):
 #    PALC_plots     = PALC_classes.PALC_plotting()
     ###################### RUN THE CALCUlATION ####################################
 
-#  TRY EXCEPT STATEMENT MUST BE REACTIVATED!!!!
-#    try:
+    try:
         # weighting optimization here    
-    if PALC_config.use_weighting == 'Target Slope' and Opt_w.init:
-        x, SPL = SPLoverX_dict.data['x'], SPLoverX_dict.data['SPL']
-        Opt_w.calc_init()
-        # move reference
-        Opt_w.maxonref(0)
-        Opt_SPLoverX_dict.data.update(dict(SPL=list(Opt_w.SPL)))
-        # start optimization, last input is max loops (default=40)
-        optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
-                  Opt_arr, created_pal, Tech_res, SPLoverX, Opt_w, \
-                  40)            
-    else:
-        calcPALC.calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)        
-    # except:
-    #     gui_start.active = False
-    #     update_text(config_error_info,'Error: PALC calculation failed')
+        if PALC_config.use_weighting == 'Target Slope' and Opt_w.init:
+            x, SPL = SPLoverX_dict.data['x'], SPLoverX_dict.data['SPL']
+            Opt_w.calc_init()
+            # move reference
+            #Opt_w.maxonref(0)
+            Opt_SPLoverX_dict.data.update(dict(SPL=list(Opt_w.SPL)))
+            # start optimization, last input is max loops (default=40)
+            opt_ind = optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
+                                    Opt_arr, created_pal, Tech_res, SPLoverX, Opt_w, \
+                                    200)
+        else:
+            calcPALC.calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)        
+    except:
+        gui_start.active = False
+        update_text(config_error_info,'Error: PALC calculation failed')
     ###############################################################################
     # reset some possibly changed values...
     for key, val in [['last_angle_hm', []],['x_H', gui_x_H.value], \
@@ -891,7 +897,7 @@ def start_calc(arg):
         return
 
     ################## Calculation for SPL over distance ###########################################################
-    calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX)
+    calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX, SFP_config.freq_range)
     ####### Calculate the Homogeneity and Bar Chart #############
     calcHomogeneity(Tech_res, x_S, y_S, created_pal.xline, created_pal.yline) 
     calcHistogram(Tech_res)
@@ -905,6 +911,7 @@ def start_calc(arg):
 
     x_patches_ref, y_patches_ref = LSA_visualization(PALC_plots_ref, PALC_config, \
                                                      Ref_arr.gamma_n)
+    calcSPLoverX(PALC_plots_ref, created_pal, Tech_res_ref.p_SPL, SPLoverX_ref, SFP_config.freq_range)
     calcHomogeneity(Tech_res_ref, x_S, y_S, created_pal.xline, created_pal.yline)
     calcHistogram(Tech_res_ref)
     ############# Plot and save to plot dictionaries ##########################
@@ -923,20 +930,32 @@ def start_calc(arg):
                        palette=rainbow[::-1], low=0, high=np.shape(Tech_res_ref.p_SPL)[0]-1), \
                        line_alpha=0.9)
     if not Opt_w.init:
+        shift_ref_on_zero(Opt_w, SPLoverX, SPLoverX_ref)
         SPLoverX_dict.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x, \
                                    x_v=created_pal.xline, y_v=created_pal.yline))
-    
+        SPLoverX_ref_dict.data.update(dict(SPL=SPLoverX_ref.SPL, x=SPLoverX_ref.x, \
+                                   x_v=created_pal.xline, y_v=created_pal.yline))
         Opt_SPLoverX_dict.data.update(dict(SPL=[SPLoverX.SPL[0], SPLoverX.SPL[-1]], \
-                                           x=[SPLoverX.x[0], SPLoverX.x[-1]], \
+                                           x  =[SPLoverX.x[0], SPLoverX.x[-1]], \
                                            x_v=[created_pal.xline[0],created_pal.xline[-1]], \
                                            y_v=[created_pal.yline[0],created_pal.yline[-1]]))
+        Opt_refpoint_dict.data.update(dict(x_ref=[Opt_w.x_interp[int(len(Opt_w.x_interp)/2)]], \
+                                           SPL  =[Opt_w.SPL_interp[int(len(Opt_w.SPL_interp)/2)]], \
+                                           x_v  =[created_pal.xline[int(len(created_pal.xline)/2)]], \
+                                           y_v  =[created_pal.yline[int(len(created_pal.yline)/2)]]))
     elif PALC_config.use_weighting == 'Target Slope' and Opt_w.init:
+        shift2ref(Opt_w, SPLoverX, opt_ind, SPLoverX_ref)
         get_opt_region(SPLoverX, Opt_w)
-        SPLoverX_dict.data.update(dict(SPL=SPLoverX.SPL_interp, x=SPLoverX.x, \
+        SPLoverX_dict.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x, \
                                        x_v=created_pal.xline, y_v=created_pal.yline))
+        Opt_SPLoverX_dict.data.update(dict(SPL=Opt_w.SPL))
+        Opt_refpoint_dict.data.update(dict(SPL=[Opt_w.SPL_interp[Opt_w.ref_ind]]))
+        SPLoverX_ref_dict.data.update(dict(SPL=SPLoverX_ref.SPL))
     else:
         SPLoverX_dict.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x, \
                                        x_v=created_pal.xline, y_v=created_pal.yline))
+        SPLoverX_ref_dict.data.update(dict(SPL=SPLoverX_ref.SPL, x=SPLoverX_ref.x, \
+                                   x_v=created_pal.xline, y_v=created_pal.yline))
     # Homogeneity
     Homogeneity_dict.data = dict(H=Tech_res.H, f=Tech_res.f, \
                                  H_dist_high=Tech_res.H_dist[1], \
@@ -966,7 +985,8 @@ def start_calc(arg):
     pSFP.y_range, pSFPref.y_range = psfp_y_range, psfp_y_range
     # SPLoverX
     SPLoverX_y_range = plt_ranges.update_range('SPLoverX_y', [-1,1], Opt_w.SPL_interp, \
-                                               SPLoverX.SPL_interp, SPLoverX.SPL)
+                                               SPLoverX.SPL_interp, SPLoverX.SPL, \
+                                               SPLoverX_ref.SPL)
     pSPLoverX.y_range = SPLoverX_y_range
     update_text(config_error_info,'')
     gui_which_beam.active, gui_which_beam.disabled = [], False
@@ -976,8 +996,6 @@ def start_calc(arg):
                                   y_list_ref=y_patches_ref))
     gui_start.active = False
     steps()
-    print('Weighting factors are: ',PALC_config.weighting_factors)
-    print(PALC_config.weighting_weights)
 
 
 def clear_result_fig():
@@ -1042,7 +1060,8 @@ def get_value(attr, old, new):
                    'fixed_angle':gui_fixed_first_angle.value, \
                    'x_H':gui_x_H.value, 'y_H':gui_y_H.value, \
                    'N':gui_N_LS.value, \
-                   'psi_n':gui_psi_n.value, 'tolerance':gui_tolerance.value}
+                   'psi_n':gui_psi_n.value, 'tolerance':gui_tolerance.value, \
+                   'freq_range':gui_freq_range.value}
     # iterate over widget_dict to detect changed value and store in object
     for key, val in widget_dict.items():
         if new == val:
@@ -1271,7 +1290,7 @@ def chg_weight_links(attr, old, new):
 
     """
     ind = get_weight_links(int(new), SPLoverX)
-    Opt_SPLoverX_dict.data.update(dict(SPL=SPLoverX.SPL[ind], \
+    Opt_SPLoverX_dict.data.update(dict(SPL=np.array(SPLoverX.SPL)[ind], \
                                            x=SPLoverX.x[ind], \
                                            x_v=created_pal.xline[ind], \
                                            y_v=created_pal.yline[ind]))
@@ -1303,6 +1322,7 @@ def update_draw(attr, old, new):
     x         = SPLoverX_dict.data['x']
     x_v, y_v  = SPLoverX_dict.data['x_v'], SPLoverX_dict.data['y_v']
     Opt_w.CDS2obj(Opt_SPLoverX_dict, ['x', 'SPL', 'x_v', 'y_v'])
+    Opt_w.CDS2obj(Opt_refpoint_dict, ['x_ref'])
     for ind, val in enumerate(Opt_w.x):
         arg = np.argmin(np.abs(np.array(x)-val))
         Opt_w.x[ind] = x[arg]
@@ -1311,10 +1331,17 @@ def update_draw(attr, old, new):
     Opt_w.resort_opt_region()           
     Opt_w.x_interp = list(x[np.argmin(np.abs(x-Opt_w.x[0])):np.argmin(np.abs(x-Opt_w.x[-1]))+1])
     Opt_w.interpolate_SPL()
+    # find nearest index for x_ref
+    ref_ind = np.argmin(np.abs(Opt_w.x_ref[0] - np.array(Opt_w.x_interp)))
+    Opt_w.x_ref, Opt_w.ref_ind = Opt_w.x_interp[ref_ind], ref_ind   
+    xv_ind = np.argmin(np.abs(np.array(x)-Opt_w.x_ref))
+    #Opt_w.SPL -= Opt_w.SPL_interp[ref_ind]
     if Opt_w.is2update < 4:
         Opt_w.is2update += 1
         Opt_SPLoverX_dict.data.update(dict(x=Opt_w.x, SPL=Opt_w.SPL, \
                                            x_v=Opt_w.x_v, y_v=Opt_w.y_v))
+        Opt_refpoint_dict.data.update(dict(x_ref=[Opt_w.x_ref], SPL=[Opt_w.SPL_interp[ref_ind]], \
+                                           x_v=[x_v[xv_ind]], y_v=[y_v[xv_ind]]))#SPL=[Opt_w.SPL_interp[ref_ind]], \
     SPLoverX_optreg.data.update(dict(x=[Opt_w.x[0],Opt_w.x[0],Opt_w.x[-1],Opt_w.x[-1]], \
                                      y=[Opt_w.SPL[0]+100,Opt_w.SPL[-1]-100, \
                                         Opt_w.SPL[-1]-100,Opt_w.SPL[0]+100]))
@@ -1400,7 +1427,7 @@ def steps():
                        strich6, gui_tolerance, gui_use_fixed_angles, \
                        gui_fixed_first_angle, fixed_angle_text], width=270)
         col1 = column([check_PAL_button, gui_start, gui_clear_result_fig, \
-                       gui_download_result, config_error_info, results_table], \
+                       gui_download_result, config_error_info, results_table, gui_download_SPLoverX], \
                       width=270)
         col2 = column([row([p_equal_axis_dist, p_equal_axis]), SPLoverX_tabs], \
                       width=690)
@@ -1507,7 +1534,7 @@ gui_use_dangles = Select(title="16. Use Discrete Tilt Angles?", value="No", \
                          options=["No", "Yes"], width=255, height=50)
 """Select widget to choose if discrete tilt angles shall be used. Triggers
    :any:`choose_dangles`."""
-gui_discrete_angles = TextInput(value=None, disabled=True, width=255, height=50, \
+gui_discrete_angles = TextInput(value='', disabled=True, width=255, height=50, \
                                 title="17. Discrete Tilt Angles in deg (',': separator)")
 """TextInput widget to enter the discrete tilt angles. Triggers :any:`get_discrete_angles`."""
 gui_ref_array = Select(title="Reference Array: Type", value="Straight", \
@@ -1568,7 +1595,7 @@ gui_weighting_nu = Slider(title="Weighting Parameter ν", value=np.cbrt(1.00), \
 # linear spaced slider of the weighting
 # gui_weighting_nu = Slider(title="Weighting Parameter ν", value=1.00, \
 #                           start=0.01, end=10.00, step=0.01, disabled=True, width=255)
-weighting_title = Div(text="22. Adjustment of ν and Step Size", width=255, height=20)
+weighting_title = Paragraph(text="22. Adjustment of ν and Step Size", width=255, height=20)
 weighting_plus = Button(label="+", button_type="success", disabled=True, width=70)
 """Button widget that increases the weightings strength by the value of
    :any:`weighting_step_size`."""
@@ -1580,7 +1607,7 @@ weighting_step_size = Select(value='0.05', options=['0.01', '0.05', '0.10', '0.5
 """Select widget to set the step size of :any:`weighting_plus` and
    :any:`weighting_minus`. Triggers :any:`update_weighting_step_size`."""
 gui_tolerance = Slider(title="23. Tolerance (Abort Criterion) in m", \
-                       value=0.1, start=0.05, end=5, step=0.05, width=255)
+                       value=1.0, start=0.05, end=5, step=0.05, width=255)
 """Slider widget to set the tolerance, which is the break out condition of the
    PALC computation. It is the distance of covered region to the first audience
    position in m. Triggers :any:`get_value`."""
@@ -1604,6 +1631,9 @@ gui_clear_result_fig = Button(label="27. Delete Result Visualization", \
    :any:`clear_result_fig`"""
 gui_download_result = Button(label="Download PALC Angles", button_type="success", width=255)
 """Button widget to download the PALC tilt angles in .csv format"""
+gui_freq_range = RangeSlider(title="Frequency Range", width=690, \
+                             start=0, end=20000, value=(200,8000), step=20)
+gui_download_SPLoverX = Button(label="Download SPL", button_type="success", width=255)
 
 # PAGE 5: Results Visualization
 gui_f_beam = Select(title="Frequency in Hz", value="63", width=200, \
@@ -1620,18 +1650,18 @@ gui_which_beam = CheckboxGroup(labels=["PALC", "Reference"], active=[], \
 # AK Logo
 x_range, y_range = (10,30), (10,30)
 aklogo = figure(x_range=x_range, y_range=y_range, plot_width=80, plot_height=80, min_border=0)
-aklogo.toolbar.logo, aklogo.axis.visible        = None, None
-aklogo.outline_line_color, aklogo.grid.visible = None, None
-aklogo.toolbar_location, aklogo.toolbar.logo = None, None
+aklogo.toolbar.logo, aklogo.axis.visible        = 'grey', False
+aklogo.outline_line_color, aklogo.grid.visible = None, False
+aklogo.toolbar_location, aklogo.toolbar.logo = None, 'grey'
 IMPATH = os.path.join(f"{appname}/static/logo_grau-schwarz.png")
 aklogo.image_url(url=[IMPATH], x=x_range[0], y=y_range[1]-0.3, \
                  w=x_range[1]-(x_range[0]+1), h=y_range[1]-(y_range[0]+0.6))
 aklogo2 = Div(text='<b>A Software Tool by the <br><big><a href="https://www.ak.tu-berlin.de" target="_blank">Audio Communication Group</a></big></b>',width=270, height=60)
 tublogo = figure(x_range=x_range, y_range=y_range, plot_width=int(80*1.786), \
                  plot_height=80, min_border=0)
-tublogo.toolbar.logo, tublogo.axis.visible        = None, None
-tublogo.outline_line_color, tublogo.grid.visible = None, None
-tublogo.toolbar_location, tublogo.toolbar.logo = None, None
+tublogo.toolbar.logo, tublogo.axis.visible        = 'grey', False
+tublogo.outline_line_color, tublogo.grid.visible = None, False
+tublogo.toolbar_location, tublogo.toolbar.logo = None, 'grey'
 IMPATHtub = os.path.join(f"{appname}/static/TUB.png")
 tublogo.image_url(url=[IMPATHtub], x=x_range[0]+0.5, y=y_range[1]-0.3, \
                   w=x_range[1]-(x_range[0]+1), h=y_range[1]-(y_range[0]+0.6))
@@ -1708,7 +1738,24 @@ gui_fixed_first_angle.on_change("value", get_value)
 gui_start.on_click(start_calc)
 gui_clear_result_fig.on_click(clear_result_fig)
 Opt_SPLoverX_dict.on_change('data', update_draw)
+Opt_refpoint_dict.on_change('data', update_draw)
 gui_download_result.js_on_click(CustomJS(args=dict(source=results_dict), \
+                            code=open(os.path.join(os.path.dirname(__file__), \
+                                                   "ext/download.js")).read()))
+gui_freq_range.on_change("value", get_value)
+gui_download_SPLoverX.js_on_click(CustomJS(args=dict(source=SPLoverX_dict), \
+                            code=open(os.path.join(os.path.dirname(__file__), \
+                                                   "ext/download.js")).read()))
+gui_download_SPLoverX.js_on_click(CustomJS(args=dict(source=Opt_SPLoverX_dict), \
+                            code=open(os.path.join(os.path.dirname(__file__), \
+                                                   "ext/download.js")).read()))
+gui_download_SPLoverX.js_on_click(CustomJS(args=dict(source=Opt_refpoint_dict), \
+                            code=open(os.path.join(os.path.dirname(__file__), \
+                                                   "ext/download.js")).read()))
+gui_download_SPLoverX.js_on_click(CustomJS(args=dict(source=SPLoverX_ref_dict), \
+                            code=open(os.path.join(os.path.dirname(__file__), \
+                                                   "ext/download.js")).read()))
+gui_download_SPLoverX.js_on_click(CustomJS(args=dict(source=Homogeneity_dict), \
                             code=open(os.path.join(os.path.dirname(__file__), \
                                                    "ext/download.js")).read()))
 
@@ -1728,7 +1775,7 @@ f_ticks_override = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5', 
                     1000: '1', 2000: '2', 5000: '5', 10000: '10', 20000: '20'}
 ###### Venue Slice: p (PAGE 1,2,3,4) ######
 ptools = "box_zoom,pan,wheel_zoom,reset,tap,hover,save"
-p = figure(title="Venue Slice", x_axis_label="x in m", y_axis_label="y in m", \
+p = figure(title="", x_axis_label="x in m", y_axis_label="y in m", \
            toolbar_sticky=False, toolbar_location="right", tools=ptools, \
            frame_height=478, frame_width=637)
 """Venue Slice Plot"""
@@ -1736,12 +1783,12 @@ p.toolbar.logo = None
 # Venue Slice
 p.xaxis.axis_label_text_font_style = "normal"
 p.yaxis.axis_label_text_font_style = "normal"
-p.x(2,2, color='#323030')
+#p.x(2,2, color='#323030')
 p.x('x','y', source=guipal, line_color="lightskyblue") #blue 
 pal_line = p.multi_line('xlineplt', 'ylineplt', source=guilineplt, \
                         legend_label='PALC and SFP', line_dash='solid', \
                         line_color="lightskyblue", line_width=2, \
-                        selection_color="crimson", nonselection_line_alpha=0.5)
+                        selection_color="crimson", nonselection_line_alpha=0.5)#lightskyblue
 nal_line = p.multi_line('xnalplt', 'ynalplt', source=guinalplt, \
                         legend_label='PALC (non-audience line)', \
                         line_dash='dashed', line_color="lime", line_width=2, \
@@ -1750,7 +1797,7 @@ sfp_line = p.multi_line('xsfpplt', 'ysfpplt', source=guisfpplt, \
                         legend_label='only SFP', line_dash='solid', \
                         line_color="orange", line_width=2, \
                         nonselection_line_alpha=0.5) # orange
-p.patches('x_list','y_list', source=plot_patches, color="white") # black
+p.patches('x_list','y_list', source=plot_patches, color="white") # white
 
  # Array and its Rays
 p.multi_line('x_c_n_unitn', 'y_c_n_unitn', source=plt_venue_slice_1, \
@@ -1767,6 +1814,11 @@ guilineplt.selected.on_change('indices', audience_line_tap)
 # Set legend attributes
 p.legend.location, p.legend.orientation, p.legend.margin = 'top_center', 'horizontal', 0
 p.legend.background_fill_alpha, p.legend.spacing, p.legend.visible = 0.5, 15, False
+# export stuff for poster
+#p.background_fill_color, p.border_fill_color = None, None
+#p.output_backend = "svg"
+
+# p.ygrid.minor_grid_line_alpha, p.xgrid.minor_grid_line_alpha = 0,0
 
 ###### Directivity (PAGE 2) ######
 pdirtools = "box_zoom,pan,wheel_zoom,reset,hover,save"
@@ -1790,36 +1842,46 @@ pdir.legend.background_fill_alpha = 0.5
 pdir.xaxis.ticker = [-90, -60, -30, 0, 30, 60, 90]
 
 ###### SPL over distance: pSPLoverX (PAGE 4) ######
-pSPLoverXtips = [("Title", "$name"),("Index","$index"),("SPL in dB", "@SPL"), \
-                 ("(x,y) of Venue Slice in m", "@x_v, @y_v")]
+pSPLoverXtips = [("Title", "$name"),("Index","$index"),("SPL in dB", "$y"), \
+                 ("Distance", "$x"), ("(x,y) of Venue Slice in m", "@x_v, @y_v")]
 pSPLoverXtools = "box_zoom,pan,wheel_zoom,reset,hover,save, tap"
-pSPLoverX = figure(title="SPL over Distance (maximum SPL normalized to 0 dB in optimization region)", \
+pSPLoverX = figure(title="SPL over Distance (maximum SPL normalized to 0 dB)", \
                    x_axis_label="Distance LSA to Receiver in m", \
                    y_axis_label="SPL change in dB", toolbar_sticky=False, \
                    tools=pSPLoverXtools,tooltips=pSPLoverXtips, \
-                   y_range=(-15,0.3), height=550, width=690)
+                   y_range=(-15,0.3), height=550, width=690) #SPL over Distance (maximum SPL normalized to 0 dB), width=690
 """Sound Pressure over Distance Plot. If Target Slope weighting is chosen, the
    target slope can be adjusted within this figure."""
 pSPLoverX.toolbar.logo = None
-pSPLoverX.line('x', 'SPL', source=SPLoverX_dict, color="firebrick", name="PALC", \
-               legend_label='Computed')
-pSPLoverX.circle('x', 'SPL', source=SPLoverX_dict, line_color="white", \
-                 fill_color="black", line_width=2, name="PALC", \
-                 legend_label='Computed')
+pSPLoverX.line('x', 'SPL', source=SPLoverX_dict, color="lightskyblue", name="PALC", \
+               legend_label='PALC (optimized)') #lightskyblue
+# pSPLoverX.circle('x', 'SPL', source=SPLoverX_dict, line_color="white", \
+#                  fill_color="black", line_width=2, name="PALC", \
+#                  legend_label='PALC (optimized)')
+pSPLoverX.line('x', 'SPL', source=SPLoverX_ref_dict, color="orange", name="Reference", \
+               legend_label='Reference LSA') #orange
 Opt2 = pSPLoverX.line('x', 'SPL', source=Opt_SPLoverX_dict, color="lime", \
-                      name="Reference", legend_label='Target Slope')
+                      name="Reference", legend_label='Target Slope') #lime
 Opt1 = pSPLoverX.circle('x', 'SPL', source=Opt_SPLoverX_dict, line_color="yellow", \
                         fill_color="black", line_width=2, name="Reference", \
                         legend_label='Target Slope')
+Opt_ref = pSPLoverX.circle('x_ref','SPL', source=Opt_refpoint_dict, color="darkred", \
+                           fill_color="red", size=10, name="Reference Point", \
+                           legend_label="Reference Point")
 pSPLoverX.patch('x', 'y', source=SPLoverX_optreg, alpha=0.2, line_width=0.1)
 pSPLoverX.legend.location, pSPLoverX.legend.orientation = 'top_right', 'horizontal'
 pSPLoverX.legend.margin, pSPLoverX.legend.glyph_width = 0, 30
 pSPLoverX.legend.background_fill_alpha, pSPLoverX.legend.spacing = 0.5, 15
 
 Opt_SPLoverX_dict.selected.on_change('indices', optimal_SPLoverX)
-optSPLtool = PointDrawTool(renderers=[Opt1, Opt2], add=False)
+Opt_refpoint_dict.selected.on_change('indices', optimal_SPLoverX)
+optSPLtool = PointDrawTool(renderers=[Opt1, Opt2, Opt_ref], add=False)
 pSPLoverX.add_tools(optSPLtool)
 pSPLoverX.toolbar.active_tap = optSPLtool
+
+# export stuff for poster
+pSPLoverX.background_fill_color, pSPLoverX.border_fill_color = None, None
+pSPLoverX.output_backend = "svg"
 
 ####### Venue Slice with Colorbar and TapTool: pSFPv (PAGE 5) ######
 pSFPvtooltips = [("Index", "$index"),("(x,y)", "(@x_vert, @y_vert)"),]
@@ -1841,13 +1903,17 @@ pSFP = figure(title="29. SPL at all Audience Positions: PALC", \
               x_axis_type="log", x_range=(15,24000), y_range=(0, 100), \
               x_axis_label="f in kHz", y_axis_label="SPL in dB", \
               tools=pSFPtools, toolbar_sticky=False, \
-              tooltips=pSFPtooltips, width=610)
+              tooltips=pSFPtooltips, width=610) #29. SPL at all Audience Positions: PALC
 """Frequency Response Plot of PALC results of each discrete point on venue
    slice. Color of the responses belongs to the discrete points in figure
    :any:`pSFPv`."""
 pSFP.toolbar.logo = None
 pSFP.xaxis.ticker = f_ticks
 pSFP.xaxis.major_label_overrides = f_ticks_override
+
+# export stuff for poster
+#pSFP.background_fill_color, pSFP.border_fill_color = None, None
+#pSFP.output_backend = "svg"
 
 ###### Sound Field Prediction straight array: pSFPref (PAGE 5) ######
 pSFPreftools = "box_zoom,pan,wheel_zoom,reset,tap,hover,save"
@@ -1856,10 +1922,14 @@ pSFPref = figure(title="30. SPL at all Audience Positions: Reference Array", \
                  x_axis_type="log",x_range=(15,24000), y_range=(0, 100), \
                  x_axis_label="f in kHz", y_axis_label="SPL in dB", \
                  tools=pSFPreftools, toolbar_sticky=False, \
-                 tooltips=pSFPreftooltips, width=610)
+                 tooltips=pSFPreftooltips, width=610) #30. SPL at all Audience Positions: Reference Array"
 pSFPref.toolbar.logo = None
 pSFPref.xaxis.ticker = f_ticks
 pSFPref.xaxis.major_label_overrides = f_ticks_override
+
+# export stuff for poster
+#pSFPref.background_fill_color, pSFPref.border_fill_color = None, None
+#pSFPref.output_backend = "svg"
 
 ###### Homogeneity PALC and reference array: pHom (PAGE 5) ######
 pHomtools = "box_zoom,pan,wheel_zoom,reset,hover,save"
@@ -1867,7 +1937,7 @@ pHomtooltips = [("Frequency in Hz", "$x"),("SPL in dB", "$y")]
 pHom = figure(title="31. Homogeneity", x_axis_type="log", \
               x_axis_label="f in kHz", y_axis_label="H(f) in dB", \
               tools=pHomtools, tooltips=pHomtooltips, x_range=(15,24000), \
-              width=1220)
+              width=1220) #31. Homogeneity
 """Frequency Response Plot of reference array of each discrete point on venue
    slice. Color of the responses belongs to the discrete points in figure
    :any:`pSFPv`."""
@@ -1875,27 +1945,31 @@ pHom.toolbar.logo = None
 pHom.xaxis.ticker = f_ticks
 pHom.xaxis.major_label_overrides = f_ticks_override
 pHom.line('f','H', source=Homogeneity_dict, color="lightskyblue", \
-          legend_label="PALC") # blue
+          legend_label="PALC") # lightskyblue
 pHom.line('f','H_dist_high', source=Homogeneity_dict, color="navajowhite", \
-          line_dash="dashed") #blue
+          line_dash="dashed") #navajowhite
 pHom.line('f','H_dist_low', source=Homogeneity_dict, color="navajowhite", \
-          line_dash="dashed") # blue
+          line_dash="dashed") # navajowhite
 pHom.line('f', 'H_str', source=Homogeneity_dict, color="orange", \
-          legend_label="Reference Array") #firebrick
+          legend_label="Reference Array") #orange
 pHom.legend.location = "top_left"
+
+# export stuff for poster
+#pHom.background_fill_color, pHom.border_fill_color = None, None
+#pHom.output_backend = "svg"
 
 ###### Beamplot PALC: pBeam (PAGE 5) ######
 pBeamtips = [("SPL in dB", "@SPL"),("(x in m, y in m)", "($x, $y)"),]
 pBeamtools = "box_zoom,pan,wheel_zoom,reset,hover,save"
 pBeam = figure(title="34. Beam Plot PALC: SPL in dB", x_axis_label="x in m", \
                y_axis_label="y in m", frame_width=1110, match_aspect=True, \
-               visible=False, tools=pBeamtools, tooltips=pBeamtips)
+               visible=False, tools=pBeamtools, tooltips=pBeamtips) #34. Beam Plot PALC: SPL in dB
 """Beamplot of PALC results"""
 pBeam.toolbar.logo = None
 pBeam.x_range.range_padding = pBeam.y_range.range_padding = 0
 mapper = LinearColorMapper(palette=Cividis256, low=50, high=100)
-color_bar = ColorBar(color_mapper=mapper, location=(0,0), title_standoff=10, \
-                     title="dB", title_text_font_style="normal")
+color_bar = ColorBar(color_mapper=mapper, location=(0,0), \
+                     title="", title_text_font_style="normal")
 pBeam.add_layout(color_bar, 'right')
 pBeam.image(image='SPL',x='x', y='y', dw='dw', dh='dh', \
             source=Beamplot_dict, palette=Cividis256)
@@ -1909,13 +1983,13 @@ pBeamreftools = "box_zoom,pan,wheel_zoom,reset,hover,save"
 pBeam_ref = figure(title="34. Beam Plot Reference: SPL in dB", \
                    x_axis_label="x in m", y_axis_label="y in m", \
                    frame_width=1110, match_aspect=True, visible=False, \
-                   tools=pBeamreftools, tooltips=pBeamreftips)
+                   tools=pBeamreftools, tooltips=pBeamreftips) #34. Beam Plot Reference: SPL in dB
 """Beamplot of reference array"""
 pBeam_ref.toolbar.logo = None
 pBeam_ref.x_range.range_padding = pBeam.y_range.range_padding = 0
 mapper_ref = LinearColorMapper(palette=Cividis256, low=50, high=100)
 color_bar_ref = ColorBar(color_mapper=mapper_ref, location=(0,0), \
-                     title_standoff=10, title="dB", title_text_font_style="normal")
+                     title_standoff=10, title="", title_text_font_style="normal")
 pBeam_ref.add_layout(color_bar_ref, 'right')
 pBeam_ref.image(image='SPL_ref',x='x', y='y', dw='dw', dh='dh', \
                 source=Beamplot_dict, palette=Cividis256)
@@ -1949,7 +2023,7 @@ dir_tab2 = Panel(child=pdir, title="Loudspeaker Directivity")
 dir_tabs = Tabs(tabs=[dir_tab1, dir_tab2])
 # Venue Slice Plot and SPL over distance (PAGE 4)
 SPLoverX_tab1 = Panel(child=p, title="Venue Slice")
-SPLoverX_tab2 = Panel(child=pSPLoverX, title="SPL over Distance")
+SPLoverX_tab2 = Panel(child=column([gui_freq_range, pSPLoverX]), title="SPL over Distance")
 SPLoverX_tabs = Tabs(tabs=[SPLoverX_tab1, SPLoverX_tab2])
 # Result Tabs (PAGE 5)
 res_tab1 = Panel(child=column([pSFPv, row([pSFP, pSFPref])]), \
@@ -1965,7 +2039,7 @@ PALC_config.store_config('N', gui_N_LS.value)
 ###### DATA TABLE of Resulting PALC Calculcation (PAGE 4) ###### 
 results_columns = [TableColumn(field="a_num_LS", title="LS", width=20), 
                    TableColumn(field="b_gamma_tilt_deg", title="Total Angle", width=80),  
-                   TableColumn(field="c_gamma_tilt_deg_diff", title="Inter Cabinet Angle", width=150)] 
+                   TableColumn(field="c_gamma_tilt_deg_diff", title="ICA", width=80)] 
 results_table = DataTable(source=results_dict, columns=results_columns, \
                           index_position=None, width=250, height=700, \
                           fit_columns=False)

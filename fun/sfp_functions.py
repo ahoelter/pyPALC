@@ -14,7 +14,7 @@ import scipy.signal as sig
 from scipy.stats.mstats import mquantiles
 
 
-def get_freq_vec(N_freq, step_freq):
+def get_freq_vec(N_freq, step_freq, freq_range):
     """
     Compute a linear frequency vector. Called by :any:`calcSFP` and
     :any:`init_dir_plot`.
@@ -25,6 +25,8 @@ def get_freq_vec(N_freq, step_freq):
         Number of frequency bins.
     step_freq : int
         Step size of frequency vector.
+    freq_range: tuple or list
+        Contains start and stop frequency of frequncy vector
 
     Returns
     -------
@@ -33,8 +35,8 @@ def get_freq_vec(N_freq, step_freq):
 
     """
     f = 20 * (2 * np.ones(N_freq+1))**(step_freq * np.arange(N_freq+1))
-    f = f[f <= 20000]
-    f = f[f >= 20]
+    f = f[f <= freq_range[1]]
+    f = f[f >= freq_range[0]]
     f = np.unique(f)
     return f
 
@@ -392,7 +394,7 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     # reference pressure
     p0 = 2 * 10**(-5)
     # frequencies
-    f = get_freq_vec(N_freq=120, step_freq=1/12)
+    f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])
     f_xy = np.array([100, 200, 400, 800, 1000, 2000, 5000, 10000, 16000])
 
     # initialize variables
@@ -645,7 +647,7 @@ def calcHistogram(Tech_res):
     return
 
 
-def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX):
+def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX, freq_range):
     """
     Computes the SPL over distance. The distance is measured from the center
     of the LSA to the receiver positions. Called by :any:`start_calc` and
@@ -661,6 +663,8 @@ def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX):
         Sound pressure level at each receiver position.
     SPLoverX : obj [out]
         Contains the SPL over distance output.
+    freq_range: tuple or list [in]
+        Frequency range to be considered, contains (start,stop) in Hz.
 
     Returns
     -------
@@ -671,11 +675,14 @@ def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX):
 
     """
     p0 = 2*10**(-5) # atmospheric pressure
+    f  = get_freq_vec(120, 1/12, (20,20000))
+    f_ind_min = np.argmin(np.abs(f-freq_range[0]))
+    f_ind_max = np.argmin(np.abs(f-freq_range[1]))
     # distance source --> receiver
     total_dist = np.sqrt(((PALC_plots.x_start[0]+PALC_plots.x_stop[-1])/2 - created_pal.xline)**2 + \
                          ((PALC_plots.y_start[0]+PALC_plots.y_stop[-1])/2 - created_pal.yline)**2)
     # SPLoverX computation
-    p_sum = np.sum(p0 * 10**(p_SPL/20), axis=1)
+    p_sum = np.sum(p0 * 10**(p_SPL[:,f_ind_min:f_ind_max+1]/20), axis=1)
     p_SPL_x_vert = 20 * np.log10(np.abs(p_sum) / p0)
     p_SPL_x_vert = p_SPL_x_vert - max(p_SPL_x_vert)
     SPLoverX.x   = total_dist
@@ -796,7 +803,7 @@ def init_dir_plot():
     beta_deg = np.linspace(-180,180,181)
     beta = beta_deg * np.pi / 180
     # frequencies
-    f = get_freq_vec(N_freq=120, step_freq=1/12)
+    f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])
     omega = 2 * np.pi * f
     dir_meas = np.ones([np.shape(f)[0],np.shape(f)[0]])
     dir_meas_deg = np.ones([np.shape(f)[0],np.shape(f)[0]])

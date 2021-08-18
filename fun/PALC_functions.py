@@ -497,9 +497,9 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                 elif np.abs(Gamma_aud) > 1.5 and np.abs(Gamma_aud) <= 4:
                     psi_n[:] = psi_n[:] * (1 - np.sign(Gamma_aud) * 0.01)
                 elif np.abs(Gamma_aud) > 4 and np.abs(Gamma_aud) <= 8:
-                    psi_n[:] = psi_n[:] * (1 - np.sign(Gamma_aud) * 0.05)
+                    psi_n[:] = psi_n[:] * (1 - np.sign(Gamma_aud) * 0.03)
                 elif np.abs(Gamma_aud) > 8:
-                    psi_n[:] = psi_n[:] * (1 - np.sign(Gamma_aud) * 0.1)
+                    psi_n[:] = psi_n[:] * (1 - np.sign(Gamma_aud) * 0.05)
             
         
         N_PALC = 0
@@ -598,14 +598,17 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
             elif m > 0:
                 x_a_t_n[m,:] = x_a_b_n[m-1,:]
                 gamma_n[m] = calc_gamma(gamma_n, psi_n, x_start, y_start, x_a_t_n, PALC_config.Lambda_y, m)
-
+ 
                 ################## DISCRETE TILT ANGLES ###################
-                if  PALC_config.use_gamma_LSA and np.shape(PALC_config.gamma_LSA)[0] > 1:
+                if PALC_config.use_gamma_LSA and np.shape(PALC_config.gamma_LSA)[0] > 1:
                     ######### Calculate The Tilt Angles By Usage Of The Set Of Discrete Tilt Angles #######
                     val = np.abs(PALC_config.gamma_LSA - (gamma_n[m] - gamma_n[m-1]))
                     ind = np.unravel_index(np.argmin(val, axis=None), val.shape)
                     gamma_n[m] = PALC_config.gamma_LSA[ind[0]] + gamma_n[m-1]
-
+                    
+                if (PALC_config.use_gamma_LSA and np.shape(PALC_config.gamma_LSA)[0] > 1) or gamma_n[m]-gamma_n[m-1] < 0:
+                    # case in continuous tilt angles: intercabinet angle is smaller than zero
+                    if gamma_n[m]-gamma_n[m-1] < 0: gamma_n[m] = float(gamma_n[m-1])
                     ######### Shift Necessary Variables And Update k If Necessary ###########
                     direction = gamma_n[m] - psi_n[m]  # angle of direction to x_a_t_n of m-th loudspeaker
                     hypo = 1/np.cos(direction)    # length if side adjacent is equal to one
@@ -801,7 +804,6 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                                 dist_near = np.amin([dist_high, dist_low])
                             PALC_config.gap_weights[m] = 1 - PALC_config.strength_sm*(dist_near/dist_na_line)
                                                
-        ###### Iterative optimization of weighting_nu may be done here!!!
         ###### weighting factors calculation with special case if fixed angles, soft margin and weighting
         if PALC_config.use_fixed_angle and PALC_config.gap_handling in ['Soft Margin'] \
            and PALC_config.weighting_nu <= 1.02 and not PALC_config.use_weighting in ['Without']:
@@ -828,6 +830,10 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
 
         thr_dist = np.sqrt(np.sum((x_a_c_n[:,:] - np.transpose(np.array([x_c_n[:], y_c_n[:], x_c_n[:]*0])))**2,1))
         num_iter += 1
+        print('error is: ', Gamma_aud)
+        # if difference is to big, reset psi_n
+        if np.abs(Gamma_aud) > 50:
+            psi_n = PALC_config.psi_n
 
     #PALC_plots  = PALC_classes.PALC_plotting()
     PALC_plots.update_plot_array(x_c_n=x_c_n, y_c_n=y_c_n, x_fin_unitn=x_fin_unitn, y_fin_unitn=y_fin_unitn)

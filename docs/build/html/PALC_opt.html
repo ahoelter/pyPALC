@@ -52,7 +52,7 @@
 <p>Contains functions to compute the target slope optimization.</p>
 <dl class="py function">
 <dt id="PALC_opt.calc_SingleValueDiff">
-<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">calc_SingleValueDiff</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean_abs'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#calc_SingleValueDiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.calc_SingleValueDiff" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">calc_SingleValueDiff</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#calc_SingleValueDiff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.calc_SingleValueDiff" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a single value difference of the actual PALC results. Called by
 <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a> and <a class="reference internal" href="#PALC_opt.diff_on_ls" title="PALC_opt.diff_on_ls"><code class="xref any py py-func docutils literal notranslate"><span class="pre">diff_on_ls</span></code></a>.</p>
 <dl class="field-list simple">
@@ -62,6 +62,7 @@
 <li><p><strong>opt</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Target slope of optimization.</p></li>
 <li><p><strong>mtype</strong> (<em>str</em><em>, </em><em>optional</em>) – Type of summing up the differences. Possible types are … ‘mean’.
 Default is ‘mean_abs’.</p></li>
+<li><p><strong>ef</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, use an error function, otherwise False. Default is True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -75,7 +76,7 @@ Default is ‘mean_abs’.</p></li>
 
 <dl class="py function">
 <dt id="PALC_opt.diff_on_ls">
-<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">diff_on_ls</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#diff_on_ls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.diff_on_ls" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">diff_on_ls</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#diff_on_ls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.diff_on_ls" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maps diference in optimization region to LSA cabinets. Called by
 <a class="reference internal" href="gui_algorithm_sfp.html#gui_algorithm_sfp.optimize_PALC" title="gui_algorithm_sfp.optimize_PALC"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimize_PALC</span></code></a>.</p>
 <dl class="field-list simple">
@@ -85,8 +86,10 @@ Default is ‘mean_abs’.</p></li>
 <li><p><strong>opt_ind</strong> (<em>list</em>) – Indices of optimization region.</p></li>
 <li><p><strong>ls_ind</strong> (<em>list</em>) – Indices of venue slice mapped on LSA cabinets.</p></li>
 <li><p><strong>ls_opt_ind</strong> (<em>list</em>) – Indices of optimization region mapped on LSA cabinets.</p></li>
-<li><p><strong>comp</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Computed PALC results in optimization region.</p></li>
-<li><p><strong>opt</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Target Slope of optimization.</p></li>
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Object with computed PALC results in optimization region.</p></li>
+<li><p><strong>Opt_w</strong> (<em>obj</em><em> [</em><em>in</em><em>, </em><em>out</em><em>]</em>) – Object with information of Target Slope in optimization.</p></li>
+<li><p><strong>created_pal</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Venue information that was drawn by the user.</p></li>
+<li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Optional input to set single value difference</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -96,6 +99,48 @@ point in the optimization region, the value is set to 100.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.err_func">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">err_func</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_in</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_out</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">l</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#err_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.err_func" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes gaussian like function with error function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_l</strong> (<em>list</em>) – Coordinates along function is computed. [start, stop, step_size]</p></li>
+<li><p><strong>x_in</strong> (<em>float</em>) – Fade in of error function.</p></li>
+<li><p><strong>x_out</strong> (<em>float</em>) – Fade out of error function.</p></li>
+<li><p><strong>l</strong> (<em>float</em>) – Top of error function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>out</strong> – Error function.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.gaussian">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">gaussian</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute Gaussian distribution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_l</strong> (<em>array</em><em> or </em><em>list</em>) – Spatial points of gaussian distribution.</p></li>
+<li><p><strong>sig</strong> (<em>float</em>) – Sigma auf gaussian distribution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>out</strong> – Gaussian distribution.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -113,6 +158,28 @@ point in the optimization region, the value is set to 100.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><strong>diff</strong> – Difference between computed and target.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.get_nbs_neighbours">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">get_nbs_neighbours</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ls_opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_ind</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#get_nbs_neighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.get_nbs_neighbours" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the number of neighbours on which it could be smoothed. Called
+by <a class="reference internal" href="#PALC_opt.diff_on_ls" title="PALC_opt.diff_on_ls"><code class="xref any py py-func docutils literal notranslate"><span class="pre">diff_on_ls</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – Number of LSA cabinets.</p></li>
+<li><p><strong>ls_opt_ind</strong> (<em>list</em>) – List of LSA cabinets mapped to audience positions.</p></li>
+<li><p><strong>opt_ind</strong> (<em>list</em>) – Indices of optimization region.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>nebs</strong> – Number of possible neighbouring points for each cabinet.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>ndarray</p>
@@ -169,6 +236,33 @@ center of LSA and receiver positions.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt id="PALC_opt.insert_neighbours">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">insert_neighbours</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_comp_opt_LS</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nebs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frontend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_ins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#insert_neighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.insert_neighbours" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert neighbouring points of the LSA cabinet to for difference of
+computed and target values. Called by <a class="reference internal" href="#PALC_opt.diff_on_ls" title="PALC_opt.diff_on_ls"><code class="xref any py py-func docutils literal notranslate"><span class="pre">diff_on_ls</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comp</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Computed PALC results in optimization region.</p></li>
+<li><p><strong>opt</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Target Slope of optimization.</p></li>
+<li><p><strong>diff_comp_opt_LS</strong> (<em>list</em>) – Contains the computed and target values of actual LSA cabinet.</p></li>
+<li><p><strong>nebs</strong> (<em>list</em>) – Maximum of points that can be added in front and end of diff_comp_opt_LS.</p></li>
+<li><p><strong>frontend</strong> (<em>list</em>) – Index of front and behind position to insert neighbouring points.</p></li>
+<li><p><strong>to_ins</strong> (<em>float</em><em>, </em><em>optional</em>) – Depending on discretized audience positions, percentage of the total
+amount of audience positions to add in front and end of
+diff_comp_opt_LS. The default is 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>diff_comp_opt_LS</strong> – Contains the computed and target values of actual LSA cabinet.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="PALC_opt.ls2pal">
 <code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">ls2pal</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Opt_arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">created_pal</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#ls2pal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.ls2pal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Maps LSA cabinets to discrete venue points depending on the assumed splay
@@ -189,6 +283,27 @@ angle. Called by <a class="reference internal" href="gui_algorithm_sfp.html#gui_
 <li><p><strong>ls2pal_opt</strong> (<em>list</em>) – Indices in optimization region sorted to the LSA cabinets.</p></li>
 </ul>
 </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.mirror">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">mirror</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_l</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#mirror"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.mirror" title="Permalink to this definition">¶</a></dt>
+<dd><p>Flips arr if x is bigger than mir.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>array</em>) – Input array.</p></li>
+<li><p><strong>x_l</strong> (<em>array</em>) – Information for gaussian distribution.</p></li>
+<li><p><strong>mir</strong> (<em>float</em><em>, </em><em>optional</em>) – Value to control point to flip. The default is 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>arr</strong> – Output array.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array</p>
 </dd>
 </dl>
 </dd></dl>
@@ -220,16 +335,84 @@ be updated for the next PALC computation.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt id="PALC_opt.range_neighbours">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">range_neighbours</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diff_comp_opt_LS</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#range_neighbours"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.range_neighbours" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the front and behind position to insert neighbouring points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comp</strong> (<em>list</em><em> or </em><em>1D-array</em>) – Computed PALC results in optimization region</p></li>
+<li><p><strong>diff_comp_opt_LS</strong> (<em>list</em>) – Contains the computed and target values of actual LSA cabinet.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List with two entries. Front and behind position of neighbouring points.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.shift2ref">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">shift2ref</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Opt_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opt_ind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#shift2ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.shift2ref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts SPL values on given reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Opt_w</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains information on the optimization target.</p></li>
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains computed SPL over distance data including distance between
+center of LSA and receiver positions.</p></li>
+<li><p><strong>opt_ind</strong> (<em>list</em><em> [</em><em>in</em><em>]</em>) – Indice of points in optimization region.</p></li>
+<li><p><strong>SPLoverX_ref</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains computed SPL over distance data including distance between
+center of LSA and receiver positions of reference.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.shift_ref_on_zero">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">shift_ref_on_zero</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Opt_w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">SPLoverX_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#shift_ref_on_zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.shift_ref_on_zero" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts SPL on zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Opt_w</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains information on the optimization target.</p></li>
+<li><p><strong>SPLoverX</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains computed SPL over distance data including distance between
+center of LSA and receiver positions.</p></li>
+<li><p><strong>SPLoverX_ref</strong> (<em>obj</em><em> [</em><em>in</em><em>]</em>) – Contains computed SPL over distance data including distance between
+center of LSA and receiver positions of reference.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="PALC_opt.smooth_1D_list">
-<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">smooth_1D_list</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#smooth_1D_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.smooth_1D_list" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">smooth_1D_list</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbs_w</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nums</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#smooth_1D_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.smooth_1D_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>Smoothes a 1D array with the neighbouring entry.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<em>1D-array</em>) – Array to be smoothed.</p></li>
-<li><p><strong>nbs</strong> (<em>float</em><em>, </em><em>optional</em>) – Weight of the neighbouring point, means
-new[n] = old[n-1]*nbs + old[n]*(1-2*nbs) + old[n+1]*nbs.
+<li><p><strong>nbs_w</strong> (<em>float</em><em>, </em><em>optional</em>) – Weight of the neighbouring point, means
+new[n] = old[n-1]*nbs_w + old[n]*(1-2*nbs_w) + old[n+1]*nbs_w.
 The default is 0.2.</p></li>
+<li><p><strong>nums</strong> (<em>int</em>) – Number of neighbouring data points to use</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -237,6 +420,27 @@ The default is 0.2.</p></li>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>1D-array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="PALC_opt.sv_gaussian">
+<code class="sig-prename descclassname"><span class="pre">PALC_opt.</span></code><code class="sig-name descname"><span class="pre">sv_gaussian</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/PALC_opt.html#sv_gaussian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#PALC_opt.sv_gaussian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute Gaussian distribution and flips the output if x is bigger than mir.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>float</em>) – Spatial point in  gaussian distribution.</p></li>
+<li><p><strong>sig</strong> (<em>float</em>) – Sigma of gaussian distribution.</p></li>
+<li><p><strong>offset</strong> (<em>float</em>) – Height of start of gaussian distribution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>coeff</strong> – Value of spatial point in gaussian distribution.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>

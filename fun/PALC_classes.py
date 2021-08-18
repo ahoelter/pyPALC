@@ -262,7 +262,7 @@ class PALC_configuration():
     def __init__(self, Lambda_gap=0, Lambda_y=0.2, x_H=0, y_H=2, constraint='PALC 2', use_gamma_LSA=False, gamma_LSA=[], \
                  use_weighting='Without', weighting_nu=1, weighting_factors=[], N=int(4), gap_handling='Without', strength_sm=1, \
                  last_angle_hm=[], gap_weights=[], weighting_weights=[], use_fixed_angle=False, fixed_angle=0, \
-                 directivity = 'Circular Piston', psi_n=[0.0524], gamma_n=[0], tolerance=0.1):
+                 directivity = 'Circular Piston', psi_n=[0.0524], gamma_n=[0], tolerance=1.0, freq_range=(200,8000)):
         self.x_H, self.y_H , self.Lambda_gap, self.Lambda_y = x_H, y_H, Lambda_gap, Lambda_y
         self.tolerance, self.psi_n, self.gamma_n            = tolerance, psi_n, gamma_n
         self.constraint, self.N, self.directivity           = constraint, N, directivity
@@ -272,6 +272,8 @@ class PALC_configuration():
         self.strength_sm, self.last_angle_hm                = strength_sm, last_angle_hm
         self.use_fixed_angle, self.fixed_angle              = use_fixed_angle, fixed_angle
         self.use_gamma_LSA, self.gamma_LSA                  = use_gamma_LSA, gamma_LSA
+        self.freq_range                                     = freq_range
+
 
     def store_config(self, *new_input):
         """
@@ -360,11 +362,13 @@ class SFP_configuration(PALC_configuration):
                  Lambda_y=0.2, x_H=0, y_H=2, dir_meas=np.zeros([2,120]), \
                  dir_meas_deg=np.zeros([2,120]), \
                  dir_meas_amp=[], gamma_n=[0], f=[], plot_dir_amp=[], \
-                 plot_dir_amp_meas=[[0],[0],[0]], plot_beta_meas=[0]):
-        self.dir_meas, self.f                = dir_meas, f 
-        self.dir_meas_deg, self.dir_meas_amp = dir_meas_deg, dir_meas_amp
+                 plot_dir_amp_meas=[[0],[0],[0]], plot_beta_meas=[0], \
+                 freq_range=(200,8000)):
+        self.dir_meas, self.f                     = dir_meas, f 
+        self.dir_meas_deg, self.dir_meas_amp      = dir_meas_deg, dir_meas_amp
         self.plot_dir_amp, self.plot_dir_amp_meas = plot_dir_amp, plot_dir_amp_meas
-        self.plot_beta_meas = plot_beta_meas
+        self.plot_beta_meas                       = plot_beta_meas
+        self.freq_range                           = freq_range
         super(SFP_configuration, self).__init__()
         
     def get_plot_dir_amp(self, H_post, f2plot, meas=False):
@@ -596,9 +600,14 @@ class Opt_weight():
         self.init          = False
         self.x_v, self.y_v = [0,0], [0,0]
         self.diffLS        = []
-        self.diffps        = {'n-1':100, 'lowest':[]}
+        self.diffps        = {'n-1':100, 'lowest':[],'same':0}
         self.w_ps          = {'n-1':[], 'lowest':[]}
         self.is2update     = 0
+        self.SPL_grad      = []
+        self.opt_ind       = 0
+        self.diffgradLS    = []
+        self.x_ref         = []
+        self.ref_ind       = []
         
     def calc_init(self):
         """
@@ -651,10 +660,10 @@ class Opt_weight():
         """
         shift           = np.amax(self.SPL_interp)-ref
         self.SPL        = self.SPL - shift
-        self.SPL_interp = self.SPL_interp - shift
+        self.SPL_interp = self.SPL_interp - shift 
 
 
-    def shift2psval(self, PALC_config, diff_opt):
+    def shift2psval(self, PALC_config, diff_opt, num_iter):
         """
         Shifts the actual value to a list that stores the past value. These are
         used to check if the actual loop improved that the difference between
@@ -674,12 +683,16 @@ class Opt_weight():
             of while optimization loop. Otherwise False.
 
         """
+        if np.round(diff_opt, decimals=8) == np.round(self.diffps['n-1'], decimals=8):
+            self.diffps['same'] += 1
+        else:
+            self.diffps['same'] = 0
         if diff_opt > self.diffps['n-1']:
             self.diffps['lowest'].append(self.diffps['n-1'])
             self.w_ps['lowest'].append(self.w_ps['n-1'])
         self.diffps['n-1'] = diff_opt
         self.w_ps['n-1'] = np.array(PALC_config.weighting_weights[:])
-        if len(self.w_ps['lowest']) == 5:
+        if len(self.w_ps['lowest']) == 10 or self.diffps['same'] == 5 or num_iter==500:
             low_ind = np.argmin(self.diffps['lowest'])
             PALC_config.weighting_weights = self.w_ps['lowest'][low_ind][:]
             return True

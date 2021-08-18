@@ -57,9 +57,9 @@ contains the “pyPALC” folder.</p>
 <dl class="simple">
 <dt>The script is structured as follows:</dt><dd><ol class="arabic simple">
 <li><p>Import all necessary modules</p></li>
-<li><p>Definition objects for calculation and ColumnDataSources for visualization</p></li>
+<li><p>Definition of objects for calculation and ColumnDataSources for visualization</p></li>
 <li><p>Definition of callbacks</p></li>
-<li><p>Definition of usable widgets</p></li>
+<li><p>Definition of widgets</p></li>
 <li><p>Connection of widgets with callbacks</p></li>
 <li><p>Setting up all figures, tables and tabs</p></li>
 <li><p>Defining the start page (venue creation)</p></li>
@@ -68,38 +68,38 @@ contains the “pyPALC” folder.</p>
 </dl>
 <dl class="py data">
 <dt id="main.Bar_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Bar_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1012',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Bar_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Bar_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1013',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Bar_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the values of the bar plot of the PALC results.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.Bar_dict_ref">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Bar_dict_ref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1013',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Bar_dict_ref" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Bar_dict_ref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1014',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Bar_dict_ref" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the values of the bar plot of the reference results.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.Beamplot_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Beamplot_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1018',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Beamplot_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Beamplot_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1021',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Beamplot_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the SPL, start points, height and widtch of the beamplot (PALC and reference).</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.Homogeneity_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Homogeneity_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1011',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Homogeneity_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Homogeneity_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1012',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Homogeneity_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the computed homogeneity.</p>
-</dd></dl>
-
-<dl class="py data">
-<dt id="main.Opt_SPLoverX_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Opt_SPLoverX_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1016',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Opt_SPLoverX_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Contains SPL and distance values on the hinges of the target slope.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.Opt_arr">
 <code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Opt_arr</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;PALC_classes.Array_opt</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#main.Opt_arr" title="Permalink to this definition">¶</a></dt>
 <dd><p>Data of the optimized array</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="main.Opt_refpoint_dict">
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">Opt_refpoint_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1019',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.Opt_refpoint_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains SPL and distance values on the hinges of the target slope.</p>
 </dd></dl>
 
 <dl class="py data">
@@ -146,13 +146,13 @@ contains the “pyPALC” folder.</p>
 
 <dl class="py data">
 <dt id="main.SFP_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SFP_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1009',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SFP_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SFP_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1010',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SFP_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the sound pressure levels of PALC and reference computed by the CDPS model.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.SFPv_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SFPv_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1010',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SFPv_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SFPv_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1011',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SFPv_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the discrete venue slice points needed for visualization of <a class="reference internal" href="#main.SFP_dict" title="main.SFP_dict"><code class="xref any py py-data docutils literal notranslate"><span class="pre">SFP_dict</span></code></a>.</p>
 </dd></dl>
 
@@ -164,15 +164,28 @@ contains the “pyPALC” folder.</p>
 
 <dl class="py data">
 <dt id="main.SPLoverX_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SPLoverX_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1015',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SPLoverX_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SPLoverX_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1016',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SPLoverX_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the SPL values over distance between LSA reference point and the
-receiver positions normalized on 0 dB (if target slope, optimization region is used.</p>
+receiver positions normalized on 0 dB (if target slope, optimization region is used).</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.SPLoverX_optreg">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SPLoverX_optreg</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1017',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SPLoverX_optreg" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SPLoverX_optreg</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1020',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SPLoverX_optreg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains edges of the drawn polygon which indicates the optimization region</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="main.SPLoverX_ref">
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SPLoverX_ref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">&lt;PALC_classes.Opt_weight</span> <span class="pre">object&gt;</span></em><a class="headerlink" href="#main.SPLoverX_ref" title="Permalink to this definition">¶</a></dt>
+<dd><p>Result data of SPL over distance computation of reference LSA</p>
+</dd></dl>
+
+<dl class="py data">
+<dt id="main.SPLoverX_ref_dict">
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">SPLoverX_ref_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1017',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.SPLoverX_ref_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Contains the SPL values over distance between LSA reference point and the
+receiver positions normalized on 0 dB of reference LSA.</p>
 </dd></dl>
 
 <dl class="py data">
@@ -241,13 +254,13 @@ Triggered if user taps on a line in figure <a class="reference internal" href="#
 
 <dl class="py data">
 <dt id="main.audience_line_tap_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">audience_line_tap_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1020',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.audience_line_tap_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">audience_line_tap_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1023',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.audience_line_tap_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the tapped line of the venue slice plot.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.button_input">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">button_input</span></code><em class="property"> <span class="pre">=</span> <span class="pre">FileInput(id='1060',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.button_input" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">button_input</span></code><em class="property"> <span class="pre">=</span> <span class="pre">FileInput(id='1063',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.button_input" title="Permalink to this definition">¶</a></dt>
 <dd><p>FileInput widget to upload measured (complex) directivity data. Triggers
 <a class="reference internal" href="#main.upload_directivity" title="main.upload_directivity"><code class="xref any py py-func docutils literal notranslate"><span class="pre">upload_directivity</span></code></a>.</p>
 </dd></dl>
@@ -290,7 +303,7 @@ Triggered by <a class="reference internal" href="#main.check_PAL_button" title="
 
 <dl class="py data">
 <dt id="main.check_PAL_button">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">check_PAL_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1056',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.check_PAL_button" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">check_PAL_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1059',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.check_PAL_button" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to check the created venue slice. Triggers <a class="reference internal" href="#main.check_PAL" title="main.check_PAL"><code class="xref any py py-func docutils literal notranslate"><span class="pre">check_PAL</span></code></a></p>
 </dd></dl>
 
@@ -372,28 +385,28 @@ Triggered by <a class="reference internal" href="#main.save_prev_line_button" ti
 
 <dl class="py data">
 <dt id="main.directivity_dict_plt">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">directivity_dict_plt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1014',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.directivity_dict_plt" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">directivity_dict_plt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1015',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.directivity_dict_plt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the directivity of 100 Hz, 1 kHz and 10 kHz used in SFP (CDPS-model).
 Plotted on the second page.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.end_point_x">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">end_point_x</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1049',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.end_point_x" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">end_point_x</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1052',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.end_point_x" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget of end point of audience lines in x-direction. Triggers
 <a class="reference internal" href="#main.update_point" title="main.update_point"><code class="xref any py py-func docutils literal notranslate"><span class="pre">update_point</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.end_point_y">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">end_point_y</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1050',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.end_point_y" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">end_point_y</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1053',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.end_point_y" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget of end point of audience lines in y-direction. Triggers
 <a class="reference internal" href="#main.update_point" title="main.update_point"><code class="xref any py py-func docutils literal notranslate"><span class="pre">update_point</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gamma_ref_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gamma_ref_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1008',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gamma_ref_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gamma_ref_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1009',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gamma_ref_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the tilt angles of the reference LSA.</p>
 </dd></dl>
 
@@ -512,27 +525,27 @@ has changed. Always calls <a class="reference internal" href="gui_algorithm_sfp.
 
 <dl class="py data">
 <dt id="main.gui_Lambda_gap">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_Lambda_gap</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1064',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_Lambda_gap" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_Lambda_gap</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1067',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_Lambda_gap" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput to define gaps between the LS cabinets. Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a></p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_Lambda_y">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_Lambda_y</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1058',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_Lambda_y" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_Lambda_y</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1061',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_Lambda_y" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to define the height of the used LSA cabinets. Triggers
 <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_N_LS">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_N_LS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1061',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_N_LS" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_N_LS</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1064',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_N_LS" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the number of LS cabinets in LSA. Triggers
 <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_PALC_alg">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_PALC_alg</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1072',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_PALC_alg" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_PALC_alg</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1075',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_PALC_alg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose the type of the algorithm. Either PALC1 (Splay angles
 are equal), PALC2 (Splay angles depend on distance to receiver), PALC3
 Similar to PALC2, tan of splay angles is used). Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
@@ -540,14 +553,14 @@ Similar to PALC2, tan of splay angles is used). Triggers <a class="reference int
 
 <dl class="py data">
 <dt id="main.gui_clear_result_fig">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_clear_result_fig</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1088',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_clear_result_fig" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_clear_result_fig</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1091',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_clear_result_fig" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to clear the plotted venue slice with LSA and rays. Triggers
 <a class="reference internal" href="#main.clear_result_fig" title="main.clear_result_fig"><code class="xref any py py-func docutils literal notranslate"><span class="pre">clear_result_fig</span></code></a></p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_directivity">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_directivity</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1059',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_directivity" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_directivity</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1062',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_directivity" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose a directivity of the LSA cabinets used in the Sound
 Field Prediction. Can be either Circular Piston, Line Piston, Comined Circular
 and Line Piston (x-over at 1.5 kHz) or Measured Loudspeaker Data. Triggers
@@ -556,33 +569,33 @@ and Line Piston (x-over at 1.5 kHz) or Measured Loudspeaker Data. Triggers
 
 <dl class="py data">
 <dt id="main.gui_discrete_angles">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_discrete_angles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1066',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_discrete_angles" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_discrete_angles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1069',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_discrete_angles" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the discrete tilt angles. Triggers <a class="reference internal" href="#main.get_discrete_angles" title="main.get_discrete_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_discrete_angles</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_download_result">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_download_result</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1089',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_download_result" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_download_result</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1092',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_download_result" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to download the PALC tilt angles in .csv format</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_f_beam">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_f_beam</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1090',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_f_beam" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_f_beam</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1095',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_f_beam" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose the plotted frequency in the beamplot. Triggers
 <a class="reference internal" href="#main.get_beamplot" title="main.get_beamplot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_beamplot</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_fixed_first_angle">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_fixed_first_angle</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1085',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_fixed_first_angle" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_fixed_first_angle</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1088',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_fixed_first_angle" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the fixed angle of the heighest LSA cabinet.
 Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_gap_handling">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_gap_handling</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1073',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_gap_handling" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_gap_handling</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1076',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_gap_handling" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose the gap handling approach. Either Without (No gap
 handling), Hard Margin (based on assumed splay angles, gaps are totally avoided),
 Soft Margin (gaps are lower weighted). Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
@@ -590,7 +603,7 @@ Soft Margin (gaps are lower weighted). Triggers <a class="reference internal" hr
 
 <dl class="py data">
 <dt id="main.gui_opt_weight_link">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_opt_weight_link</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1076',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_opt_weight_link" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_opt_weight_link</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1079',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_opt_weight_link" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose number of hinges in target slope when ‘Target Slope’
 is chosen in <a class="reference internal" href="#main.gui_weighting" title="main.gui_weighting"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_weighting</span></code></a>. The number of choosable hinges depends on
 the number of audience lines.</p>
@@ -598,68 +611,68 @@ the number of audience lines.</p>
 
 <dl class="py data">
 <dt id="main.gui_psi_n">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_psi_n</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1057',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_psi_n" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_psi_n</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1060',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_psi_n" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to define the initial splay / aperture angle of the LSA
 cabinets. Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_ref_array">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_array</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1067',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_array" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_array</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1070',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_array" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose the type of the reference LSA. Triggers
 <a class="reference internal" href="#main.reference_array_setting" title="main.reference_array_setting"><code class="xref any py py-func docutils literal notranslate"><span class="pre">reference_array_setting</span></code></a></p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_ref_discrete_angles">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_discrete_angles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1068',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_discrete_angles" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_discrete_angles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1071',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_discrete_angles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose if discrete tilt angles of <a class="reference internal" href="#main.gui_discrete_angles" title="main.gui_discrete_angles"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_discrete_angles</span></code></a>
 shall be used. Triggers <a class="reference internal" href="#main.get_ref_array_angles" title="main.get_ref_array_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_ref_array_angles</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_ref_start">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_start</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1069',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_start" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_start</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1072',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_start" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the angle of the heighest LSA cabinet in reference
 array.  Triggers <a class="reference internal" href="#main.get_ref_array_angles" title="main.get_ref_array_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_ref_array_angles</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_ref_step_stop">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_step_stop</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1070',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_step_stop" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_step_stop</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1073',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_step_stop" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the inter cabinet angle of the reference array.
 Triggers <a class="reference internal" href="#main.get_ref_array_angles" title="main.get_ref_array_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_ref_array_angles</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_ref_userdef">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_userdef</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextAreaInput(id='1071',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_userdef" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_ref_userdef</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextAreaInput(id='1074',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_ref_userdef" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextAreaInput widget to enter user defined tilt angles of the reference array.
 Triggers <a class="reference internal" href="#main.get_ref_array_angles" title="main.get_ref_array_angles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_ref_array_angles</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_start">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_start</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Toggle(id='1087',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_start" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_start</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Toggle(id='1090',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_start" title="Permalink to this definition">¶</a></dt>
 <dd><p>Toggle widget to start the PALC and SFP computation.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_step">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_step</span></code><em class="property"> <span class="pre">=</span> <span class="pre">RadioButtonGroup(id='1169',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_step" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_step</span></code><em class="property"> <span class="pre">=</span> <span class="pre">RadioButtonGroup(id='1174',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_step" title="Permalink to this definition">¶</a></dt>
 <dd><p>RadioButtonGroup widget to switch between the different pages.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_strength_smarg">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_strength_smarg</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Slider(id='1074',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_strength_smarg" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_strength_smarg</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Slider(id='1077',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_strength_smarg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Slider widget to set the strength of soft margin approach, if chosen in
 <a class="reference internal" href="#main.gui_gap_handling" title="main.gui_gap_handling"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_gap_handling</span></code></a>. Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_tolerance">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_tolerance</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Slider(id='1083',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_tolerance" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_tolerance</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Slider(id='1086',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_tolerance" title="Permalink to this definition">¶</a></dt>
 <dd><p>Slider widget to set the tolerance, which is the break out condition of the
 PALC computation. It is the distance of covered region to the first audience
 position in m. Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
@@ -667,27 +680,27 @@ position in m. Triggers <a class="reference internal" href="#main.get_value" tit
 
 <dl class="py data">
 <dt id="main.gui_use_dangles">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_use_dangles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1065',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_use_dangles" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_use_dangles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1068',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_use_dangles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose if discrete tilt angles shall be used. Triggers
 <a class="reference internal" href="#main.choose_dangles" title="main.choose_dangles"><code class="xref any py py-func docutils literal notranslate"><span class="pre">choose_dangles</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_use_fixed_angles">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_use_fixed_angles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1084',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_use_fixed_angles" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_use_fixed_angles</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1087',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_use_fixed_angles" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose if the heighest LSA cabinet shall be fixed on a
 specific angle.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_weighting">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_weighting</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1075',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_weighting" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_weighting</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1078',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_weighting" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to choose the weighting approach. Triggers <a class="reference internal" href="#main.weighting_select" title="main.weighting_select"><code class="xref any py py-func docutils literal notranslate"><span class="pre">weighting_select</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_weighting_nu">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_weighting_nu</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Slider(id='1078',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_weighting_nu" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_weighting_nu</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Slider(id='1081',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_weighting_nu" title="Permalink to this definition">¶</a></dt>
 <dd><p>Slider widget to set the strength of the weighting if ‘Linear Spacing’ or
 ‘Logarithmic Spacing’ is chosen in <a class="reference internal" href="#main.gui_weighting" title="main.gui_weighting"><code class="xref any py py-data docutils literal notranslate"><span class="pre">gui_weighting</span></code></a>. Triggers
 <a class="reference internal" href="#main.store_weighting_nu" title="main.store_weighting_nu"><code class="xref any py py-func docutils literal notranslate"><span class="pre">store_weighting_nu</span></code></a>.</p>
@@ -695,53 +708,53 @@ specific angle.</p>
 
 <dl class="py data">
 <dt id="main.gui_which_beam">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_which_beam</span></code><em class="property"> <span class="pre">=</span> <span class="pre">CheckboxGroup(id='1091',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_which_beam" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_which_beam</span></code><em class="property"> <span class="pre">=</span> <span class="pre">CheckboxGroup(id='1096',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_which_beam" title="Permalink to this definition">¶</a></dt>
 <dd><p>CheckboxGroup widget to choose wheter PALC and/or Reference results shall
 be shown as a beamplot. Triggers <a class="reference internal" href="#main.get_beamplot" title="main.get_beamplot"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_beamplot</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_x_H">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_x_H</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1062',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_x_H" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_x_H</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1065',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_x_H" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the mounting point in x-direction (front position
 of the heighest LS cabinet. Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.gui_y_H">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_y_H</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1063',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_y_H" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">gui_y_H</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1066',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.gui_y_H" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to enter the mounting height of the LSA (top front of the
 highest LS cabinet. Triggers <a class="reference internal" href="#main.get_value" title="main.get_value"><code class="xref any py py-func docutils literal notranslate"><span class="pre">get_value</span></code></a></p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.guilineplt">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guilineplt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1002',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guilineplt" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guilineplt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1003',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guilineplt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the drawn audience lines based on user input. After compatibilization
 to the PALC algorithm, shows the lines used for PALC and SFP.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.guinalplt">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guinalplt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1003',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guinalplt" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guinalplt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1004',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guinalplt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains non audience lines, e.g., gaps between audience line.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.guipal">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guipal</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1001',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guipal" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guipal</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1002',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guipal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains data points that are given by user. Visualized in venue slice plot.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.guisfpplt">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guisfpplt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1004',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guisfpplt" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">guisfpplt</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1005',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.guisfpplt" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains audience lines that are not used for PALC calcution but for SFP.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.line_discretization">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">line_discretization</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1051',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.line_discretization" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">line_discretization</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1054',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.line_discretization" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget to define the discretization in points per m of audience lines</p>
 </dd></dl>
 
@@ -749,44 +762,44 @@ to the PALC algorithm, shows the lines used for PALC and SFP.</p>
 <dt id="main.optimal_SPLoverX">
 <code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">optimal_SPLoverX</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#optimal_SPLoverX"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.optimal_SPLoverX" title="Permalink to this definition">¶</a></dt>
 <dd><p>Triggered if user draws in <a class="reference internal" href="#main.pSPLoverX" title="main.pSPLoverX"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSPLoverX</span></code></a>. Sets is2update attribute of
-:any:Opt_w` to zero. <a class="reference internal" href="#main.Opt_SPLoverX_dict" title="main.Opt_SPLoverX_dict"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_SPLoverX_dict</span></code></a> is automatically updated.</p>
+:any:Opt_w` to zero. <code class="xref any docutils literal notranslate"><span class="pre">Opt_SPLoverX_dict</span></code> is automatically updated.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.p">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">p</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1183',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.p" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">p</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1193',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.p" title="Permalink to this definition">¶</a></dt>
 <dd><p>Venue Slice Plot</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pBar">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBar</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1809',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBar" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBar</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1866',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBar" title="Permalink to this definition">¶</a></dt>
 <dd><p>Barplot of PALC results. Number of Positions that contain SPL values on
 y-axis.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pBarref">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBarref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1848',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBarref" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBarref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1905',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBarref" title="Permalink to this definition">¶</a></dt>
 <dd><p>Barplot of reference array. Number of Positions that contain SPL values on
 y-axis.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pBeam">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBeam</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1701',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBeam" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBeam</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1754',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBeam" title="Permalink to this definition">¶</a></dt>
 <dd><p>Beamplot of PALC results</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pBeam_ref">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBeam_ref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1755',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBeam_ref" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pBeam_ref</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1810',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pBeam_ref" title="Permalink to this definition">¶</a></dt>
 <dd><p>Beamplot of reference array</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pHom">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pHom</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1628',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pHom" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pHom</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1677',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pHom" title="Permalink to this definition">¶</a></dt>
 <dd><p>Frequency Response Plot of reference array of each discrete point on venue
 slice. Color of the responses belongs to the discrete points in figure
 <a class="reference internal" href="#main.pSFPv" title="main.pSFPv"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSFPv</span></code></a>.</p>
@@ -794,7 +807,7 @@ slice. Color of the responses belongs to the discrete points in figure
 
 <dl class="py data">
 <dt id="main.pSFP">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pSFP</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1552',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pSFP" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pSFP</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1601',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pSFP" title="Permalink to this definition">¶</a></dt>
 <dd><p>Frequency Response Plot of PALC results of each discrete point on venue
 slice. Color of the responses belongs to the discrete points in figure
 <a class="reference internal" href="#main.pSFPv" title="main.pSFPv"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSFPv</span></code></a>.</p>
@@ -802,35 +815,35 @@ slice. Color of the responses belongs to the discrete points in figure
 
 <dl class="py data">
 <dt id="main.pSFPv">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pSFPv</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1510',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pSFPv" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pSFPv</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1559',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pSFPv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Venue Slice Plot of SFP, shows the discrete points of the venue slice in
 color of the frequency responses in <a class="reference internal" href="#main.pSFP" title="main.pSFP"><code class="xref any py py-data docutils literal notranslate"><span class="pre">pSFP</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pSPLoverX">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pSPLoverX</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1406',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pSPLoverX" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pSPLoverX</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1417',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pSPLoverX" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sound Pressure over Distance Plot. If Target Slope weighting is chosen, the
 target slope can be adjusted within this figure.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.p_equal_axis">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">p_equal_axis</span></code><em class="property"> <span class="pre">=</span> <span class="pre">RadioGroup(id='1170',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.p_equal_axis" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">p_equal_axis</span></code><em class="property"> <span class="pre">=</span> <span class="pre">RadioGroup(id='1175',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.p_equal_axis" title="Permalink to this definition">¶</a></dt>
 <dd><p>RadioGroup widget to set the scaling of the venue slice plot. Triggers
 <a class="reference internal" href="#main.scale_p_axis" title="main.scale_p_axis"><code class="xref any py py-func docutils literal notranslate"><span class="pre">scale_p_axis</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.pdir">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pdir</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1328',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pdir" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">pdir</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Figure(id='1333',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.pdir" title="Permalink to this definition">¶</a></dt>
 <dd><p>Directivity Plot of 100 Hz, 1 kHz and 10 kHz to check used directivity in
 SFP and / or uploaded measured loudspeaker data.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.plot_patches">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">plot_patches</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1019',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.plot_patches" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">plot_patches</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1022',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.plot_patches" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the values to plot the LSA cabinets with bokeh’s patch function.</p>
 </dd></dl>
 
@@ -842,13 +855,13 @@ SFP and / or uploaded measured loudspeaker data.</p>
 
 <dl class="py data">
 <dt id="main.plt_venue_slice_1">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">plt_venue_slice_1</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1006',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.plt_venue_slice_1" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">plt_venue_slice_1</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1007',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.plt_venue_slice_1" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains data to plot the LSA cabinets in venue slice plot.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.plt_venue_slice_2">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">plt_venue_slice_2</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1005',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.plt_venue_slice_2" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">plt_venue_slice_2</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1006',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.plt_venue_slice_2" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the rays from LSA cabinets to the venue slice in venue slice plot.</p>
 </dd></dl>
 
@@ -892,7 +905,7 @@ Triggered by <a class="reference internal" href="#main.remove_line_button" title
 
 <dl class="py data">
 <dt id="main.remove_line_button">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">remove_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1053',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.remove_line_button" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">remove_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1056',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.remove_line_button" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to remove audience lines. Triggers <a class="reference internal" href="#main.remove_line" title="main.remove_line"><code class="xref any py py-func docutils literal notranslate"><span class="pre">remove_line</span></code></a></p>
 </dd></dl>
 
@@ -914,14 +927,14 @@ Triggered by <a class="reference internal" href="#main.remove_sel_line_button" t
 
 <dl class="py data">
 <dt id="main.remove_sel_line_button">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">remove_sel_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1055',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.remove_sel_line_button" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">remove_sel_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1058',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.remove_sel_line_button" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to remove a audience line in front of the selected line. Triggers
 <a class="reference internal" href="#main.remove_sel_line" title="main.remove_sel_line"><code class="xref any py py-func docutils literal notranslate"><span class="pre">remove_sel_line</span></code></a></p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.results_dict">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">results_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1007',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.results_dict" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">results_dict</span></code><em class="property"> <span class="pre">=</span> <span class="pre">ColumnDataSource(id='1008',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.results_dict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains the tilt angles of the LSA cabinet computed by PALC.</p>
 </dd></dl>
 
@@ -951,13 +964,13 @@ Checks the defined conditions defined in <a class="reference internal" href="che
 
 <dl class="py data">
 <dt id="main.save_line_button">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">save_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1052',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.save_line_button" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">save_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1055',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.save_line_button" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to save audience lines. Triggers <a class="reference internal" href="#main.save_line" title="main.save_line"><code class="xref any py py-func docutils literal notranslate"><span class="pre">save_line</span></code></a></p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.save_prev_line_button">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">save_prev_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1054',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.save_prev_line_button" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">save_prev_line_button</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1057',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.save_prev_line_button" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget to save a audience line before the selected line. Triggers
 <a class="reference internal" href="#main.create_prev_line" title="main.create_prev_line"><code class="xref any py py-func docutils literal notranslate"><span class="pre">create_prev_line</span></code></a></p>
 </dd></dl>
@@ -1025,14 +1038,14 @@ visualize the output and sets the ranges of the figures.</p>
 
 <dl class="py data">
 <dt id="main.start_point_x">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">start_point_x</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1047',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.start_point_x" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">start_point_x</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1050',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.start_point_x" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget of start point of audience lines in x-direction. Triggers
 <a class="reference internal" href="#main.update_point" title="main.update_point"><code class="xref any py py-func docutils literal notranslate"><span class="pre">update_point</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.start_point_y">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">start_point_y</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1048',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.start_point_y" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">start_point_y</span></code><em class="property"> <span class="pre">=</span> <span class="pre">TextInput(id='1051',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.start_point_y" title="Permalink to this definition">¶</a></dt>
 <dd><p>TextInput widget of start point of audience lines in y-direction. Triggers
 <a class="reference internal" href="#main.update_point" title="main.update_point"><code class="xref any py py-func docutils literal notranslate"><span class="pre">update_point</span></code></a>.</p>
 </dd></dl>
@@ -1107,10 +1120,10 @@ four. Highlites the tapped line or venue point in <a class="reference internal" 
 <dl class="py function">
 <dt id="main.update_draw">
 <code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">update_draw</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/main.html#update_draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#main.update_draw" title="Permalink to this definition">¶</a></dt>
-<dd><p>Updates <a class="reference internal" href="#main.Opt_w" title="main.Opt_w"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_w</span></code></a>, <a class="reference internal" href="#main.Opt_SPLoverX_dict" title="main.Opt_SPLoverX_dict"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_SPLoverX_dict</span></code></a> and <a class="reference internal" href="#main.SPLoverX_optreg" title="main.SPLoverX_optreg"><code class="xref any py py-data docutils literal notranslate"><span class="pre">SPLoverX_optreg</span></code></a>,
+<dd><p>Updates <a class="reference internal" href="#main.Opt_w" title="main.Opt_w"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_w</span></code></a>, <code class="xref any docutils literal notranslate"><span class="pre">Opt_SPLoverX_dict</span></code> and <a class="reference internal" href="#main.SPLoverX_optreg" title="main.SPLoverX_optreg"><code class="xref any py py-data docutils literal notranslate"><span class="pre">SPLoverX_optreg</span></code></a>,
 when <a class="reference internal" href="#main.optimal_SPLoverX" title="main.optimal_SPLoverX"><code class="xref any py py-func docutils literal notranslate"><span class="pre">optimal_SPLoverX</span></code></a> function was triggered. This happens if the
 target slope weighting is chosen and the user changes the target slope.
-Triggered by data change of <a class="reference internal" href="#main.Opt_SPLoverX_dict" title="main.Opt_SPLoverX_dict"><code class="xref any py py-data docutils literal notranslate"><span class="pre">Opt_SPLoverX_dict</span></code></a>.</p>
+Triggered by data change of <code class="xref any docutils literal notranslate"><span class="pre">Opt_SPLoverX_dict</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1227,14 +1240,14 @@ of the angle of the fixed loudspeaker. Calls <a class="reference internal" href=
 
 <dl class="py data">
 <dt id="main.weighting_minus">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">weighting_minus</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1081',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.weighting_minus" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">weighting_minus</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1084',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.weighting_minus" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget that decreases the weightings strength by the value of
 <a class="reference internal" href="#main.weighting_step_size" title="main.weighting_step_size"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_step_size</span></code></a>.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt id="main.weighting_plus">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">weighting_plus</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1080',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.weighting_plus" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">weighting_plus</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Button(id='1083',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.weighting_plus" title="Permalink to this definition">¶</a></dt>
 <dd><p>Button widget that increases the weightings strength by the value of
 <a class="reference internal" href="#main.weighting_step_size" title="main.weighting_step_size"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_step_size</span></code></a>.</p>
 </dd></dl>
@@ -1264,7 +1277,7 @@ Triggered by <a class="reference internal" href="#main.gui_weighting" title="mai
 
 <dl class="py data">
 <dt id="main.weighting_step_size">
-<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">weighting_step_size</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1082',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.weighting_step_size" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname"><span class="pre">main.</span></code><code class="sig-name descname"><span class="pre">weighting_step_size</span></code><em class="property"> <span class="pre">=</span> <span class="pre">Select(id='1085',</span> <span class="pre">...)</span></em><a class="headerlink" href="#main.weighting_step_size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select widget to set the step size of <a class="reference internal" href="#main.weighting_plus" title="main.weighting_plus"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_plus</span></code></a> and
 <a class="reference internal" href="#main.weighting_minus" title="main.weighting_minus"><code class="xref any py py-data docutils literal notranslate"><span class="pre">weighting_minus</span></code></a>. Triggers <a class="reference internal" href="#main.update_weighting_step_size" title="main.update_weighting_step_size"><code class="xref any py py-func docutils literal notranslate"><span class="pre">update_weighting_step_size</span></code></a>.</p>
 </dd></dl>
