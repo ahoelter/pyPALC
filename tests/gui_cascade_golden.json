@@ -1,0 +1,2675 @@
+[
+[
+"page1",
+{
+"1.check_venue_button.button_type": "warning",
+"1.check_venue_button.disabled": false,
+"1.check_venue_button.label": "8. Get PALC Venue Proposal",
+"1.check_venue_button.visible": true,
+"1.end_x_input.disabled": false,
+"1.end_x_input.title": "2. End Position (x) of Audience Line in m",
+"1.end_x_input.value": "0",
+"1.end_x_input.visible": true,
+"1.end_y_input.disabled": false,
+"1.end_y_input.title": "5. End Position (y) of Audience Line in m",
+"1.end_y_input.value": "0",
+"1.end_y_input.visible": true,
+"1.insert_line_button.button_type": "success",
+"1.insert_line_button.disabled": false,
+"1.insert_line_button.label": "6. Add Line before Selected Line",
+"1.insert_line_button.visible": false,
+"1.lines_source.data": {
+"xlineplt": [],
+"ylineplt": []
+},
+"1.lines_source.selected": [],
+"1.non_audience_source.data": {
+"xnalplt": [],
+"ynalplt": []
+},
+"1.non_audience_source.selected": [],
+"1.points_per_meter_input.disabled": false,
+"1.points_per_meter_input.title": "3. Discretization: Number of Points per m",
+"1.points_per_meter_input.value": "1",
+"1.points_per_meter_input.visible": true,
+"1.remove_line_button.button_type": "danger",
+"1.remove_line_button.disabled": false,
+"1.remove_line_button.label": "7. Remove Last Audience Line",
+"1.remove_line_button.visible": true,
+"1.remove_selected_line_button.button_type": "danger",
+"1.remove_selected_line_button.disabled": false,
+"1.remove_selected_line_button.label": "7. Remove Selected Audience Line",
+"1.remove_selected_line_button.visible": false,
+"1.save_line_button.button_type": "success",
+"1.save_line_button.disabled": false,
+"1.save_line_button.label": "6. Save Current Audience Line",
+"1.save_line_button.visible": true,
+"1.sound_field_only_source.data": {
+"xsfpplt": [],
+"ysfpplt": []
+},
+"1.sound_field_only_source.selected": [],
+"1.start_x_input.disabled": false,
+"1.start_x_input.title": "1. Start Position (x) of Audience Line in m",
+"1.start_x_input.value": "0",
+"1.start_x_input.visible": true,
+"1.start_y_input.disabled": false,
+"1.start_y_input.title": "4. Start Position (y) of Audience Line in m",
+"1.start_y_input.value": "0",
+"1.start_y_input.visible": true,
+"1.tapped_line_source.data": {
+"tapped": []
+},
+"1.tapped_line_source.selected": [],
+"1.venue_error_info.disabled": false,
+"1.venue_error_info.text": "",
+"1.venue_error_info.visible": true,
+"2.aperture_input.disabled": false,
+"2.aperture_input.title": "9. PALC Aperture Angle in deg",
+"2.aperture_input.value": "3.0",
+"2.aperture_input.visible": true,
+"2.cabinet_height_input.disabled": false,
+"2.cabinet_height_input.title": "10. Loudspeaker Height in m",
+"2.cabinet_height_input.value": "0.2",
+"2.cabinet_height_input.visible": true,
+"2.directivity_select.disabled": false,
+"2.directivity_select.options": [
+[
+"Circular Piston",
+"Modeled: Circular Piston"
+],
+[
+"Line Piston",
+"Modeled: Line Piston"
+],
+[
+"Combined Circular/Line",
+"Modeled: Combined Circular/Line"
+],
+"Measured Loudspeaker Data"
+],
+"2.directivity_select.title": "11. Loudspeaker Directivity",
+"2.directivity_select.value": "Circular Piston",
+"2.directivity_select.visible": true,
+"2.directivity_source.data": {
+"sha1": "9615aa4d9d247f3ab20a660a60686330d7eb5a35",
+"size": 8962
+},
+"2.directivity_source.selected": [],
+"2.directivity_upload.disabled": false,
+"2.directivity_upload.value": "",
+"2.directivity_upload.visible": false,
+"3.cabinet_count_input.disabled": false,
+"3.cabinet_count_input.title": "12. Number of Loudspeaker Cabinets",
+"3.cabinet_count_input.value": "4",
+"3.cabinet_count_input.visible": true,
+"3.cabinet_gap_input.disabled": false,
+"3.cabinet_gap_input.title": "15. Gap between Cabinets in m",
+"3.cabinet_gap_input.value": "0",
+"3.cabinet_gap_input.visible": true,
+"3.discrete_angles_input.disabled": true,
+"3.discrete_angles_input.title": "17. Discrete Tilt Angles in deg (',': separator)",
+"3.discrete_angles_input.value": "",
+"3.discrete_angles_input.visible": true,
+"3.reference_angles_source.data": {
+"LS": [
+[
+1.0,
+2.0,
+3.0,
+4.0
+]
+],
+"gamma_ref": [
+[
+0.0,
+0.0,
+0.0,
+0.0
+]
+]
+},
+"3.reference_angles_source.selected": [],
+"3.reference_discrete_angles_select.disabled": true,
+"3.reference_discrete_angles_select.options": [
+"Yes",
+"No"
+],
+"3.reference_discrete_angles_select.title": "Reference Array: Use Angles of (17.)?",
+"3.reference_discrete_angles_select.value": "No",
+"3.reference_discrete_angles_select.visible": false,
+"3.reference_start_input.disabled": false,
+"3.reference_start_input.title": "Reference Array: Array Tilt Angle in deg",
+"3.reference_start_input.value": "0",
+"3.reference_start_input.visible": true,
+"3.reference_step_stop_input.disabled": true,
+"3.reference_step_stop_input.title": "Reference Array: Inter Cabinet Angle in deg",
+"3.reference_step_stop_input.value": "0",
+"3.reference_step_stop_input.visible": true,
+"3.reference_type_select.disabled": false,
+"3.reference_type_select.options": [
+"Straight",
+"Progressive",
+"Arc",
+"User Defined"
+],
+"3.reference_type_select.title": "Reference Array: Type",
+"3.reference_type_select.value": "Straight",
+"3.reference_type_select.visible": true,
+"3.reference_user_angles_input.disabled": false,
+"3.reference_user_angles_input.title": "User Defined Tilt Angles in deg (',': separator)",
+"3.reference_user_angles_input.value": "",
+"3.reference_user_angles_input.visible": false,
+"3.top_x_input.disabled": false,
+"3.top_x_input.title": "13. Uppermost Cabinet: x in m",
+"3.top_x_input.value": "0",
+"3.top_x_input.visible": true,
+"3.top_y_input.disabled": false,
+"3.top_y_input.title": "14. Uppermost Cabinet: y in m",
+"3.top_y_input.value": "2",
+"3.top_y_input.visible": true,
+"3.use_discrete_angles_select.disabled": false,
+"3.use_discrete_angles_select.options": [
+"No",
+"Yes"
+],
+"3.use_discrete_angles_select.title": "16. Use Discrete Tilt Angles?",
+"3.use_discrete_angles_select.value": "No",
+"3.use_discrete_angles_select.visible": true,
+"4.clear_results_button.button_type": "danger",
+"4.clear_results_button.disabled": false,
+"4.clear_results_button.label": "27. Delete Result Visualization",
+"4.clear_results_button.visible": true,
+"4.fixed_angle_input.disabled": true,
+"4.fixed_angle_input.title": "25. Angle of Uppermost Cabinet in deg",
+"4.fixed_angle_input.value": "0.0",
+"4.fixed_angle_input.visible": true,
+"4.fixed_angle_text.disabled": false,
+"4.fixed_angle_text.text": "Max: 0, Min: 0",
+"4.fixed_angle_text.visible": true,
+"4.frequency_range_slider.disabled": false,
+"4.frequency_range_slider.end": 20000,
+"4.frequency_range_slider.start": 0,
+"4.frequency_range_slider.step": 20,
+"4.frequency_range_slider.title": "Frequency Range",
+"4.frequency_range_slider.value": [
+200,
+8000
+],
+"4.frequency_range_slider.visible": true,
+"4.gap_handling_select.disabled": false,
+"4.gap_handling_select.options": [
+"Without",
+"Hard Margin",
+"Soft Margin"
+],
+"4.gap_handling_select.title": "19. Gap Handling Approach",
+"4.gap_handling_select.value": "Without",
+"4.gap_handling_select.visible": true,
+"4.hinges_select.disabled": false,
+"4.hinges_select.options": [
+"0",
+"1",
+"2"
+],
+"4.hinges_select.title": "Hinges in Target",
+"4.hinges_select.value": "0",
+"4.hinges_select.visible": false,
+"4.nu_minus_button.button_type": "danger",
+"4.nu_minus_button.disabled": true,
+"4.nu_minus_button.label": "-",
+"4.nu_minus_button.visible": true,
+"4.nu_plus_button.button_type": "success",
+"4.nu_plus_button.disabled": true,
+"4.nu_plus_button.label": "+",
+"4.nu_plus_button.visible": true,
+"4.nu_step_select.disabled": true,
+"4.nu_step_select.options": [
+"0.01",
+"0.05",
+"0.10",
+"0.50"
+],
+"4.nu_step_select.title": "",
+"4.nu_step_select.value": "0.05",
+"4.nu_step_select.visible": true,
+"4.palc_variant_select.disabled": false,
+"4.palc_variant_select.options": [
+"PALC 1",
+"PALC 2",
+"PALC 3"
+],
+"4.palc_variant_select.title": "18. PALC-Algorithm",
+"4.palc_variant_select.value": "PALC 2",
+"4.palc_variant_select.visible": true,
+"4.reference_spl_over_distance_source.data": {
+"SPL": [
+[
+0
+],
+[
+0
+]
+],
+"x": [
+[
+0
+],
+[
+0
+]
+],
+"x_v": [
+[
+0
+],
+[
+0
+]
+],
+"y_v": [
+[
+0
+],
+[
+0
+]
+]
+},
+"4.reference_spl_over_distance_source.selected": [],
+"4.results_source.data": {
+"a_num_LS": [],
+"b_gamma_tilt_deg": [],
+"c_gamma_tilt_deg_diff": []
+},
+"4.results_source.selected": [],
+"4.soft_margin_slider.disabled": true,
+"4.soft_margin_slider.end": 1.9,
+"4.soft_margin_slider.start": 0.1,
+"4.soft_margin_slider.step": 0.05,
+"4.soft_margin_slider.title": "20. Strength of Soft Margin",
+"4.soft_margin_slider.value": 1.0,
+"4.soft_margin_slider.visible": true,
+"4.spl_over_distance_figure.disabled": false,
+"4.spl_over_distance_figure.frame_height": null,
+"4.spl_over_distance_figure.min_border": 5,
+"4.spl_over_distance_figure.title": "Title",
+"4.spl_over_distance_figure.visible": true,
+"4.spl_over_distance_figure.x_range": [
+"DataRange1d",
+null,
+null
+],
+"4.spl_over_distance_figure.y_range": [
+"Range1d",
+-15,
+0.3
+],
+"4.spl_over_distance_source.data": {
+"SPL": [
+[
+0
+],
+[
+0
+]
+],
+"x": [
+[
+0
+],
+[
+0
+]
+],
+"x_v": [
+[
+0
+],
+[
+0
+]
+],
+"y_v": [
+[
+0
+],
+[
+0
+]
+]
+},
+"4.spl_over_distance_source.selected": [],
+"4.start_toggle.active": false,
+"4.start_toggle.button_type": "success",
+"4.start_toggle.disabled": true,
+"4.start_toggle.label": "26. PALC Run",
+"4.start_toggle.visible": true,
+"4.target_reference_source.data": {
+"SPL": [
+0
+],
+"x_ref": [
+10
+],
+"x_v": [
+0
+],
+"y_v": [
+0
+]
+},
+"4.target_reference_source.selected": [],
+"4.target_region_source.data": {
+"x": [
+0,
+0,
+0,
+0
+],
+"y": [
+0,
+0,
+0,
+0
+]
+},
+"4.target_region_source.selected": [],
+"4.target_source.data": {
+"SPL": [
+[
+0
+],
+[
+0
+]
+],
+"x": [
+[
+0
+],
+[
+0
+]
+],
+"x_v": [
+0,
+0
+],
+"y_v": [
+0,
+0
+]
+},
+"4.target_source.selected": [],
+"4.tolerance_slider.disabled": false,
+"4.tolerance_slider.end": 5,
+"4.tolerance_slider.start": 0.05,
+"4.tolerance_slider.step": 0.05,
+"4.tolerance_slider.title": "23. Tolerance (Abort Criterion) in m",
+"4.tolerance_slider.value": 1.0,
+"4.tolerance_slider.visible": true,
+"4.use_fixed_angle_select.disabled": true,
+"4.use_fixed_angle_select.options": [
+"No",
+"Yes"
+],
+"4.use_fixed_angle_select.title": "24. Fix Angle of Uppermost Cabinet?",
+"4.use_fixed_angle_select.value": "No",
+"4.use_fixed_angle_select.visible": true,
+"4.weighting_nu_slider.disabled": true,
+"4.weighting_nu_slider.end": 2.15443469,
+"4.weighting_nu_slider.start": 0.215443469,
+"4.weighting_nu_slider.step": 0.01,
+"4.weighting_nu_slider.title": "Weighting Parameter \u03bd",
+"4.weighting_nu_slider.value": 1.0,
+"4.weighting_nu_slider.visible": true,
+"4.weighting_select.disabled": false,
+"4.weighting_select.options": [
+"Without",
+"Linear Spacing",
+"Logarithmic Spacing",
+"Target Slope"
+],
+"4.weighting_select.title": "21. Weighting",
+"4.weighting_select.value": "Without",
+"4.weighting_select.visible": true,
+"5.beam_checkbox.active": [],
+"5.beam_checkbox.disabled": true,
+"5.beam_checkbox.visible": true,
+"5.beam_figure.disabled": false,
+"5.beam_figure.frame_height": null,
+"5.beam_figure.min_border": 5,
+"5.beam_figure.title": "Title",
+"5.beam_figure.visible": false,
+"5.beam_figure.x_range": [
+"DataRange1d",
+null,
+null
+],
+"5.beam_figure.y_range": [
+"DataRange1d",
+null,
+null
+],
+"5.beam_frequency_select.disabled": false,
+"5.beam_frequency_select.options": [
+"63",
+"125",
+"250",
+"500",
+"1000",
+"2000",
+"4000",
+"8000",
+"16000"
+],
+"5.beam_frequency_select.title": "Frequency in Hz",
+"5.beam_frequency_select.value": "63",
+"5.beam_frequency_select.visible": true,
+"5.beam_source.data": {
+"sha1": "8a376744e81199807207aaff97ca8f42bc6222d5",
+"size": 100470
+},
+"5.beam_source.selected": [],
+"5.histogram_source.data": {
+"top": [
+[
+0
+],
+[
+0
+]
+],
+"x": [
+[
+0
+],
+[
+0
+]
+]
+},
+"5.histogram_source.selected": [],
+"5.homogeneity_source.data": {
+"H": [
+[
+0
+],
+[
+0
+]
+],
+"H_dist_high": [
+[
+0
+],
+[
+0
+]
+],
+"H_dist_low": [
+[
+0
+],
+[
+0
+]
+],
+"H_str": [
+[
+0
+],
+[
+0
+]
+],
+"f": [
+[
+0
+],
+[
+0
+]
+]
+},
+"5.homogeneity_source.selected": [],
+"5.reference_beam_figure.disabled": false,
+"5.reference_beam_figure.frame_height": null,
+"5.reference_beam_figure.min_border": 5,
+"5.reference_beam_figure.title": "Title",
+"5.reference_beam_figure.visible": false,
+"5.reference_beam_figure.x_range": [
+"DataRange1d",
+null,
+null
+],
+"5.reference_beam_figure.y_range": [
+"DataRange1d",
+null,
+null
+],
+"5.sound_field_source.data": {
+"f": [
+[
+0
+],
+[
+0
+]
+],
+"foo": [
+0,
+1
+],
+"p_SPL": [
+[
+0
+],
+[
+0
+]
+],
+"p_SPL_ref": [
+[
+0
+],
+[
+0
+]
+]
+},
+"5.sound_field_source.selected": [],
+"5.venue_points_figure.disabled": false,
+"5.venue_points_figure.frame_height": null,
+"5.venue_points_figure.min_border": 5,
+"5.venue_points_figure.title": "Title",
+"5.venue_points_figure.visible": true,
+"5.venue_points_figure.x_range": [
+"DataRange1d",
+null,
+null
+],
+"5.venue_points_figure.y_range": [
+"DataRange1d",
+null,
+null
+],
+"5.venue_points_source.data": {
+"foo": [
+0,
+1
+],
+"x_vert": [
+[
+0
+],
+[
+0
+]
+],
+"y_vert": [
+[
+0
+],
+[
+0
+]
+]
+},
+"5.venue_points_source.selected": [],
+"app.cabinet_patches_source.data": {
+"x_list": [],
+"x_list_ref": [],
+"y_list": [],
+"y_list_ref": []
+},
+"app.cabinet_patches_source.selected": [],
+"app.config_error_info.disabled": false,
+"app.config_error_info.text": "",
+"app.config_error_info.visible": true,
+"app.hit_points_source.data": {
+"seg_pos_start_x": [],
+"seg_pos_start_y": [],
+"seg_pos_stop_x": [],
+"seg_pos_stop_y": [],
+"seg_pos_x": [],
+"seg_pos_y": []
+},
+"app.hit_points_source.selected": [],
+"app.page_select.active": 1,
+"app.page_select.button_type": "primary",
+"app.page_select.disabled": false,
+"app.page_select.visible": true,
+"app.rays_source.data": {
+"x_c_n_unitn": [],
+"x_c_n_unitn_psi1": [],
+"x_c_n_unitn_psi2": [],
+"x_fin_unitn_start_stop": [],
+"x_start_stop": [],
+"x_start_unitn_start": [],
+"x_stop_unitn_stop": [],
+"y_c_n_unitn": [],
+"y_c_n_unitn_psi1": [],
+"y_c_n_unitn_psi2": [],
+"y_fin_unitn_start_stop": [],
+"y_start_stop": [],
+"y_start_unitn_start": [],
+"y_stop_unitn_stop": []
+},
+"app.rays_source.selected": [],
+"app.venue_axes_select.active": 2,
+"app.venue_axes_select.disabled": false,
+"app.venue_axes_select.visible": true,
+"app.venue_figure.disabled": false,
+"app.venue_figure.frame_height": 478,
+"app.venue_figure.min_border": 5,
+"app.venue_figure.title": "Title",
+"app.venue_figure.visible": true,
+"app.venue_figure.x_range": [
+"DataRange1d",
+null,
+null
+],
+"app.venue_figure.y_range": [
+"DataRange1d",
+null,
+null
+],
+"config.Lambda_gap": 0,
+"config.Lambda_y": 0.2,
+"config.N": 4,
+"config.constraint": "PALC 2",
+"config.directivity": "Circular Piston",
+"config.fixed_angle": 0,
+"config.freq_range": [
+200,
+8000
+],
+"config.gamma_LSA": [],
+"config.gap_handling": "Without",
+"config.psi_n": [
+0.052359878,
+0.052359878,
+0.052359878,
+0.052359878
+],
+"config.strength_sm": 1,
+"config.tolerance": 1.0,
+"config.use_fixed_angle": false,
+"config.use_gamma_LSA": false,
+"config.use_weighting": "Without",
+"config.weighting_nu": 1,
+"config.x_H": 0,
+"config.y_H": 2,
+"document.model_count": 183,
+"error": null
+}
+],
+[
+"sx",
+{
+"1.start_x_input.value": "2"
+}
+],
+[
+"sy",
+{}
+],
+[
+"ex",
+{
+"1.end_x_input.value": "10"
+}
+],
+[
+"ey",
+{
+"1.end_y_input.value": "1"
+}
+],
+[
+"save",
+{
+"1.lines_source.data": {
+"xlineplt": [
+[
+2.0,
+10.0
+]
+],
+"ylineplt": [
+[
+0.0,
+1.0
+]
+]
+},
+"4.spl_over_distance_figure.x_range": [
+"Range1d",
+-2,
+12.0
+],
+"5.beam_figure.frame_height": 475,
+"5.beam_figure.x_range": [
+"Range1d",
+-2,
+12.0
+],
+"5.beam_figure.y_range": [
+"Range1d",
+-2.0,
+4
+],
+"5.reference_beam_figure.frame_height": 475,
+"5.reference_beam_figure.x_range": [
+"Range1d",
+-2,
+12.0
+],
+"5.reference_beam_figure.y_range": [
+"Range1d",
+-2.0,
+4
+],
+"5.venue_points_figure.x_range": [
+"Range1d",
+-2,
+12.0
+],
+"5.venue_points_figure.y_range": [
+"Range1d",
+-2.0,
+4
+],
+"app.venue_figure.x_range": [
+"Range1d",
+-2,
+12.0
+],
+"app.venue_figure.y_range": [
+"Range1d",
+-2.0,
+4
+]
+}
+],
+[
+"save_same",
+{
+"1.venue_error_info.text": "Error: The audience line lies on an already drawn audience line"
+}
+],
+[
+"sx2",
+{
+"1.start_x_input.value": "10",
+"1.venue_error_info.text": ""
+}
+],
+[
+"sy2",
+{
+"1.start_y_input.value": "1.5"
+}
+],
+[
+"ex2",
+{
+"1.end_x_input.value": "20"
+}
+],
+[
+"ey2",
+{
+"1.end_y_input.value": "4"
+}
+],
+[
+"ppm_bad",
+{
+"1.points_per_meter_input.value": "abc"
+}
+],
+[
+"save2",
+{
+"1.lines_source.data": {
+"xlineplt": [
+[
+2.0,
+10.0
+],
+[
+10.0,
+20.0
+]
+],
+"ylineplt": [
+[
+0.0,
+1.0
+],
+[
+1.5,
+4.0
+]
+]
+},
+"1.venue_error_info.text": "Couldnt process discretization input. Use default: 5 points per m",
+"4.spl_over_distance_figure.x_range": [
+"Range1d",
+-2,
+22.0
+],
+"5.beam_figure.frame_height": 370,
+"5.beam_figure.x_range": [
+"Range1d",
+-2,
+22.0
+],
+"5.beam_figure.y_range": [
+"Range1d",
+-2.0,
+6.0
+],
+"5.reference_beam_figure.frame_height": 370,
+"5.reference_beam_figure.x_range": [
+"Range1d",
+-2,
+22.0
+],
+"5.reference_beam_figure.y_range": [
+"Range1d",
+-2.0,
+6.0
+],
+"5.venue_points_figure.x_range": [
+"Range1d",
+-2,
+22.0
+],
+"5.venue_points_figure.y_range": [
+"Range1d",
+-2.0,
+6.0
+],
+"app.venue_figure.x_range": [
+"Range1d",
+-2,
+22.0
+],
+"app.venue_figure.y_range": [
+"Range1d",
+-2.0,
+6.0
+]
+}
+],
+[
+"ppm",
+{
+"1.points_per_meter_input.value": "5"
+}
+],
+[
+"sx3",
+{
+"1.start_x_input.value": "20",
+"1.venue_error_info.text": ""
+}
+],
+[
+"sy3",
+{
+"1.start_y_input.value": "5"
+}
+],
+[
+"ex3",
+{
+"1.end_x_input.value": "30"
+}
+],
+[
+"ey3",
+{
+"1.end_y_input.value": "8"
+}
+],
+[
+"save3",
+{
+"1.lines_source.data": {
+"xlineplt": [
+[
+2.0,
+10.0
+],
+[
+10.0,
+20.0
+],
+[
+20.0,
+30.0
+]
+],
+"ylineplt": [
+[
+0.0,
+1.0
+],
+[
+1.5,
+4.0
+],
+[
+5.0,
+8.0
+]
+]
+},
+"4.spl_over_distance_figure.x_range": [
+"Range1d",
+-2,
+32.0
+],
+"5.beam_figure.frame_height": 391,
+"5.beam_figure.x_range": [
+"Range1d",
+-2,
+32.0
+],
+"5.beam_figure.y_range": [
+"Range1d",
+-2.0,
+10.0
+],
+"5.reference_beam_figure.frame_height": 391,
+"5.reference_beam_figure.x_range": [
+"Range1d",
+-2,
+32.0
+],
+"5.reference_beam_figure.y_range": [
+"Range1d",
+-2.0,
+10.0
+],
+"5.venue_points_figure.x_range": [
+"Range1d",
+-2,
+32.0
+],
+"5.venue_points_figure.y_range": [
+"Range1d",
+-2.0,
+10.0
+],
+"app.venue_figure.x_range": [
+"Range1d",
+-2,
+32.0
+],
+"app.venue_figure.y_range": [
+"Range1d",
+-2.0,
+10.0
+]
+}
+],
+[
+"axes1",
+{
+"app.venue_axes_select.active": 1,
+"app.venue_figure.y_range": [
+"Range1d",
+-1.500784929,
+24.01255887
+]
+}
+],
+[
+"axes2",
+{
+"app.venue_axes_select.active": 2,
+"app.venue_figure.y_range": [
+"Range1d",
+-2.0,
+10.0
+]
+}
+],
+[
+"axes0",
+{
+"app.venue_axes_select.active": 0,
+"app.venue_figure.frame_height": 224
+}
+],
+[
+"tap",
+{
+"1.insert_line_button.visible": true,
+"1.lines_source.selected": [
+1
+],
+"1.remove_line_button.visible": false,
+"1.remove_selected_line_button.visible": true,
+"1.save_line_button.visible": false,
+"1.tapped_line_source.data": {
+"tapped": [
+1
+]
+}
+}
+],
+[
+"sxi",
+{
+"1.start_x_input.value": "5"
+}
+],
+[
+"sxi2",
+{
+"1.end_x_input.value": "9"
+}
+],
+[
+"syi",
+{
+"1.start_y_input.value": "-1"
+}
+],
+[
+"eyi",
+{
+"1.end_y_input.value": "-0.5"
+}
+],
+[
+"insert",
+{
+"1.venue_error_info.text": "Error: Stop values must be higher or equal than the start values and only positive values are allowed"
+}
+],
+[
+"untap",
+{
+"1.insert_line_button.visible": false,
+"1.lines_source.selected": [],
+"1.remove_line_button.visible": true,
+"1.remove_selected_line_button.visible": false,
+"1.save_line_button.visible": true,
+"1.tapped_line_source.data": {
+"tapped": []
+}
+}
+],
+[
+"tap0",
+{
+"1.insert_line_button.visible": true,
+"1.lines_source.selected": [
+1
+],
+"1.remove_line_button.visible": false,
+"1.remove_selected_line_button.visible": true,
+"1.save_line_button.visible": false,
+"1.tapped_line_source.data": {
+"tapped": [
+1
+]
+}
+}
+],
+[
+"remove_sel",
+{
+"1.lines_source.data": {
+"xlineplt": [
+[
+2.0,
+10.0
+],
+[
+20.0,
+30.0
+]
+],
+"ylineplt": [
+[
+0.0,
+1.0
+],
+[
+5.0,
+8.0
+]
+]
+}
+}
+],
+[
+"untap2",
+{
+"1.insert_line_button.visible": false,
+"1.lines_source.selected": [],
+"1.remove_line_button.visible": true,
+"1.remove_selected_line_button.visible": false,
+"1.save_line_button.visible": true,
+"1.tapped_line_source.data": {
+"tapped": []
+}
+}
+],
+[
+"start_nocheck",
+{
+"app.config_error_info.text": "Error: Please CREATE and GET PALC compatible venue proposal on page 1."
+}
+],
+[
+"check",
+{
+"1.check_venue_button.button_type": "success",
+"1.check_venue_button.label": "8. Venue is PALC compatible!",
+"1.non_audience_source.data": {
+"xnalplt": [
+[
+10.0,
+20.0
+]
+],
+"ynalplt": [
+[
+1.0,
+5.0
+]
+]
+},
+"4.start_toggle.disabled": false,
+"4.use_fixed_angle_select.disabled": false,
+"app.config_error_info.text": ""
+}
+],
+[
+"page2",
+{
+"app.page_select.active": 2,
+"document.model_count": 217
+}
+],
+[
+"psi_bad",
+{
+"app.config_error_info.text": "Error: only numbers are allowed. Set to default"
+}
+],
+[
+"psi",
+{
+"2.aperture_input.value": "4",
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0
+],
+"gamma_ref": [
+0.0,
+0.0,
+0.0,
+0.0
+]
+},
+"app.config_error_info.text": "",
+"config.psi_n": [
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317
+]
+}
+],
+[
+"dir_line",
+{
+"2.directivity_select.value": "Line Piston",
+"2.directivity_source.data": {
+"sha1": "f805e7f5c3fbf780ce9b9504e4f548c1c9a1b3cc",
+"size": 8952
+},
+"config.directivity": "Line Piston"
+}
+],
+[
+"dir_meas",
+{
+"2.directivity_select.value": "Measured Loudspeaker Data",
+"2.directivity_source.data": {
+"amplitude_100": [
+0
+],
+"amplitude_10k": [
+0
+],
+"amplitude_1k": [
+0
+],
+"degree": [
+0
+]
+},
+"2.directivity_upload.visible": true,
+"config.directivity": "Measured Loudspeaker Data"
+}
+],
+[
+"upload",
+{
+"2.directivity_source.data": {
+"sha1": "df5b93c274a8dfa3cf1e940e3d398c17c5939ed1",
+"size": 9153
+},
+"2.directivity_upload.value": {
+"sha1": "2980b228f7f641ab662e8e885d7d9372dfc77bfc",
+"size": 1346526
+}
+}
+],
+[
+"dir_circ",
+{
+"2.directivity_select.value": "Circular Piston",
+"2.directivity_source.data": {
+"sha1": "9615aa4d9d247f3ab20a660a60686330d7eb5a35",
+"size": 8962
+},
+"2.directivity_upload.visible": false,
+"config.directivity": "Circular Piston"
+}
+],
+[
+"page3",
+{
+"app.page_select.active": 3,
+"document.model_count": 194
+}
+],
+[
+"N",
+{
+"3.cabinet_count_input.value": "8",
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0
+],
+"gamma_ref": [
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0
+]
+},
+"config.N": 8,
+"config.psi_n": [
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317
+]
+}
+],
+[
+"N_bad",
+{
+"3.cabinet_count_input.value": "4",
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0
+],
+"gamma_ref": [
+0.0,
+0.0,
+0.0,
+0.0
+]
+},
+"app.config_error_info.text": "Error: only numbers are allowed. Set to default",
+"config.N": 4,
+"config.psi_n": [
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317
+]
+}
+],
+[
+"N2",
+{
+"3.cabinet_count_input.value": "10",
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"gamma_ref": [
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0
+]
+},
+"app.config_error_info.text": "",
+"config.N": 10,
+"config.psi_n": [
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317,
+0.06981317
+]
+}
+],
+[
+"yh_low",
+{
+"3.top_y_input.value": "2.0",
+"app.config_error_info.text": "Warning: loudspeaker array is too long for the mounting height. Changed (14.)"
+}
+],
+[
+"yh",
+{
+"3.top_y_input.value": "6",
+"app.config_error_info.text": "",
+"config.y_H": 6.0
+}
+],
+[
+"dang",
+{
+"3.discrete_angles_input.disabled": false,
+"3.discrete_angles_input.value": "0,0.5,1,2,3.5,5,7,10",
+"3.reference_discrete_angles_select.disabled": false,
+"3.use_discrete_angles_select.value": "Yes",
+"config.gamma_LSA": [
+0.0,
+0.008726646,
+0.017453293,
+0.034906585,
+0.061086524,
+0.087266463,
+0.122173048,
+0.174532925
+],
+"config.use_gamma_LSA": true
+}
+],
+[
+"dang_vals",
+{
+"3.discrete_angles_input.value": "0,1,2,3,4,5,6,7,8,9,10",
+"config.gamma_LSA": [
+0.0,
+0.017453293,
+0.034906585,
+0.052359878,
+0.06981317,
+0.087266463,
+0.104719755,
+0.122173048,
+0.13962634,
+0.157079633,
+0.174532925
+]
+}
+],
+[
+"dang_bad",
+{
+"3.discrete_angles_input.value": "a,b"
+}
+],
+[
+"dang_vals2",
+{
+"3.discrete_angles_input.value": "0,1,2,4,6,8,10",
+"config.gamma_LSA": [
+0.0,
+0.017453293,
+0.034906585,
+0.06981317,
+0.104719755,
+0.13962634,
+0.174532925
+]
+}
+],
+[
+"ref_prog",
+{
+"3.reference_discrete_angles_select.visible": true,
+"3.reference_start_input.title": "Reference Array: Start Angle in deg",
+"3.reference_step_stop_input.disabled": false,
+"3.reference_step_stop_input.title": "Reference Array: Final Angle in deg",
+"3.reference_type_select.value": "Progressive"
+}
+],
+[
+"ref_arc",
+{
+"3.reference_step_stop_input.title": "Reference Array: Inter Cabinet Angle in deg",
+"3.reference_type_select.value": "Arc"
+}
+],
+[
+"ref_step",
+{
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"gamma_ref": [
+0.0,
+3.0,
+6.0,
+9.0,
+12.0,
+15.0,
+18.0,
+21.0,
+24.0,
+27.0
+]
+},
+"3.reference_step_stop_input.value": "3"
+}
+],
+[
+"ref_dang",
+{
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"gamma_ref": [
+0.0,
+2.0,
+4.0,
+6.0,
+8.0,
+10.0,
+12.0,
+14.0,
+16.0,
+18.0
+]
+},
+"3.reference_discrete_angles_select.value": "Yes"
+}
+],
+[
+"ref_user",
+{
+"3.reference_discrete_angles_select.visible": false,
+"3.reference_start_input.visible": false,
+"3.reference_step_stop_input.value": "0",
+"3.reference_step_stop_input.visible": false,
+"3.reference_type_select.value": "User Defined",
+"3.reference_user_angles_input.visible": true,
+"app.config_error_info.text": "Error: Could not process the input"
+}
+],
+[
+"ref_userv",
+{
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"gamma_ref": [
+1.0,
+2.0,
+3.0,
+3.0,
+3.0,
+3.0,
+3.0,
+3.0,
+3.0,
+3.0
+]
+},
+"3.reference_user_angles_input.value": "1,2,3",
+"app.config_error_info.text": ""
+}
+],
+[
+"ref_userv2",
+{
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"gamma_ref": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+]
+},
+"3.reference_user_angles_input.value": "1,2,3,4,5,6,7,8,9,10"
+}
+],
+[
+"ref_str",
+{
+"3.reference_angles_source.data": {
+"LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"gamma_ref": [
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0,
+0.0
+]
+},
+"3.reference_start_input.title": "Reference Array: Array Tilt Angle in deg",
+"3.reference_start_input.visible": true,
+"3.reference_step_stop_input.disabled": true,
+"3.reference_step_stop_input.visible": true,
+"3.reference_type_select.value": "Straight",
+"3.reference_user_angles_input.visible": false
+}
+],
+[
+"dang_no",
+{
+"3.discrete_angles_input.disabled": true,
+"3.discrete_angles_input.value": "",
+"3.reference_discrete_angles_select.disabled": true,
+"3.reference_discrete_angles_select.value": "No",
+"3.use_discrete_angles_select.value": "No",
+"config.gamma_LSA": [],
+"config.use_gamma_LSA": false
+}
+],
+[
+"page4",
+{
+"app.page_select.active": 4,
+"document.model_count": 289
+}
+],
+[
+"gh_hm",
+{
+"4.gap_handling_select.value": "Hard Margin",
+"4.weighting_select.options": [
+"Without",
+"Linear Spacing",
+"Logarithmic Spacing"
+],
+"config.gap_handling": "Hard Margin"
+}
+],
+[
+"gh_sm",
+{
+"4.gap_handling_select.value": "Soft Margin",
+"4.soft_margin_slider.disabled": false,
+"4.weighting_select.options": [
+"Without",
+"Linear Spacing",
+"Logarithmic Spacing",
+"Target Slope"
+],
+"config.gap_handling": "Soft Margin"
+}
+],
+[
+"sm",
+{
+"4.soft_margin_slider.value": 1.5,
+"config.strength_sm": 1.5
+}
+],
+[
+"w_lin",
+{
+"4.nu_minus_button.disabled": false,
+"4.nu_plus_button.disabled": false,
+"4.nu_step_select.disabled": false,
+"4.weighting_nu_slider.disabled": false,
+"4.weighting_select.value": "Linear Spacing",
+"config.use_weighting": "Linear Spacing"
+}
+],
+[
+"stepsz",
+{
+"4.nu_step_select.value": "0.1",
+"4.weighting_nu_slider.step": 0.1
+}
+],
+[
+"plus",
+{
+"4.weighting_nu_slider.value": 1.1,
+"config.weighting_nu": 1.33
+}
+],
+[
+"plus2",
+{
+"4.weighting_nu_slider.value": 1.2,
+"config.weighting_nu": 1.73
+}
+],
+[
+"minus",
+{
+"4.weighting_nu_slider.value": 1.1,
+"config.weighting_nu": 1.33
+}
+],
+[
+"nu",
+{
+"4.weighting_nu_slider.value": 1.3,
+"config.weighting_nu": 2.2
+}
+],
+[
+"w_log",
+{
+"4.weighting_select.value": "Logarithmic Spacing",
+"config.use_weighting": "Logarithmic Spacing"
+}
+],
+[
+"fix",
+{
+"4.fixed_angle_input.disabled": false,
+"4.fixed_angle_input.value": "-4.19",
+"4.fixed_angle_text.text": "Max: 1.29, Min: -14.19",
+"4.use_fixed_angle_select.value": "Yes",
+"config.fixed_angle": -4.19,
+"config.use_fixed_angle": true
+}
+],
+[
+"fixv",
+{
+"4.fixed_angle_input.value": "-14.19",
+"config.fixed_angle": -14.19
+}
+],
+[
+"fixv2",
+{
+"4.fixed_angle_input.value": "",
+"app.config_error_info.text": "Error: only numbers are allowed. Set to Default"
+}
+],
+[
+"fixv3",
+{
+"4.fixed_angle_input.value": "1.29",
+"app.config_error_info.text": "",
+"config.fixed_angle": 1.29
+}
+],
+[
+"fix_no",
+{
+"4.fixed_angle_input.disabled": true,
+"4.use_fixed_angle_select.value": "No",
+"config.use_fixed_angle": false
+}
+],
+[
+"tol",
+{
+"4.tolerance_slider.value": 0.5,
+"config.tolerance": 0.5
+}
+],
+[
+"fr",
+{}
+],
+[
+"w_none",
+{
+"4.nu_minus_button.disabled": true,
+"4.nu_plus_button.disabled": true,
+"4.nu_step_select.disabled": true,
+"4.weighting_nu_slider.disabled": true,
+"4.weighting_nu_slider.value": 1.0,
+"4.weighting_select.value": "Without",
+"config.use_weighting": "Without",
+"config.weighting_nu": 1.0
+}
+],
+[
+"gh_none",
+{
+"4.gap_handling_select.value": "Without",
+"4.soft_margin_slider.disabled": true,
+"4.soft_margin_slider.value": 1.0,
+"config.gap_handling": "Without",
+"config.strength_sm": 1.0
+}
+],
+[
+"run",
+{
+"4.reference_spl_over_distance_source.data": {
+"sha1": "259e9131b500137453cff5afa13c77a4fbb5adc2",
+"size": 3179
+},
+"4.results_source.data": {
+"a_num_LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"b_gamma_tilt_deg": [
+-2.63,
+-0.04,
+3.06,
+6.71,
+10.95,
+15.85,
+21.55,
+28.48,
+37.12,
+47.66
+],
+"c_gamma_tilt_deg_diff": [
+-2.63,
+2.59,
+3.1,
+3.65,
+4.24,
+4.9,
+5.7,
+6.94,
+8.64,
+10.53
+]
+},
+"4.spl_over_distance_figure.y_range": [
+"Range1d",
+-6.875825679,
+10.342028757
+],
+"4.spl_over_distance_source.data": {
+"sha1": "83025dc871aa83fe815e75c41ca4605827c1fcef",
+"size": 3183
+},
+"4.target_reference_source.data": {
+"SPL": [
+-1.592143834
+],
+"x_ref": [
+24.621100384
+],
+"x_v": [
+24.31372549
+],
+"y_v": [
+6.294117647
+]
+},
+"4.target_region_source.data": {
+"x": [
+5.565793639,
+5.565793639,
+30.417967668,
+30.417967668
+],
+"y": [
+105.257413325,
+-103.67586646,
+-103.67586646,
+105.257413325
+]
+},
+"4.target_source.data": {
+"SPL": [
+5.257413325,
+-3.67586646
+],
+"x": [
+5.565793639,
+30.417967668
+],
+"x_v": [
+2.0,
+30.0
+],
+"y_v": [
+0.0,
+8.0
+]
+},
+"5.beam_checkbox.disabled": false,
+"5.histogram_source.data": {
+"top": [
+2,
+14,
+12,
+12,
+10,
+2,
+0,
+0,
+0,
+0,
+1,
+1,
+2,
+3,
+1
+],
+"x": [
+79.5,
+80.5,
+81.5,
+82.5,
+83.5,
+84.5,
+85.5,
+86.5,
+87.5,
+88.5,
+89.5,
+90.5,
+91.5,
+92.5,
+93.5
+]
+},
+"5.homogeneity_source.data": {
+"sha1": "7d20b0335c28cbd92cba131921255303e965df75",
+"size": 8237
+},
+"5.sound_field_source.data": {
+"sha1": "27ba0b1493f56f562f081f7bb4536031e4f0f7b1",
+"size": 304345
+},
+"5.venue_points_source.data": {
+"sha1": "adf9bcb2b6603b4bb6afa23d45bbe359199b70ae",
+"size": 1792
+},
+"app.cabinet_patches_source.data": {
+"sha1": "ca1f9ef7c40ab6c806a5352efdb8f4c18d2aef8a",
+"size": 1625
+},
+"app.hit_points_source.data": {
+"seg_pos_start_x": [
+30.0,
+24.806497875,
+20.400499358,
+17.404118016,
+14.849617757,
+12.595838599,
+10.600226595,
+8.231225203,
+5.976592072,
+4.096998187
+],
+"seg_pos_start_y": [
+8.0,
+6.441949363,
+5.120149807,
+3.961647206,
+2.939847103,
+2.03833544,
+1.240090638,
+0.77890315,
+0.497074009,
+0.262124773
+],
+"seg_pos_stop_x": [
+24.806497875,
+20.400499358,
+17.404118016,
+14.849617757,
+12.595838599,
+10.600226595,
+8.231225203,
+5.976592072,
+4.096998187,
+2.494009296
+],
+"seg_pos_stop_y": [
+6.441949363,
+5.120149807,
+3.961647206,
+2.939847103,
+2.03833544,
+1.240090638,
+0.77890315,
+0.497074009,
+0.262124773,
+0.061751162
+],
+"seg_pos_x": [
+27.154299704,
+22.389032769,
+18.745907865,
+16.032284356,
+13.641155859,
+11.528620044,
+9.442965029,
+6.980087229,
+4.942811003,
+3.229022375
+],
+"seg_pos_y": [
+7.146289911,
+5.716709831,
+4.498363146,
+3.412913742,
+2.456462344,
+1.611448018,
+0.930370629,
+0.622510904,
+0.367851375,
+0.153627797
+]
+},
+"app.rays_source.data": {
+"sha1": "efd5cd0c8a3bb603f38bdb7f7322778c2ae7e30b",
+"size": 1809
+}
+}
+],
+[
+"page5",
+{
+"app.page_select.active": 5,
+"document.model_count": 363
+}
+],
+[
+"beam0",
+{
+"5.beam_checkbox.active": [
+0
+],
+"5.beam_figure.visible": true,
+"5.beam_source.data": {
+"sha1": "c8cd716c98ca96245669c74c9017b901b5005d46",
+"size": 3271640
+}
+}
+],
+[
+"beam01",
+{
+"5.beam_checkbox.active": [
+0,
+1
+],
+"5.beam_source.data": {
+"sha1": "52ce7eade6f0dffc3e9c94d629932d1dbd57880c",
+"size": 6440433
+},
+"5.reference_beam_figure.visible": true
+}
+],
+[
+"fbeam",
+{
+"5.beam_frequency_select.value": "2000",
+"5.beam_source.data": {
+"sha1": "21a91523a4581743a84e8a6203a0b886fb0d44ec",
+"size": 6790732
+}
+}
+],
+[
+"beam1",
+{
+"5.beam_checkbox.active": [
+1
+],
+"5.beam_figure.visible": false
+}
+],
+[
+"sfptap",
+{
+"5.sound_field_source.data": {
+"sha1": "174bf41fd888f7eafca24ebcfe4601cd665aa8c4",
+"size": 10191
+},
+"5.venue_points_source.selected": [
+2,
+5
+]
+}
+],
+[
+"sfpuntap",
+{
+"5.sound_field_source.data": {
+"sha1": "27ba0b1493f56f562f081f7bb4536031e4f0f7b1",
+"size": 304345
+},
+"5.venue_points_source.selected": []
+}
+],
+[
+"page4b",
+{
+"app.page_select.active": 4,
+"document.model_count": 289
+}
+],
+[
+"w_ts",
+{
+"4.gap_handling_select.options": [
+"Without",
+"Soft Margin"
+],
+"4.hinges_select.visible": true,
+"4.weighting_select.value": "Target Slope",
+"5.beam_checkbox.active": [],
+"5.reference_beam_figure.visible": false,
+"config.use_weighting": "Target Slope"
+}
+],
+[
+"gh_hm2",
+{
+"4.gap_handling_select.value": "Hard Margin",
+"config.gap_handling": "Hard Margin"
+}
+],
+[
+"hinges",
+{
+"4.hinges_select.value": "2",
+"4.target_source.data": {
+"SPL": [
+5.257413325,
+1.66234413,
+-1.208363649,
+-3.67586646
+],
+"x": [
+5.565793639,
+22.441414787,
+26.413484128,
+30.417967668
+],
+"x_v": [
+2.0,
+22.156862745,
+26.078431373,
+30.0
+],
+"y_v": [
+0.0,
+5.647058824,
+6.823529412,
+8.0
+]
+}
+}
+],
+[
+"tsel",
+{}
+],
+[
+"drag",
+{
+"4.target_reference_source.data": {
+"SPL": [
+-7.66449596
+],
+"x_ref": [
+24.621100384
+],
+"x_v": [
+24.31372549
+],
+"y_v": [
+6.294117647
+]
+},
+"4.target_region_source.data": {
+"x": [
+5.565793639,
+5.565793639,
+25.018779834,
+25.018779834
+],
+"y": [
+100.0,
+-108.0,
+-108.0,
+100.0
+]
+},
+"4.target_source.data": {
+"SPL": [
+0.0,
+-2.0,
+-4.0,
+-8.0
+],
+"x": [
+5.565793639,
+11.057058666,
+20.277502194,
+25.018779834
+],
+"x_v": [
+2.0,
+10.0,
+20.0,
+24.705882353
+],
+"y_v": [
+0.0,
+1.0,
+5.0,
+6.411764706
+]
+}
+}
+],
+[
+"run_ts",
+{
+"4.reference_spl_over_distance_source.data": {
+"sha1": "2b150b99146a2fd73f65dfc96a63e3343cf7dbbc",
+"size": 3233
+},
+"4.results_source.data": {
+"a_num_LS": [
+1.0,
+2.0,
+3.0,
+4.0,
+5.0,
+6.0,
+7.0,
+8.0,
+9.0,
+10.0
+],
+"b_gamma_tilt_deg": [
+-3.38,
+-2.48,
+-1.48,
+-0.39,
+24.67,
+28.5,
+32.87,
+37.82,
+43.42,
+49.66
+],
+"c_gamma_tilt_deg_diff": [
+-3.38,
+0.9,
+0.99,
+1.09,
+25.06,
+3.83,
+4.37,
+4.96,
+5.59,
+6.25
+]
+},
+"4.spl_over_distance_figure.y_range": [
+"Range1d",
+-14.540321639,
+3.705200231
+],
+"4.spl_over_distance_source.data": {
+"sha1": "0edabc4f32ec11075868ca7a01de6735809a8949",
+"size": 3225
+},
+"4.target_reference_source.data": {
+"SPL": [
+-7.664468573
+],
+"x_ref": [
+24.621100384
+],
+"x_v": [
+24.31372549
+],
+"y_v": [
+6.294117647
+]
+},
+"4.target_region_source.data": {
+"x": [
+5.62902399,
+5.62902399,
+25.075624993,
+25.075624993
+],
+"y": [
+100.0,
+-108.0,
+-108.0,
+100.0
+]
+},
+"4.target_source.data": {
+"SPL": [
+0.0,
+-2.0,
+-4.0,
+-8.0
+],
+"x": [
+5.62902399,
+11.127788479,
+20.336870779,
+25.075624993
+],
+"x_v": [
+2.0,
+10.0,
+20.0,
+24.705882353
+],
+"y_v": [
+0.0,
+1.0,
+5.0,
+6.411764706
+]
+},
+"5.histogram_source.data": {
+"top": [
+3,
+14,
+12,
+14,
+9,
+0,
+0,
+0,
+0,
+0,
+1,
+1,
+1,
+2,
+3
+],
+"x": [
+79.5,
+80.5,
+81.5,
+82.5,
+83.5,
+84.5,
+85.5,
+86.5,
+87.5,
+88.5,
+89.5,
+90.5,
+91.5,
+92.5,
+93.5
+]
+},
+"5.homogeneity_source.data": {
+"sha1": "77d203b94fd022fa3bc15b2c90cee87ba6ff8ff3",
+"size": 8231
+},
+"5.sound_field_source.data": {
+"sha1": "f147fb2033c07245fc85642ad9ead540a25ee086",
+"size": 304282
+},
+"app.cabinet_patches_source.data": {
+"sha1": "8c4bc1336874644897a32b6230dcff26b4a8cc12",
+"size": 1622
+},
+"app.hit_points_source.data": {
+"seg_pos_start_x": [
+30.0,
+27.379781477,
+24.922302588,
+22.621335372,
+10.0,
+8.428809414,
+7.007819759,
+5.720130912,
+4.548965978,
+3.477583686
+],
+"seg_pos_start_y": [
+8.0,
+7.213934443,
+6.476690776,
+5.786400611,
+1.0,
+0.803601177,
+0.62597747,
+0.465016364,
+0.318620747,
+0.184697961
+],
+"seg_pos_stop_x": [
+27.379781477,
+24.922302588,
+22.621335372,
+20.470638928,
+8.428809414,
+7.007819759,
+5.720130912,
+4.548965978,
+3.477583686,
+2.489193047
+],
+"seg_pos_stop_y": [
+7.213934443,
+6.476690776,
+5.786400611,
+5.141191678,
+0.803601177,
+0.62597747,
+0.465016364,
+0.318620747,
+0.184697961,
+0.061149131
+],
+"seg_pos_x": [
+28.629206991,
+26.092743218,
+23.715896815,
+21.492435723,
+9.162285679,
+7.671862069,
+6.323108857,
+5.099215881,
+3.983452458,
+2.959078388
+],
+"seg_pos_y": [
+7.588762097,
+6.827822965,
+6.114769045,
+5.447730717,
+0.89528571,
+0.708982759,
+0.540388607,
+0.387401985,
+0.247931557,
+0.119884799
+]
+},
+"app.rays_source.data": {
+"sha1": "92bfd0d8e5f6e04e1af6b757ffded833b502c2af",
+"size": 1799
+}
+}
+],
+[
+"clear",
+{
+"app.hit_points_source.data": {
+"seg_pos_start_x": [],
+"seg_pos_start_y": [],
+"seg_pos_stop_x": [],
+"seg_pos_stop_y": [],
+"seg_pos_x": [],
+"seg_pos_y": []
+},
+"app.rays_source.data": {
+"x_c_n_unitn": [],
+"x_c_n_unitn_psi1": [],
+"x_c_n_unitn_psi2": [],
+"x_fin_unitn_start_stop": [],
+"x_start_stop": [],
+"x_start_unitn_start": [],
+"x_stop_unitn_stop": [],
+"y_c_n_unitn": [],
+"y_c_n_unitn_psi1": [],
+"y_c_n_unitn_psi2": [],
+"y_fin_unitn_start_stop": [],
+"y_start_stop": [],
+"y_start_unitn_start": [],
+"y_stop_unitn_stop": []
+}
+}
+],
+[
+"page1b",
+{
+"app.page_select.active": 1,
+"document.model_count": 183
+}
+],
+[
+"remove_last",
+{
+"1.check_venue_button.button_type": "warning",
+"1.check_venue_button.label": "8. Get PALC Venue Proposal",
+"1.lines_source.data": {
+"xlineplt": [
+[
+2.0,
+10.0
+]
+],
+"ylineplt": [
+[
+0.0,
+1.0
+]
+]
+},
+"4.spl_over_distance_figure.x_range": [
+"Range1d",
+-2.0,
+12.0
+],
+"4.start_toggle.disabled": true,
+"4.use_fixed_angle_select.disabled": true,
+"5.beam_figure.frame_height": 792,
+"5.beam_figure.x_range": [
+"Range1d",
+-2.0,
+12.0
+],
+"5.beam_figure.y_range": [
+"Range1d",
+-2.0,
+8.0
+],
+"5.reference_beam_figure.frame_height": 792,
+"5.reference_beam_figure.x_range": [
+"Range1d",
+-2.0,
+12.0
+],
+"5.reference_beam_figure.y_range": [
+"Range1d",
+-2.0,
+8.0
+],
+"5.venue_points_figure.x_range": [
+"Range1d",
+-2.0,
+12.0
+],
+"5.venue_points_figure.y_range": [
+"Range1d",
+-2.0,
+8.0
+],
+"app.venue_figure.frame_height": 455,
+"app.venue_figure.x_range": [
+"Range1d",
+-2.0,
+12.0
+],
+"app.venue_figure.y_range": [
+"Range1d",
+-2.0,
+8.0
+]
+}
+],
+[
+"check2",
+{
+"1.check_venue_button.button_type": "success",
+"1.check_venue_button.label": "8. Venue is PALC compatible!",
+"1.non_audience_source.data": {
+"xnalplt": [],
+"ynalplt": []
+},
+"4.hinges_select.options": [
+"0",
+"1"
+],
+"4.hinges_select.value": "0",
+"4.hinges_select.visible": false,
+"4.start_toggle.disabled": false,
+"4.use_fixed_angle_select.disabled": false,
+"4.weighting_select.options": [
+"Without",
+"Linear Spacing",
+"Logarithmic Spacing"
+],
+"4.weighting_select.value": "Without",
+"app.config_error_info.text": "Error: Could not create PAL proposal",
+"config.use_weighting": "Without"
+}
+],
+[
+"page0",
+{
+"app.page_select.active": 0,
+"document.model_count": 95
+}
+]
+]
