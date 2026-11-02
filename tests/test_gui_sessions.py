@@ -6,10 +6,13 @@ import pkgutil
 from pathlib import Path
 
 import numpy as np
+import pytest
 from bokeh.document import Document
 from bokeh.model import Model
 
 import pypalc.gui
+from pypalc.core import pipeline
+from pypalc.core.pipeline import result_arrays, run
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
 
@@ -66,3 +69,57 @@ def test_run_calculation_matches_pipeline():
         np.testing.assert_array_equal(np.array(data['c_gamma_tilt_deg_diff'],
                                                dtype=float),
                                       baseline['inter_cabinet_angles_deg'])
+
+
+def _app_with_venue(case='simple'):
+    setup = load_setup(ROOT / 'tests' / 'cases' / ('%s.yaml' % case))
+    app = PalcApp(Document())
+    for line in setup.venue.audience_lines:
+        _add_line(app, line.start, line.stop, line.points_per_meter)
+    app.check_venue()
+    return app, setup
+
+
+def test_run_calculation_stores_result():
+    app, setup = _app_with_venue()
+    assert app.state.result is None
+    with contextlib.redirect_stdout(io.StringIO()):
+        app.run_calculation()
+    gui = result_arrays(app.state.result)
+    headless = result_arrays(run(setup))
+    assert sorted(gui) == sorted(headless)
+    for key in headless:
+        np.testing.assert_array_equal(gui[key], headless[key], err_msg=key)
+
+
+def test_failed_calculation_shows_error_and_keeps_results():
+    app, _ = _app_with_venue()
+    with contextlib.redirect_stdout(io.StringIO()):
+        app.run_calculation()
+    result = app.state.result
+    angles = dict(app.pages[4].results_source.data)
+    array = app.pages[3]
+    array.use_discrete_angles_select.value = 'Yes'
+    array.discrete_angles_input.value = 'a,b'
+    algorithm = app.pages[4]
+    algorithm.start_toggle.active = True
+    assert algorithm.start_toggle.active is False
+    assert app.config_error_info.text.startswith(
+        'Error: array.discrete_tilt_angles_deg')
+    assert app.state.result is result
+    assert algorithm.results_source.data == angles
+
+
+def test_unexpected_error_releases_start_toggle(monkeypatch, caplog):
+    app, _ = _app_with_venue()
+
+    def fail(setup, venue=None):
+        raise RuntimeError('unexpected')
+
+    monkeypatch.setattr(pipeline, 'run', fail)
+    algorithm = app.pages[4]
+    with pytest.raises(RuntimeError):
+        algorithm.start_toggle.active = True
+    assert algorithm.start_toggle.active is False
+    assert any(record.exc_info and record.levelname == 'ERROR'
+               for record in caplog.records)

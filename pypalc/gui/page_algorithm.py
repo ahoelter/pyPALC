@@ -446,6 +446,9 @@ class AlgorithmPage:
     def choose_hinges(self, attr, old, new) -> None:
         """Place the selected number of hinges on the target slope.
 
+        The hinges are placed on the SPL over distance of the last
+        calculation; without a calculation nothing happens.
+
         Parameters
         ----------
         attr : str
@@ -458,7 +461,10 @@ class AlgorithmPage:
         None.
         """
         state = self.app.state
-        SPLoverX, drawn = state.spl_over_distance, state.drawn
+        if state.result is None:
+            return
+        SPLoverX = state.result.optimized.spl_over_distance
+        drawn = state.drawn
         ind = get_weight_links(int(new), SPLoverX)
         self.target_source.data.update(dict(
             SPL=np.array(SPLoverX.SPL)[ind], x=SPLoverX.x[ind],

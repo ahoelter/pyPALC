@@ -21,14 +21,17 @@ scaling, the configuration error text and the venue figure) and the
 callbacks that read widgets of several pages live on :class:`PalcApp`.
 No module of this package holds per-session state.
 
+A calculation reads the entered setup (:func:`~.setup_io.setup_from_app`)
+and computes it with :func:`pypalc.core.pipeline.run`, like the headless
+runner.
+
 author: Arne Hoelter
 """
 from __future__ import annotations
 
 import logging
-import time
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Union
+from dataclasses import dataclass, field, replace
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 from bokeh.document import Document
@@ -39,16 +42,13 @@ from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 from colorcet import rainbow
 
-from pypalc.core.geometry import LSA_visualization, calc_diff_tilt_angles
-from pypalc.core.palc import (Array_opt, PALC_configuration, PALC_plotting,
-                              calcPALC)
-from pypalc.core.pipeline import AudienceLines, VenueResult
-from pypalc.core.sound_field import (SFP_configuration, Technical_meas_results,
-                                     calcHistogram, calcHomogeneity, calcSFP,
-                                     calcSPLoverX)
-from pypalc.core.target_slope import (Opt_weight, get_opt_region,
-                                      optimize_PALC, shift2ref,
-                                      shift_ref_on_zero)
+from pypalc.core import pipeline
+from pypalc.core.errors import PalcError, SetupError
+from pypalc.core.palc import Array_opt, PALC_configuration
+from pypalc.core.pipeline import AudienceLines, RunResult, VenueResult
+from pypalc.core.settings import AudienceLine, Setup
+from pypalc.core.sound_field import SFP_configuration
+from pypalc.core.target_slope import Opt_weight
 from pypalc.core.venue import (PAL, PALC_compatible_PAL,
                                get_PALC_compatible_PAL, suggestPAL)
 from pypalc.gui import APP_NAME, CALLBACK_ERRORS
@@ -58,6 +58,7 @@ from pypalc.gui.page_array import ArrayPage
 from pypalc.gui.page_loudspeaker import LoudspeakerPage
 from pypalc.gui.page_results import ResultsPage
 from pypalc.gui.page_venue import VenuePage
+from pypalc.gui.setup_io import setup_from_app
 from pypalc.gui.ranges import (Plot_ranges, get_p_axis_rng, set_figure_ranges,
                                venue_slice2CDS)
 
@@ -81,51 +82,53 @@ class SessionState:
     ----------
     drawn : AudienceLines
         Audience lines drawn by the user (legacy ``created_pal``).
+    audience_lines : list of AudienceLine
+        The drawn audience lines as settings, in the order of ``drawn``,
+        with the discretization each line was saved with.
     venue : VenueResult or None
         Venue of the last successful "Get PALC Venue Proposal", None before.
         Like in the legacy GUI it is kept when lines change afterwards; the
         start toggle is disabled until the venue is checked again.
+    measured_directivity_csv : str or None
+        Text of the last readable upload of measured directivity data.
     config : PALC_configuration
-        PALC configuration (legacy ``PALC_config``).
+        PALC configuration (legacy ``PALC_config``), holding the values of
+        the configuration widgets. Calculations do not change it.
     sound_field_config : SFP_configuration
-        Sound field prediction configuration (legacy ``SFP_config``).
-    ray_plot, reference_ray_plot : RayPlotData
-        Plot data of the optimized and the reference array (legacy
-        ``PALC_plots``, ``PALC_plots_ref``).
+        Sound field prediction configuration (legacy ``SFP_config``), used
+        for the directivity and beam plots.
     ranges : Plot_ranges
         Ranges of the figures.
-    optimized_array, reference_array : ArrayGeometry
-        The optimized and the reference array (legacy ``Opt_arr``,
-        ``Ref_arr``).
-    evaluation, evaluation_reference : ArrayEvaluation
-        Sound field prediction, homogeneity and histogram of the optimized
-        and the reference array (legacy ``Tech_res``, ``Tech_res_ref``).
+    optimized_array : ArrayGeometry
+        Holds the allowed range of the fixed angle of the uppermost cabinet
+        (attribute ``fixed_angle``, legacy ``Opt_arr.fixed_angle``).
+    reference_array : ArrayGeometry
+        The reference array as computed on page 3 (legacy ``Ref_arr``).
     target : TargetSlopeState
-        Target slope state (legacy ``Opt_w``).
-    spl_over_distance, reference_spl_over_distance : TargetSlopeState
-        SPL over distance of the optimized and the reference array (legacy
-        ``SPLoverX``, ``SPLoverX_ref``).
+        The target slope shown on page 4 (legacy ``Opt_w``).
+    result : RunResult or None
+        Results of the last successful calculation, None before.
     """
     drawn: AudienceLines = field(default_factory=_initial_drawn_lines)
+    audience_lines: List[AudienceLine] = field(default_factory=list)
     venue: Optional[VenueResult] = None
+    measured_directivity_csv: Optional[str] = None
     config: PALC_configuration = field(default_factory=PALC_configuration)
     sound_field_config: SFP_configuration = field(
         default_factory=SFP_configuration)
-    ray_plot: PALC_plotting = field(default_factory=PALC_plotting)
-    reference_ray_plot: PALC_plotting = field(default_factory=PALC_plotting)
     ranges: Plot_ranges = field(default_factory=Plot_ranges)
     optimized_array: Array_opt = field(default_factory=Array_opt)
     reference_array: Array_opt = field(
         default_factory=lambda: Array_opt(gamma_tilt_deg=np.zeros(4)))
-    evaluation: Technical_meas_results = field(
-        default_factory=Technical_meas_results)
-    evaluation_reference: Technical_meas_results = field(
-        default_factory=Technical_meas_results)
     target: Opt_weight = field(default_factory=Opt_weight)
-    spl_over_distance: Opt_weight = field(
-        default_factory=lambda: Opt_weight(SPL_interp=[0]))
-    reference_spl_over_distance: Opt_weight = field(
-        default_factory=lambda: Opt_weight(SPL_interp=[0]))
+    result: Optional[RunResult] = None
+
+
+def _error_text(exc: PalcError) -> str:
+    """Error text shown for a failed calculation."""
+    if isinstance(exc, SetupError):
+        return 'Error: %s' % exc
+    return str(exc)
 
 
 def _logo_figure(width: int, image: str, x_offset: float):
@@ -481,130 +484,98 @@ class PalcApp:
     # Calculation
     # ------------------------------------------------------------------
 
-    def _calculation_failed(self, message: str) -> None:
-        """Release the start toggle and show an error text."""
-        self.pages[4].start_toggle.active = False
-        self.config_error_info.text = message
+    def _calculation_setup(self) -> Setup:
+        """The setup of the next calculation.
+
+        While "Target Slope" is selected but no target slope is shown yet,
+        this is the initial run without weighting, whose SPL over distance
+        the target slope is placed on.
+        """
+        setup = setup_from_app(self)
+        if setup.algorithm.weighting == 'target_slope' and \
+                not self.state.target.init:
+            setup = replace(setup, target_slope=None, algorithm=replace(
+                setup.algorithm, weighting='without'))
+        return setup
 
     def run_calculation(self) -> None:
         """Run PALC and the sound field prediction (legacy ``start_calc``).
 
         Callback body of the start toggle; also runs when "Target Slope" is
-        selected. Runs the PALC algorithm (or the target slope
-        optimization), the sound field prediction of the optimized and the
-        reference array, and copies the results into the sources.
+        selected (the initial run). Computes :func:`setup_from_app` with
+        :func:`pypalc.core.pipeline.run` on the checked venue, stores the
+        result in ``state.result`` and shows it.
+
+        If the calculation fails, its error text is shown and the sources
+        keep the previous results. The start toggle is released in every
+        case; unexpected exceptions are logged and raised again.
 
         Returns
         -------
         None.
         """
         st = self.state
-        P, S = st.config, st.sound_field_config
-        array, algorithm, results = self.pages[3], self.pages[4], \
-            self.pages[5]
-        Opt_arr, Ref_arr, Opt_w = st.optimized_array, st.reference_array, \
-            st.target
-        Tech_res, Tech_res_ref = st.evaluation, st.evaluation_reference
-        SPLoverX, SPLoverX_ref = st.spl_over_distance, \
-            st.reference_spl_over_distance
-        created_pal = st.drawn
-        if not self.has_venue():
-            algorithm.start_toggle.active = False
-            self.config_error_info.text = 'Error: Please CREATE and GET PALC compatible venue proposal on page 1.'
-            return
-        PALC_pal = st.venue.palc_venue
-        # Start the PALC algorithm
-        P.get_initial_weights()
-        opt_ind = None
         try:
-            if P.use_weighting == 'Target Slope' and Opt_w.init:
-                Opt_w.calc_init()
-                algorithm.target_source.data.update(dict(SPL=list(Opt_w.SPL)))
-                # start optimization, last input is max loops
-                opt_ind = optimize_PALC(P, S, PALC_pal, st.ray_plot, Opt_arr,
-                                        created_pal, Tech_res, SPLoverX,
-                                        Opt_w, 200)
-            else:
-                calcPALC(st.ray_plot, PALC_pal, P, Opt_arr)
-        except CALLBACK_ERRORS:
-            logger.exception('PALC calculation failed')
-            self._calculation_failed('Error: PALC calculation failed')
-        # reset some possibly changed values...
-        loudspeaker = self.pages[2]
-        for key, val in [['last_angle_hm', []],
-                         ['x_H', array.top_x_input.value],
-                         ['y_H', array.top_y_input.value],
-                         ['psi_n', loudspeaker.aperture_input.value]]:
-            P.store_config(key, val)
-        # case no convergence reached and calcPALC returned by except-case
-        if Opt_arr.num_iter == 500 or np.shape(Opt_arr.gamma_tilt_deg)[0] == 0:
-            self.config_error_info.text = 'Error: No convergence reached'
-            algorithm.start_toggle.active = False
-            return
-        else:
-            self.config_error_info.text = ''
-        # save / copy results to plot in ColumnDataSources
-        try:
-            x_patches, y_patches = LSA_visualization(st.ray_plot, P,
-                                                     Opt_arr.gamma_n)
-            self.cabinet_patches_source.data.update(dict(
-                x_list=x_patches, y_list=y_patches,
-                x_list_ref=np.zeros(P.N), y_list_ref=np.zeros(P.N)))
-        except CALLBACK_ERRORS:
-            logger.exception('Could not store the output')
-            self._calculation_failed('Error: Could not store the output')
-            return
-        try:
-            st.ray_plot.get_plot_array(Opt_arr)
-            venue_slice2CDS(self.rays_source, self.hit_points_source,
-                            st.ray_plot, Opt_arr)
-        except CALLBACK_ERRORS:
-            logger.exception('Could not store the output')
-            venue_slice2CDS(self.rays_source, self.hit_points_source, [], [])
-            self.config_error_info.text = 'Error: Could not store the output'
-            algorithm.start_toggle.active = False
-            return
-        # Prepare the data output (results) and save them in a dictionary
-        gamma_tilt_deg_diff, gamma_tilt_deg_round = \
-            calc_diff_tilt_angles(Opt_arr.gamma_tilt_deg)
-        setattr(Opt_arr, 'gamma_tilt_deg_diff', gamma_tilt_deg_diff)
+            if not self.has_venue():
+                self.config_error_info.text = 'Error: Please CREATE and GET PALC compatible venue proposal on page 1.'
+                return
+            try:
+                result = pipeline.run(self._calculation_setup(),
+                                      venue=st.venue)
+            except PalcError as exc:
+                logger.warning('PALC calculation failed: %s', exc,
+                               exc_info=True)
+                self.config_error_info.text = _error_text(exc)
+                return
+            except CALLBACK_ERRORS:
+                logger.exception('PALC calculation failed')
+                self.config_error_info.text = 'Error: PALC calculation failed'
+                return
+            st.result = result
+            try:
+                self._show_result(result)
+            except CALLBACK_ERRORS:
+                logger.exception('Could not store the output')
+                self.config_error_info.text = 'Error: Could not store the output'
+                return
+            self.pages[4].start_toggle.active = False
+            self.show()
+        except Exception:
+            logger.exception('PALC calculation failed unexpectedly')
+            raise
+        finally:
+            self.pages[4].start_toggle.active = False
+
+    def _show_result(self, result: RunResult) -> None:
+        """Copy the results of a calculation into the sources and figures.
+
+        Parameters
+        ----------
+        result : RunResult
+            The results to show.
+
+        Returns
+        -------
+        None.
+        """
+        st = self.state
+        algorithm, results = self.pages[4], self.pages[5]
+        N = result.setup.array.cabinet_count
+        optimized, reference = result.optimized, result.reference
+        Tech_res, Tech_res_ref = optimized.evaluation, reference.evaluation
+        SPLoverX, SPLoverX_ref = optimized.spl_over_distance, \
+            reference.spl_over_distance
+        created_pal = result.venue.drawn
+        Opt_w = st.target
+        self.config_error_info.text = ''
+        # array and rays in the venue figure
+        venue_slice2CDS(self.rays_source, self.hit_points_source,
+                        result.ray_plot, result.geometry)
+        # tilt angles
         algorithm.results_source.data = dict(
-            a_num_LS=np.linspace(1, P.N, num=P.N),
-            b_gamma_tilt_deg=gamma_tilt_deg_round,
-            c_gamma_tilt_deg_diff=gamma_tilt_deg_diff)
-        # Sound field prediction
-        try:
-            t1 = time.time()
-            x_S, y_S = calcSFP(Opt_arr.gamma_tilt_deg, created_pal, S,
-                               Tech_res)
-            print('elapsed time for SFP in s: ', time.time() - t1)
-        except CALLBACK_ERRORS:
-            logger.exception('SFP calculation failed')
-            self._calculation_failed('Error: SFP calculation failed')
-            return
-        # SPL over distance
-        calcSPLoverX(st.ray_plot, created_pal, Tech_res.p_SPL, SPLoverX,
-                     S.freq_range)
-        # Homogeneity and bar chart
-        calcHomogeneity(Tech_res, x_S, y_S, created_pal.xline,
-                        created_pal.yline)
-        calcHistogram(Tech_res)
-        # Reference array
-        try:
-            x_S, y_S = calcSFP(Ref_arr.gamma_tilt_deg, created_pal, S,
-                               Tech_res_ref)
-        except CALLBACK_ERRORS:
-            logger.exception('SFP calculation of reference array failed')
-            self._calculation_failed(
-                'Error: SFP calculation of reference array failed')
-        x_patches_ref, y_patches_ref = LSA_visualization(
-            st.reference_ray_plot, P, Ref_arr.gamma_n)
-        calcSPLoverX(st.reference_ray_plot, created_pal, Tech_res_ref.p_SPL,
-                     SPLoverX_ref, S.freq_range)
-        calcHomogeneity(Tech_res_ref, x_S, y_S, created_pal.xline,
-                        created_pal.yline)
-        calcHistogram(Tech_res_ref)
-        # Plot and save to plot sources
+            a_num_LS=np.linspace(1, N, num=N),
+            b_gamma_tilt_deg=optimized.tilt_angles_deg,
+            c_gamma_tilt_deg_diff=optimized.inter_cabinet_angles_deg)
         # Sound Field Prediction
         results.venue_points_source.data = dict(
             x_vert=created_pal.xline, y_vert=created_pal.yline,
@@ -627,10 +598,19 @@ class PalcApp:
             color=linear_cmap(field_name='foo', palette=rainbow[::-1], low=0,
                               high=np.shape(Tech_res_ref.p_SPL)[0]-1),
             line_alpha=0.9)
+        # SPL over distance and target slope; writing the target sources
+        # snaps the shown target to the new distance grid (snap_target)
         spl_source = algorithm.spl_over_distance_source
         spl_ref_source = algorithm.reference_spl_over_distance_source
-        if not Opt_w.init:
-            shift_ref_on_zero(Opt_w, SPLoverX, SPLoverX_ref)
+        if result.target is not None:
+            spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
+                                        x_v=created_pal.xline,
+                                        y_v=created_pal.yline))
+            algorithm.target_source.data.update(dict(SPL=result.target.SPL))
+            algorithm.target_reference_source.data.update(dict(
+                SPL=[Opt_w.SPL_interp[Opt_w.ref_ind]]))
+            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL))
+        elif not Opt_w.init:
             spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
                                         x_v=created_pal.xline,
                                         y_v=created_pal.yline))
@@ -648,16 +628,6 @@ class PalcApp:
                 SPL=[Opt_w.SPL_interp[int(len(Opt_w.SPL_interp)/2)]],
                 x_v=[created_pal.xline[int(len(created_pal.xline)/2)]],
                 y_v=[created_pal.yline[int(len(created_pal.yline)/2)]]))
-        elif P.use_weighting == 'Target Slope' and Opt_w.init:
-            shift2ref(Opt_w, SPLoverX, opt_ind, SPLoverX_ref)
-            get_opt_region(SPLoverX, Opt_w)
-            spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
-                                        x_v=created_pal.xline,
-                                        y_v=created_pal.yline))
-            algorithm.target_source.data.update(dict(SPL=Opt_w.SPL))
-            algorithm.target_reference_source.data.update(dict(
-                SPL=[Opt_w.SPL_interp[Opt_w.ref_ind]]))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL))
         else:
             spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
                                         x_v=created_pal.xline,
@@ -694,11 +664,8 @@ class PalcApp:
         algorithm.spl_over_distance_figure.y_range = rng.update_range(
             'SPLoverX_y', [-1, 1], Opt_w.SPL_interp, SPLoverX.SPL_interp,
             SPLoverX.SPL, SPLoverX_ref.SPL)
-        self.config_error_info.text = ''
         results.beam_checkbox.active, results.beam_checkbox.disabled = [], False
         # Array visualization
         self.cabinet_patches_source.data.update(dict(
-            x_list=x_patches, y_list=y_patches, x_list_ref=x_patches_ref,
-            y_list_ref=y_patches_ref))
-        algorithm.start_toggle.active = False
-        self.show()
+            x_list=optimized.patches_x, y_list=optimized.patches_y,
+            x_list_ref=reference.patches_x, y_list_ref=reference.patches_y))

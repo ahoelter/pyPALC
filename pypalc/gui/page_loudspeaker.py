@@ -151,7 +151,9 @@ class LoudspeakerPage:
 
         The CSV file holds the frequency bins in the first line and the
         angles in degree in the first column; the imaginary unit is "j" or
-        "i". Triggered by the file upload.
+        "i". The text of a readable file is kept in the session state
+        (``measured_directivity_csv``) for the calculation. Triggered by the
+        file upload.
 
         Parameters
         ----------
@@ -165,8 +167,10 @@ class LoudspeakerPage:
         None.
         """
         try:
-            parse_measured_directivity(base64.b64decode(new).decode('utf-8'),
+            text = base64.b64decode(new).decode('utf-8')
+            parse_measured_directivity(text,
                                        self.app.state.sound_field_config)
+            self.app.state.measured_directivity_csv = text
             self._show_measured_directivity()
         except CALLBACK_ERRORS:
             logger.exception('Could not read the measured loudspeaker data')

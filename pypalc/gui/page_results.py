@@ -260,7 +260,9 @@ class ResultsPage:
     def update_beam_plot(self, attr, old, new) -> None:
         """Show the selected beam plots and compute newly selected ones.
 
-        Triggered by the frequency selection and the beam plot checkboxes.
+        The beam plot of the PALC optimized array uses the array of the last
+        calculation (``state.result``). Triggered by the frequency selection
+        and the beam plot checkboxes.
 
         Parameters
         ----------
@@ -292,7 +294,7 @@ class ResultsPage:
             for n in self.beam_checkbox.active:
                 if n == 0 and 0 not in old and (0 in new or f_int in new):
                     p_SPL = self._beam_spl(self.beam_mapper,
-                                           st.optimized_array.gamma_n, f,
+                                           st.result.geometry.gamma_n, f,
                                            ind_f)
                     self.beam_source.data.update(dict(
                         SPL=[p_SPL], x=[rng.p_x[0]], y=[rng.p_y[0]],
@@ -323,8 +325,11 @@ class ResultsPage:
         -------
         None.
         """
-        st = self.app.state
-        Tech_res, Tech_res_ref = st.evaluation, st.evaluation_reference
+        result = self.app.state.result
+        if result is None:
+            return
+        Tech_res = result.optimized.evaluation
+        Tech_res_ref = result.reference.evaluation
         f, p_SPL, p_SPL_ref = [], [], []
         if np.shape(new)[0] >= 1:
             for n in range(np.shape(new)[0]):

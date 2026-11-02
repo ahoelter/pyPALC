@@ -30,6 +30,13 @@ RULE = "___________________________________"
 _DISCRETIZATION_ERROR = 'Couldnt process discretization input. Use default: 5 points per m'
 
 
+def _audience_line(line: tuple, points_per_meter: float) -> AudienceLine:
+    """Setting of a line as returned by :meth:`VenuePage._new_line`."""
+    x_start, x_stop, y_start, y_stop = (float(v) for v in line[:4])
+    return AudienceLine(start=(x_start, y_start), stop=(x_stop, y_stop),
+                        points_per_meter=float(points_per_meter))
+
+
 class VenuePage:
     """Page 1: draw the audience lines and create the PALC venue.
 
@@ -257,6 +264,8 @@ class VenuePage:
         if failed:
             self.venue_error_info.text = _DISCRETIZATION_ERROR
         self.app.state.drawn.append_line(*line)
+        self.app.state.audience_lines.append(
+            _audience_line(line, points_per_meter))
         self.app.update_venue_ranges()
         drawn = self.app.state.drawn
         self.lines_source.data = dict(xlineplt=drawn.plot_x,
@@ -274,6 +283,7 @@ class VenuePage:
         drawn = self.app.state.drawn
         if np.shape(drawn.pal_index)[0] > 1:
             drawn.remove_last_line()
+            del self.app.state.audience_lines[-1]
         if np.shape(drawn.pal_index)[0] > 1:
             self.app.update_venue_ranges()
         self.lines_source.data = dict(xlineplt=drawn.plot_x,
@@ -298,6 +308,8 @@ class VenuePage:
         self.venue_error_info.text = ''
         drawn = self.app.state.drawn
         drawn.insert_previous_line(sel_ind, *line)
+        self.app.state.audience_lines.insert(
+            sel_ind, _audience_line(line, points_per_meter))
         self.lines_source.data = dict(xlineplt=drawn.plot_x,
                                       ylineplt=drawn.plot_y)
         self.app.set_venue_checked(False)
@@ -313,6 +325,7 @@ class VenuePage:
         sel_ind = self.tapped_line_source.data['tapped'][0]
         drawn = self.app.state.drawn
         drawn.remove_selected_line(sel_ind)
+        del self.app.state.audience_lines[sel_ind]
         self.lines_source.data = dict(xlineplt=drawn.plot_x,
                                       ylineplt=drawn.plot_y)
         self.app.set_venue_checked(False)

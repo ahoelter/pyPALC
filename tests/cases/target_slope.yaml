@@ -9,7 +9,7 @@ target_slope:
   # distances snapped to the SPL-over-distance grid of the initial run:
   # first, middle (index len // 2) and last grid point
   points:
-  - {distance: 2.599062001296999, level_db: 0.0}
-  - {distance: 11.071611806293436, level_db: -3.0}
-  - {distance: 20.092379483699013, level_db: -6.0}
-  reference_distance: 11.071611806293436
+  - {distance: 2.5989832395853814, level_db: 0.0}
+  - {distance: 11.071526100056044, level_db: -3.0}
+  - {distance: 20.092295956288577, level_db: -6.0}
+  reference_distance: 11.071526100056044

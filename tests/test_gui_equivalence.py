@@ -5,7 +5,7 @@ way a user does it, page by page, through the widgets and the button
 callbacks (the click order of ``tests/legacy/capture.py``). For target slope
 the target points and the reference point are dragged by writing the target
 sources, as Bokeh does when a point is dragged in the browser. Afterwards the
-sources the GUI shows (and the calculation objects of the session) must
+sources the GUI shows (and the session's last result, ``state.result``) must
 equal ``tests/baseline/<case>.npz`` exactly.
 """
 import base64
@@ -64,10 +64,11 @@ def _measured_csv_base64(setup):
     return base64.b64encode(raw).decode("ascii")
 
 
-def drive(app, setup):
-    """Enter a setup into the app page by page and press "PALC Run"."""
-    venue, loudspeaker, array, algorithm, results = (
-        app.pages[1], app.pages[2], app.pages[3], app.pages[4], app.pages[5])
+def enter(app, setup):
+    """Enter a setup into the app page by page, without pressing "PALC Run".
+    """
+    venue, loudspeaker, array, algorithm = (
+        app.pages[1], app.pages[2], app.pages[3], app.pages[4])
     # page 1
     for line in setup.venue.audience_lines:
         venue.start_x_input.value = repr(float(line.start[0]))
@@ -136,6 +137,14 @@ def drive(app, setup):
         algorithm.target_reference_source.data = dict(
             x_ref=[ts.reference_distance], SPL=list(r['SPL']),
             x_v=list(r['x_v']), y_v=list(r['y_v']))
+
+
+def drive(app, setup):
+    """Enter a setup into the app, press "PALC Run" and return the shown
+    results."""
+    enter(app, setup)
+    algorithm, results = app.pages[4], app.pages[5]
+    alg = setup.algorithm
     algorithm.start_toggle.active = True
     assert app.config_error_info.text == '', app.config_error_info.text
     assert algorithm.start_toggle.active is False
@@ -148,10 +157,10 @@ def drive(app, setup):
         'tilt_angles_deg': a(algorithm.results_source.data['b_gamma_tilt_deg']),
         'inter_cabinet_angles_deg':
             a(algorithm.results_source.data['c_gamma_tilt_deg_diff']),
-        'reference_tilt_angles_deg': a(st.reference_array.gamma_tilt_deg),
-        'frequencies_hz': a(st.evaluation.f),
-        'spl_db': a(st.evaluation.p_SPL),
-        'reference_spl_db': a(st.evaluation_reference.p_SPL),
+        'reference_tilt_angles_deg': a(st.result.reference.tilt_angles_deg),
+        'frequencies_hz': a(st.result.optimized.evaluation.f),
+        'spl_db': a(st.result.optimized.evaluation.p_SPL),
+        'reference_spl_db': a(st.result.reference.evaluation.p_SPL),
         'spl_over_distance_x':
             a(algorithm.spl_over_distance_source.data['x']),
         'spl_over_distance_db':
@@ -175,7 +184,7 @@ def drive(app, setup):
     if alg.weighting == 'target_slope':
         out['target_x'] = a(algorithm.target_source.data['x'])
         out['target_db'] = a(algorithm.target_source.data['SPL'])
-        out['weighting_weights'] = a(st.config.weighting_weights)
+        out['weighting_weights'] = a(st.result.weighting_weights)
     return out
 
 

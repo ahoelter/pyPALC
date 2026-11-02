@@ -28,10 +28,13 @@ Accepted differences to the legacy GUI
 * ``run_ts`` and later steps (a target slope run with hard margin gap
   handling, whose optimization raises an IndexError): the legacy GUI
   crashed in the callback with ``UnboundLocalError`` after it had already
-  written part of the new results. The GUI catches the error but still
-  writes results computed after the failed optimization into the target
-  slope, SPL over distance, homogeneity, histogram and cabinet sources,
-  without an error text (known issue, to be fixed).
+  written the new tilt angles, rays, cabinets and sound field into their
+  sources. The GUI now shows "Error: PALC calculation failed", releases
+  the start toggle and keeps the results of the previous run in all
+  sources (``4.results_source``, ``5.sound_field_source``,
+  ``app.cabinet_patches_source``, ``app.rays_source``,
+  ``app.hit_points_source``, ``app.config_error_info.text`` and the
+  recorded exception differ; see :func:`test_failed_run_keeps_results`).
 * The rewording of the "more than 2000 points" text is not reached by
   these steps.
 
@@ -349,6 +352,19 @@ def test_state_after_step(replayed, index):
                          if state.get(key) != golden.get(key))
     assert not differences, (name, {key: (golden.get(key), state.get(key))
                                     for key in differences[:5]})
+
+
+def test_failed_run_keeps_results(replayed):
+    """A failing target slope run shows its error and changes nothing else.
+    """
+    states = dict(replayed)
+    before, after = states['drag'], states['run_ts']
+    assert after['app.config_error_info.text'] == \
+        'Error: PALC calculation failed'
+    assert after['4.start_toggle.active'] is False
+    assert after['error'] is None
+    changed = {key for key in after if after[key] != before[key]}
+    assert changed == {'app.config_error_info.text'}
 
 
 if __name__ == '__main__':
