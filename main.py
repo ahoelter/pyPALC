@@ -1079,7 +1079,7 @@ def get_value(attr, old, new):
             if failed_key in ['x_H']         : setattr(gui_x_H,attr,'0')
             if failed_key in ['y_H']         : setattr(gui_y_H,attr,'2')
             if failed_key in ['too low']     : setattr(gui_y_H,attr,str(PALC_config.y_H))
-            if failed_key in ['psi_n']       : setattr(gui_psi_n,attr,'0.0524')
+            if failed_key in ['psi_n']       : setattr(gui_psi_n,attr,'3.0')
             # Set attribute in SFP_config if possible
             if hasattr(SFP_config, key) and failed_key in [None, 'too low']: 
                 SFP_config.store_config(key,val)
