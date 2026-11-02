@@ -1,24 +1,28 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-author: Arne Hoelter
+"""Help page of the GUI (formerly ``fun/gui_help_text.py``).
 
-Everything that is placed on the 'Help' Tab can be written or found in this
-module.
+author: Arne Hoelter
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from bokeh.layouts import row
+from bokeh.models import LayoutDOM
 from bokeh.models.widgets import Div, Panel, Tabs
 
-def help_text():
+if TYPE_CHECKING:
+    from .app import PalcApp
+
+
+def help_tabs() -> Tabs:
     """
-    Strings in html-format that are placed in Div widget in Rows to be displayed
-    in the Tabs of the 'Help' page.
+    Strings in html-format that are placed in Div widgets in rows to be
+    displayed in the tabs of the 'Help' page.
 
     Returns
     -------
-    help_tabs : obj
-        Tabs widget that contains all data of 'Help' page.
+    help_tabs : Tabs
+        Tabs widget that contains all data of the 'Help' page.
 
     """
     lspace = '<br><p></p>'
@@ -110,3 +114,26 @@ def help_text():
     help_tabs  = Tabs(tabs=[help_tab0, help_tab1, help_tab2, help_tab3, help_tab4, help_tab5])
    
     return help_tabs
+
+
+class HelpPage:
+    """Page 0: general information and help.
+
+    Parameters
+    ----------
+    app : PalcApp
+        The session the page belongs to.
+    """
+
+    def __init__(self, app: PalcApp) -> None:
+        self.app = app
+        self.tabs = help_tabs()
+
+    def layout(self) -> LayoutDOM:
+        """Body of the page below the header.
+
+        Returns
+        -------
+        LayoutDOM
+        """
+        return row([self.tabs])

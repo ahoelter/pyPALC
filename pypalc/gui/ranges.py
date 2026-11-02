@@ -160,3 +160,33 @@ def get_p_axis_rng(p, plt_ranges, p_equal_axis):
         p.frame_height = int(p.frame_width*((plt_ranges.p_y[1]-plt_ranges.p_y[0]) / \
                                             (plt_ranges.p_x[1]-plt_ranges.p_x[0])))
         p.match_aspect=True
+
+
+def set_figure_ranges(plt_ranges, figs, sizes, x_range, y_range):
+    """
+    Sets the x- and y-ranges of figures (formerly ``set_ranges`` in
+    ``main.py``). All figures get the same range objects.
+
+    Parameters
+    ----------
+    plt_ranges : Plot_ranges [in]
+        Contains the ranging data; ``p_x`` and ``p_y`` give the aspect ratio.
+    figs : list of figure [out]
+        Figures to set the ranges of.
+    sizes : list of bool
+        For each figure: if True, the frame height is set so that the axes
+        are equally scaled.
+    x_range, y_range : Range1d
+        The new ranges.
+
+    Returns
+    -------
+    None.
+
+    """
+    for fig, size in zip(figs, sizes):
+        fig.x_range = x_range
+        fig.y_range = y_range
+        if size:
+            fig.frame_height = int((plt_ranges.p_y[1]-plt_ranges.p_y[0]) * \
+                 fig.frame_width / (plt_ranges.p_x[1]-plt_ranges.p_x[0]))
