@@ -330,6 +330,8 @@ class _LegacySession:
         self.Opt_refpoint_dict.on_change("data", self.update_draw)
 
         # main.py, "Set up values before showing on Data Table"
+        # (with the fix: the start aperture angle is the widget's value)
+        self.PALC_config.store_config("psi_n", self.gui_psi_n.value)
         self.PALC_config.store_config("N", self.gui_N_LS.value)
 
     # ---------------------------------------------------------------- page 1

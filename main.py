@@ -2039,6 +2039,7 @@ res_tab4 = Panel(child=column([row([gui_f_beam, column([p_which_beamplot, gui_wh
 res_tabs = Tabs(tabs=[res_tab1, res_tab2, res_tab3, res_tab4])
 
 ###### Set up values before showing on Data Table
+PALC_config.store_config('psi_n', gui_psi_n.value)
 PALC_config.store_config('N', gui_N_LS.value)
 ###### DATA TABLE of Resulting PALC Calculcation (PAGE 4) ###### 
 results_columns = [TableColumn(field="a_num_LS", title="LS", width=20), 

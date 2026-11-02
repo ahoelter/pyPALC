@@ -14,11 +14,9 @@ GUI behavior reproduced here
 The results equal the GUI's (``tests/baseline``). This needs some GUI state
 that is not visible in a setup:
 
-* The configuration starts as after the GUI's start-up. In particular the
-  initial aperture angle of the first run is the start-up value
-  :data:`GUI_INITIAL_APERTURE_RAD` (0.0524 rad) unless the aperture angle
-  differs from the default 3 deg; after every run the GUI resets it to the
-  entered aperture angle.
+* The configuration starts as after the GUI's start-up: every run starts
+  from the entered aperture angle; after every run the GUI resets the
+  aperture angles to it.
 * A mounting height that is too low for the array is raised as the GUI does
   (see :func:`top_position_y`).
 * After the PALC run the GUI resets ``x_H``, ``y_H``, the aperture angles
@@ -70,10 +68,6 @@ RayPlotData = PALC_plotting
 MAX_VENUE_POINTS = 2000
 #: Maximum number of loops of the target slope optimization.
 TARGET_SLOPE_MAX_LOOPS = 200
-#: Default of the aperture angle input of the GUI in degree.
-GUI_DEFAULT_APERTURE_DEG = 3.0
-#: Aperture angle in radian the GUI's configuration starts with.
-GUI_INITIAL_APERTURE_RAD = 0.0524
 #: Number of cabinets the GUI's configuration starts with.
 GUI_INITIAL_CABINET_COUNT = 4
 #: Distance of the reference point in a new GUI session in m.
@@ -308,10 +302,6 @@ def _palc_config(setup: Setup, use_weighting: Optional[str] = None
                  ) -> PALC_configuration:
     """PALC configuration as the GUI holds it before the first run."""
     ls, ar, alg = setup.loudspeaker, setup.array, setup.algorithm
-    if ls.aperture_angle_deg == GUI_DEFAULT_APERTURE_DEG:
-        psi_start = GUI_INITIAL_APERTURE_RAD
-    else:
-        psi_start = float(ls.aperture_angle_deg) * np.pi / 180
     if ar.discrete_tilt_angles_deg is not None:
         gamma_LSA = np.array([float(a) for a in ar.discrete_tilt_angles_deg]) \
             * (np.pi / 180)
@@ -334,10 +324,10 @@ def _palc_config(setup: Setup, use_weighting: Optional[str] = None
         if alg.gap_handling == "soft_margin" else 1,
         last_angle_hm=[], gap_weights=[], weighting_weights=[],
         use_fixed_angle=False, fixed_angle=0,
-        directivity=_DIRECTIVITY[ls.directivity], psi_n=[psi_start],
-        gamma_n=[0], tolerance=float(alg.tolerance),
+        directivity=_DIRECTIVITY[ls.directivity], tolerance=float(alg.tolerance),
         freq_range=tuple(alg.frequency_range_hz))
-    # sets N and the start values of aperture and tilt angles
+    # sets the start values of aperture and tilt angles, then N, as the GUI
+    config.store_config('psi_n', float(ls.aperture_angle_deg))
     config.store_config('N', ar.cabinet_count)
     return config
 
@@ -364,14 +354,7 @@ def _sound_field_config(setup: Setup) -> SFP_configuration:
         dir_meas_amp=[], gamma_n=[0], f=[], plot_dir_amp=[],
         plot_dir_amp_meas=[[0], [0], [0]], plot_beta_meas=[0])
     # SFP_configuration.__init__ calls PALC_configuration.__init__() with
-    # its defaults (which also resets freq_range); give the inherited list
-    # attributes fresh lists.
-    for name, val in (("gamma_LSA", []), ("weighting_factors", []),
-                      ("last_angle_hm", []), ("gap_weights", []),
-                      ("weighting_weights", []),
-                      ("psi_n", [GUI_INITIAL_APERTURE_RAD]),
-                      ("gamma_n", [0])):
-        setattr(config, name, val)
+    # its defaults, which also resets freq_range (set below).
     config.N = ar.cabinet_count
     config.Lambda_y = float(ls.cabinet_height)
     config.Lambda_gap = float(ar.cabinet_gap)

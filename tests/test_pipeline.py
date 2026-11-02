@@ -138,3 +138,15 @@ def test_hard_margin_with_discrete_angles():
     # last angle of the previous one, also with discrete angles
     for angle in result.optimized.inter_cabinet_angles_deg[1:]:
         assert angle in angles
+
+
+def test_default_aperture_is_not_special():
+    # the first run starts from the configured aperture angle, so the GUI
+    # default 3.0 deg behaves like any neighboring value
+    base = load_setup(case_path("simple"))
+    results = []
+    for aperture in (3.0, 3.0000001):
+        setup = dataclasses.replace(base, loudspeaker=dataclasses.replace(
+            base.loudspeaker, aperture_angle_deg=aperture))
+        results.append(run(setup).geometry.gamma_tilt_deg)
+    np.testing.assert_allclose(results[0], results[1], rtol=0, atol=1e-4)
