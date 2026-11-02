@@ -126,3 +126,15 @@ def test_legacy_classes_do_not_share_default_lists():
     attrs(Plot_ranges, ["p_x", "p_y", "bar_range", "SPLoverX_y"])
     assert PALC_configuration().psi_n == [0.0524]
     assert Opt_weight().SPL_interp == [0, 0]
+
+
+def test_hard_margin_with_discrete_angles():
+    angles = (0.0, 0.5, 1.0, 2.0, 3.5, 5.0, 7.0, 10.0)
+    base = load_setup(case_path("gap_hard_margin"))
+    setup = dataclasses.replace(base, array=dataclasses.replace(
+        base.array, discrete_tilt_angles_deg=angles))
+    result = run(setup)
+    # the first cabinet of every continuous audience line starts from the
+    # last angle of the previous one, also with discrete angles
+    for angle in result.optimized.inter_cabinet_angles_deg[1:]:
+        assert angle in angles

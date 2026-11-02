@@ -423,7 +423,7 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                 # Discrete angles if hard margin is used for possibly second computation
                 if PALC_config.use_gamma_LSA and np.shape(PALC_config.gamma_LSA)[0] > 1 \
                    and PALC_config.gap_handling in ['Hard Margin'] and PALC_config.last_angle_hm:
-                    val = np.abs(PALC_config.gamma_LSA - (gamma_n[m] - PALC_config.laste_angle_hm))
+                    val = np.abs(PALC_config.gamma_LSA - (gamma_n[m] - PALC_config.last_angle_hm))
                     ind = np.unravel_index(np.argmin(val, axis=None), val.shape)
                     gamma_n[m] = PALC_config.gamma_LSA[ind[0]] + PALC_config.last_angle_hm
             elif m > 0:
