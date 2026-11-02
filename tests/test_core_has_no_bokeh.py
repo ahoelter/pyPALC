@@ -16,7 +16,7 @@ def _imported_modules(path):
 
 
 def test_core_has_no_bokeh():
-    files = sorted(CORE.glob("*.py"))
+    files = sorted(CORE.rglob("*.py"))
     assert files
     offending = [
         "%s imports %s" % (path.name, module)

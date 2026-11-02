@@ -20,9 +20,15 @@ from bokeh.models import Range1d
 
 class PAL:
     """ Class that handles the drawn lines by the user """
-    def __init__(self, xline_start=[], xline_stop=[], yline_start=[], yline_stop=[], \
-                 slope=[], b=[], xline=[], yline=[], pal_index=[], \
-                 plot_x=[], plot_y=[], ind_iscut=[]):
+    def __init__(self, xline_start=None, xline_stop=None, yline_start=None, \
+                 yline_stop=None, slope=None, b=None, xline=None, yline=None, \
+                 pal_index=None, plot_x=None, plot_y=None, ind_iscut=None):
+        # None stands for a new empty list (no shared mutable defaults)
+        xline_start, xline_stop, yline_start, yline_stop, slope, b, xline, \
+            yline, pal_index, plot_x, plot_y, ind_iscut = \
+            [[] if val is None else val for val in
+             (xline_start, xline_stop, yline_start, yline_stop, slope, b,
+              xline, yline, pal_index, plot_x, plot_y, ind_iscut)]
         self.xline_start, self.xline_stop  = xline_start, xline_stop
         self.yline_start, self.yline_stop  = yline_start, yline_stop
         self.slope, self.b, self.pal_index = slope, b, pal_index
@@ -186,13 +192,14 @@ class PALC_compatible_PAL(PAL):
     """ Class that contains data of the drawn lines in a compatible format to
         compute the PALC algorithm. The lines depend on an object of the class
         :py:class:`PAL`."""
-    def __init__(self, xline_start=[], xline_stop=[], yline_start=[], yline_stop=[], slope=[], \
-                 b=[], xline=[], yline=[], pal_index=[], plot_x=[], plot_y=[], pal=[], \
-                 pal_no_nal=[]):
+    def __init__(self, xline_start=None, xline_stop=None, yline_start=None, \
+                 yline_stop=None, slope=None, b=None, xline=None, yline=None, \
+                 pal_index=None, plot_x=None, plot_y=None, pal=None, \
+                 pal_no_nal=None):
         PAL.__init__(self, xline_start=[], xline_stop=[], yline_start=[], yline_stop=[], \
                      slope=[], b=[], xline=[], yline=[], pal_index=[], plot_x=[], plot_y=[])
-        self.pal        = pal
-        self.pal_no_nal = pal_no_nal
+        self.pal        = [] if pal is None else pal
+        self.pal_no_nal = [] if pal_no_nal is None else pal_no_nal
         
     def append_pal(self, fir_arr_x, sec_arr_x, fir_arr_y, sec_arr_y, fir_ind, sec_ind, m):
         """
@@ -259,10 +266,16 @@ class PALC_compatible_PAL(PAL):
 
 class PALC_configuration():
     """ Class to create a configuration object of the PALC algorithm. """
-    def __init__(self, Lambda_gap=0, Lambda_y=0.2, x_H=0, y_H=2, constraint='PALC 2', use_gamma_LSA=False, gamma_LSA=[], \
-                 use_weighting='Without', weighting_nu=1, weighting_factors=[], N=int(4), gap_handling='Without', strength_sm=1, \
-                 last_angle_hm=[], gap_weights=[], weighting_weights=[], use_fixed_angle=False, fixed_angle=0, \
-                 directivity = 'Circular Piston', psi_n=[0.0524], gamma_n=[0], tolerance=1.0, freq_range=(200,8000)):
+    def __init__(self, Lambda_gap=0, Lambda_y=0.2, x_H=0, y_H=2, constraint='PALC 2', use_gamma_LSA=False, gamma_LSA=None, \
+                 use_weighting='Without', weighting_nu=1, weighting_factors=None, N=int(4), gap_handling='Without', strength_sm=1, \
+                 last_angle_hm=None, gap_weights=None, weighting_weights=None, use_fixed_angle=False, fixed_angle=0, \
+                 directivity = 'Circular Piston', psi_n=None, gamma_n=None, tolerance=1.0, freq_range=(200,8000)):
+        # None stands for a new list with the default value (no shared mutable defaults)
+        gamma_LSA, weighting_factors, last_angle_hm, gap_weights, weighting_weights = \
+            [[] if val is None else val for val in
+             (gamma_LSA, weighting_factors, last_angle_hm, gap_weights, weighting_weights)]
+        psi_n = [0.0524] if psi_n is None else psi_n
+        gamma_n = [0] if gamma_n is None else gamma_n
         self.x_H, self.y_H , self.Lambda_gap, self.Lambda_y = x_H, y_H, Lambda_gap, Lambda_y
         self.tolerance, self.psi_n, self.gamma_n            = tolerance, psi_n, gamma_n
         self.constraint, self.N, self.directivity           = constraint, N, directivity
@@ -359,11 +372,18 @@ class SFP_configuration(PALC_configuration):
     """ Child class of PALC_configuration, contains data that are additionally
         needed for the sound field prediction. """
     def __init__(self, directivity='Circular Piston', N=1, Lambda_gap=0, \
-                 Lambda_y=0.2, x_H=0, y_H=2, dir_meas=np.zeros([2,120]), \
-                 dir_meas_deg=np.zeros([2,120]), \
-                 dir_meas_amp=[], gamma_n=[0], f=[], plot_dir_amp=[], \
-                 plot_dir_amp_meas=[[0],[0],[0]], plot_beta_meas=[0], \
+                 Lambda_y=0.2, x_H=0, y_H=2, dir_meas=None, \
+                 dir_meas_deg=None, \
+                 dir_meas_amp=None, gamma_n=None, f=None, plot_dir_amp=None, \
+                 plot_dir_amp_meas=None, plot_beta_meas=None, \
                  freq_range=(200,8000)):
+        # None stands for a new object with the default value (no shared mutable defaults)
+        dir_meas = np.zeros([2,120]) if dir_meas is None else dir_meas
+        dir_meas_deg = np.zeros([2,120]) if dir_meas_deg is None else dir_meas_deg
+        dir_meas_amp, f, plot_dir_amp = [[] if val is None else val for val in
+                                         (dir_meas_amp, f, plot_dir_amp)]
+        plot_dir_amp_meas = [[0],[0],[0]] if plot_dir_amp_meas is None else plot_dir_amp_meas
+        plot_beta_meas = [0] if plot_beta_meas is None else plot_beta_meas
         self.dir_meas, self.f                     = dir_meas, f 
         self.dir_meas_deg, self.dir_meas_amp      = dir_meas_deg, dir_meas_amp
         self.plot_dir_amp, self.plot_dir_amp_meas = plot_dir_amp, plot_dir_amp_meas
@@ -407,9 +427,17 @@ class SFP_configuration(PALC_configuration):
         
 class Plot_ranges():
     """ Class to create objects that contain ranges of bokeh figures. """
-    def __init__(self, p_x=[-0.5,2.5],p_y=[-0.5,2.5], bar_range=[0,0], \
-                 bartop=[0,0], h_x=[0,1], h_y=[0,1], sfp_y=[0,1], \
-                 SPLoverX_y=[0.3,15]):
+    def __init__(self, p_x=None, p_y=None, bar_range=None, \
+                 bartop=None, h_x=None, h_y=None, sfp_y=None, \
+                 SPLoverX_y=None):
+        # None stands for a new list with the default value (no shared mutable defaults)
+        p_x = [-0.5,2.5] if p_x is None else p_x
+        p_y = [-0.5,2.5] if p_y is None else p_y
+        bar_range = [0,0] if bar_range is None else bar_range
+        bartop = [0,0] if bartop is None else bartop
+        h_y = [0,1] if h_y is None else h_y
+        sfp_y = [0,1] if sfp_y is None else sfp_y
+        SPLoverX_y = [0.3,15] if SPLoverX_y is None else SPLoverX_y
         self.p_x, self.p_y          = p_x, p_y
         self.bar_range, self.bartop = bar_range, bartop
         self.h_y, self.sfp_y        = h_y, sfp_y
@@ -505,7 +533,9 @@ class PALC_plotting():
 
 class Array_opt():
     """ Class to create an object with optimized array data. """
-    def __init__(self, gamma_tilt_deg=[]):
+    def __init__(self, gamma_tilt_deg=None):
+        if gamma_tilt_deg is None:
+            gamma_tilt_deg = []
         self.gamma_n, self.gamma_tilt_deg    = [], gamma_tilt_deg
         self.gamma_tilt_deg_diff, self.psi_n = [], []
         self.Gamma_aud, self.thr_dist        = [], []
@@ -593,10 +623,10 @@ class Technical_meas_results():
 
 class Opt_weight():
     """ Class to optimize PALC by the target slope optimization. """
-    def __init__(self, SPL_interp=[0,0]):
+    def __init__(self, SPL_interp=None):
         self.x, self.SPL   = [], []
         self.x_interp      = [0,0]
-        self.SPL_interp    = SPL_interp
+        self.SPL_interp    = [0,0] if SPL_interp is None else SPL_interp
         self.init          = False
         self.x_v, self.y_v = [0,0], [0,0]
         self.diffLS        = []
