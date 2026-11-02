@@ -25,10 +25,16 @@ logger = logging.getLogger(__name__)
 
 class PALC_configuration():
     """ Class to create a configuration object of the PALC algorithm. """
-    def __init__(self, Lambda_gap=0, Lambda_y=0.2, x_H=0, y_H=2, constraint='PALC 2', use_gamma_LSA=False, gamma_LSA=[], \
-                 use_weighting='Without', weighting_nu=1, weighting_factors=[], N=int(4), gap_handling='Without', strength_sm=1, \
-                 last_angle_hm=[], gap_weights=[], weighting_weights=[], use_fixed_angle=False, fixed_angle=0, \
-                 directivity = 'Circular Piston', psi_n=[0.0524], gamma_n=[0], tolerance=1.0, freq_range=(200,8000)):
+    def __init__(self, Lambda_gap=0, Lambda_y=0.2, x_H=0, y_H=2, constraint='PALC 2', use_gamma_LSA=False, gamma_LSA=None, \
+                 use_weighting='Without', weighting_nu=1, weighting_factors=None, N=int(4), gap_handling='Without', strength_sm=1, \
+                 last_angle_hm=None, gap_weights=None, weighting_weights=None, use_fixed_angle=False, fixed_angle=0, \
+                 directivity = 'Circular Piston', psi_n=None, gamma_n=None, tolerance=1.0, freq_range=(200,8000)):
+        # None stands for a new list with the default value (no shared mutable defaults)
+        gamma_LSA, weighting_factors, last_angle_hm, gap_weights, weighting_weights = \
+            [[] if val is None else val for val in
+             (gamma_LSA, weighting_factors, last_angle_hm, gap_weights, weighting_weights)]
+        psi_n = [0.0524] if psi_n is None else psi_n
+        gamma_n = [0] if gamma_n is None else gamma_n
         self.x_H, self.y_H , self.Lambda_gap, self.Lambda_y = x_H, y_H, Lambda_gap, Lambda_y
         self.tolerance, self.psi_n, self.gamma_n            = tolerance, psi_n, gamma_n
         self.constraint, self.N, self.directivity           = constraint, N, directivity
@@ -176,7 +182,9 @@ class PALC_plotting():
 
 class Array_opt():
     """ Class to create an object with optimized array data. """
-    def __init__(self, gamma_tilt_deg=[]):
+    def __init__(self, gamma_tilt_deg=None):
+        if gamma_tilt_deg is None:
+            gamma_tilt_deg = []
         self.gamma_n, self.gamma_tilt_deg    = [], gamma_tilt_deg
         self.gamma_tilt_deg_diff, self.psi_n = [], []
         self.Gamma_aud, self.thr_dist        = [], []

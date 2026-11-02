@@ -27,11 +27,18 @@ class SFP_configuration(PALC_configuration):
     """ Child class of PALC_configuration, contains data that are additionally
         needed for the sound field prediction. """
     def __init__(self, directivity='Circular Piston', N=1, Lambda_gap=0, \
-                 Lambda_y=0.2, x_H=0, y_H=2, dir_meas=np.zeros([2,120]), \
-                 dir_meas_deg=np.zeros([2,120]), \
-                 dir_meas_amp=[], gamma_n=[0], f=[], plot_dir_amp=[], \
-                 plot_dir_amp_meas=[[0],[0],[0]], plot_beta_meas=[0], \
+                 Lambda_y=0.2, x_H=0, y_H=2, dir_meas=None, \
+                 dir_meas_deg=None, \
+                 dir_meas_amp=None, gamma_n=None, f=None, plot_dir_amp=None, \
+                 plot_dir_amp_meas=None, plot_beta_meas=None, \
                  freq_range=(200,8000)):
+        # None stands for a new object with the default value (no shared mutable defaults)
+        dir_meas = np.zeros([2,120]) if dir_meas is None else dir_meas
+        dir_meas_deg = np.zeros([2,120]) if dir_meas_deg is None else dir_meas_deg
+        dir_meas_amp, f, plot_dir_amp = [[] if val is None else val for val in
+                                         (dir_meas_amp, f, plot_dir_amp)]
+        plot_dir_amp_meas = [[0],[0],[0]] if plot_dir_amp_meas is None else plot_dir_amp_meas
+        plot_beta_meas = [0] if plot_beta_meas is None else plot_beta_meas
         self.dir_meas, self.f                     = dir_meas, f 
         self.dir_meas_deg, self.dir_meas_amp      = dir_meas_deg, dir_meas_amp
         self.plot_dir_amp, self.plot_dir_amp_meas = plot_dir_amp, plot_dir_amp_meas

@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 class Opt_weight():
     """ Class to optimize PALC by the target slope optimization. """
-    def __init__(self, SPL_interp=[0,0]):
+    def __init__(self, SPL_interp=None):
         self.x, self.SPL   = [], []
         self.x_interp      = [0,0]
-        self.SPL_interp    = SPL_interp
+        self.SPL_interp    = [0,0] if SPL_interp is None else SPL_interp
         self.init          = False
         self.x_v, self.y_v = [0,0], [0,0]
         self.diffLS        = []

@@ -14,9 +14,15 @@ from .geometry import calc_intersection_PAL
 
 class PAL:
     """ Class that handles the drawn lines by the user """
-    def __init__(self, xline_start=[], xline_stop=[], yline_start=[], yline_stop=[], \
-                 slope=[], b=[], xline=[], yline=[], pal_index=[], \
-                 plot_x=[], plot_y=[], ind_iscut=[]):
+    def __init__(self, xline_start=None, xline_stop=None, yline_start=None, \
+                 yline_stop=None, slope=None, b=None, xline=None, yline=None, \
+                 pal_index=None, plot_x=None, plot_y=None, ind_iscut=None):
+        # None stands for a new empty list (no shared mutable defaults)
+        xline_start, xline_stop, yline_start, yline_stop, slope, b, xline, \
+            yline, pal_index, plot_x, plot_y, ind_iscut = \
+            [[] if val is None else val for val in
+             (xline_start, xline_stop, yline_start, yline_stop, slope, b,
+              xline, yline, pal_index, plot_x, plot_y, ind_iscut)]
         self.xline_start, self.xline_stop  = xline_start, xline_stop
         self.yline_start, self.yline_stop  = yline_start, yline_stop
         self.slope, self.b, self.pal_index = slope, b, pal_index
@@ -181,13 +187,14 @@ class PALC_compatible_PAL(PAL):
     """ Class that contains data of the drawn lines in a compatible format to
         compute the PALC algorithm. The lines depend on an object of the class
         :py:class:`PAL`."""
-    def __init__(self, xline_start=[], xline_stop=[], yline_start=[], yline_stop=[], slope=[], \
-                 b=[], xline=[], yline=[], pal_index=[], plot_x=[], plot_y=[], pal=[], \
-                 pal_no_nal=[]):
+    def __init__(self, xline_start=None, xline_stop=None, yline_start=None, \
+                 yline_stop=None, slope=None, b=None, xline=None, yline=None, \
+                 pal_index=None, plot_x=None, plot_y=None, pal=None, \
+                 pal_no_nal=None):
         PAL.__init__(self, xline_start=[], xline_stop=[], yline_start=[], yline_stop=[], \
                      slope=[], b=[], xline=[], yline=[], pal_index=[], plot_x=[], plot_y=[])
-        self.pal        = pal
-        self.pal_no_nal = pal_no_nal
+        self.pal        = [] if pal is None else pal
+        self.pal_no_nal = [] if pal_no_nal is None else pal_no_nal
         
     def append_pal(self, fir_arr_x, sec_arr_x, fir_arr_y, sec_arr_y, fir_ind, sec_ind, m):
         """

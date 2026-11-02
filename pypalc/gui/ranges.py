@@ -14,9 +14,17 @@ from bokeh.models import Range1d
 
 class Plot_ranges():
     """ Class to create objects that contain ranges of bokeh figures. """
-    def __init__(self, p_x=[-0.5,2.5],p_y=[-0.5,2.5], bar_range=[0,0], \
-                 bartop=[0,0], h_x=[0,1], h_y=[0,1], sfp_y=[0,1], \
-                 SPLoverX_y=[0.3,15]):
+    def __init__(self, p_x=None, p_y=None, bar_range=None, \
+                 bartop=None, h_x=None, h_y=None, sfp_y=None, \
+                 SPLoverX_y=None):
+        # None stands for a new list with the default value (no shared mutable defaults)
+        p_x = [-0.5,2.5] if p_x is None else p_x
+        p_y = [-0.5,2.5] if p_y is None else p_y
+        bar_range = [0,0] if bar_range is None else bar_range
+        bartop = [0,0] if bartop is None else bartop
+        h_y = [0,1] if h_y is None else h_y
+        sfp_y = [0,1] if sfp_y is None else sfp_y
+        SPLoverX_y = [0.3,15] if SPLoverX_y is None else SPLoverX_y
         self.p_x, self.p_y          = p_x, p_y
         self.bar_range, self.bartop = bar_range, bartop
         self.h_y, self.sfp_y        = h_y, sfp_y

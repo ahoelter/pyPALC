@@ -99,3 +99,30 @@ def test_initial_target_slope_lies_on_the_distance_grid():
     assert all(d in grid for d in distances)
     assert target.reference_distance in grid
     assert distances[0] <= target.reference_distance <= distances[-1]
+
+
+def test_legacy_classes_do_not_share_default_lists():
+    from pypalc.core.palc import Array_opt, PALC_configuration
+    from pypalc.core.sound_field import SFP_configuration
+    from pypalc.core.target_slope import Opt_weight
+    from pypalc.core.venue import PALC_compatible_PAL
+    from pypalc.gui.ranges import Plot_ranges
+
+    def attrs(cls, names):
+        a, b = cls(), cls()
+        for name in names:
+            assert getattr(a, name) is not getattr(b, name), (cls, name)
+
+    attrs(PAL, ["xline_start", "xline", "pal_index", "plot_x", "ind_iscut"])
+    attrs(PALC_compatible_PAL, ["pal", "pal_no_nal", "xline"])
+    attrs(PALC_configuration, ["gamma_LSA", "weighting_factors", "psi_n",
+                               "gamma_n", "last_angle_hm", "gap_weights",
+                               "weighting_weights"])
+    attrs(SFP_configuration, ["dir_meas", "dir_meas_deg", "f",
+                              "plot_dir_amp_meas", "plot_beta_meas",
+                              "gamma_LSA", "psi_n"])
+    attrs(Array_opt, ["gamma_tilt_deg"])
+    attrs(Opt_weight, ["SPL_interp"])
+    attrs(Plot_ranges, ["p_x", "p_y", "bar_range", "SPLoverX_y"])
+    assert PALC_configuration().psi_n == [0.0524]
+    assert Opt_weight().SPL_interp == [0, 0]
