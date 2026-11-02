@@ -79,8 +79,10 @@ GUI_INITIAL_CABINET_COUNT = 4
 #: Distance of the reference point in a new GUI session in m.
 GUI_INITIAL_REFERENCE_DISTANCE = 10.0
 
-# Exceptions the legacy calculation code raises on unusable input.
-_CALCULATION_ERRORS = (ArithmeticError, LookupError, TypeError, ValueError)
+# Exceptions the legacy calculation code raises on unusable input (the GUI
+# catches all exceptions there and shows an error text).
+_CALCULATION_ERRORS = (ArithmeticError, AttributeError, LookupError,
+                       TypeError, ValueError)
 
 # Setting values -> option labels used by the legacy configuration objects.
 _VARIANTS = {"palc1": "PALC 1", "palc2": "PALC 2", "palc3": "PALC 3"}
