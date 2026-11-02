@@ -23,23 +23,27 @@ import sys
 import os
 abs_path = os.path.dirname(os.path.abspath(__file__))
 appname = os.path.basename(abs_path)
-sys.path.append(f'{abs_path}/fun/') # add functions to path
+sys.path.insert(0, abs_path) # make the pypalc package importable
+sys.path.append(f'{abs_path}/fun/') # add GUI helper functions to path
 
 # import PALC functions
-import calcPALC
-import checkPAL
-import PALC_classes
-from PALC_functions import calc_diff_tilt_angles, LSA_visualization
-from PALC_opt import get_opt_region, get_weight_links, shift2ref, shift_ref_on_zero
-from sfp_functions import calcSFP, calcHomogeneity, calc_directivity 
-from sfp_functions import init_dir_plot, calcSPLoverX, calcHistogram, getBeamplotRes
+from pypalc.core.venue import PAL, PALC_compatible_PAL
+from pypalc.core.venue import suggestPAL, get_PALC_compatible_PAL
+from pypalc.core.palc import PALC_configuration, PALC_plotting, Array_opt
+from pypalc.core.palc import calcPALC, get_fixed_angle_borders
+from pypalc.core.geometry import calc_diff_tilt_angles, LSA_visualization
+from pypalc.core.sound_field import SFP_configuration, Technical_meas_results
+from pypalc.core.sound_field import calcSFP, calcHomogeneity, calc_directivity
+from pypalc.core.sound_field import init_dir_plot, calcSPLoverX, calcHistogram
+from pypalc.core.target_slope import Opt_weight, optimize_PALC
+from pypalc.core.target_slope import get_opt_region, get_weight_links, shift2ref, shift_ref_on_zero
+from pypalc.gui.ranges import Plot_ranges, venue_slice2CDS, get_p_axis_rng
 from gui_help_text import help_text
-from gui_helper import update_text, venue_slice2CDS, get_p_axis_rng
+from gui_helper import update_text, check_all_draw_conditions
 from gui_ls_array import ref_array_angles, read_dir_data, arrange_ref_arr_in
-from gui_algorithm_sfp import optimize_PALC, round_fixed_angle
-from gui_algorithm_sfp import get_fixed_angle_borders, set_beamplot_visibility
+from gui_algorithm_sfp import round_fixed_angle, getBeamplotRes
+from gui_algorithm_sfp import set_beamplot_visibility
 from gui_algorithm_sfp import update_gh_w_select, set_weighting_in, choose_gap_handling
-from gui_venue import check_all_draw_conditions
 
 # Import python
 import numpy as np
@@ -62,33 +66,33 @@ from bokeh.palettes import Cividis256
 
 
 #%%########## Initialize all necessary objects ###############################
-created_pal    = PALC_classes.PAL(pal_index = np.array([0]).astype(int))
+created_pal    = PAL(pal_index = np.array([0]).astype(int))
 """Audience lines drawn by user"""
-PALC_pal       = PALC_classes.PALC_compatible_PAL()
+PALC_pal       = PALC_compatible_PAL()
 """PALC compatible venue slice (with audience lines)"""
-PALC_config    = PALC_classes.PALC_configuration()
+PALC_config    = PALC_configuration()
 """PALC configuration"""
-SFP_config     = PALC_classes.SFP_configuration()
+SFP_config     = SFP_configuration()
 """Sound Field Prediction configuration (CDPS-Model)"""
-PALC_plots     = PALC_classes.PALC_plotting()
+PALC_plots     = PALC_plotting()
 """Plot data of PALC results"""
-PALC_plots_ref = PALC_classes.PALC_plotting()
+PALC_plots_ref = PALC_plotting()
 """Plot data of the reference array"""
-plt_ranges     = PALC_classes.Plot_ranges()
+plt_ranges     = Plot_ranges()
 """Ranges of the plots"""
-Opt_arr        = PALC_classes.Array_opt()
+Opt_arr        = Array_opt()
 """Data of the optimized array"""
-Ref_arr        = PALC_classes.Array_opt(gamma_tilt_deg=np.zeros(4))
+Ref_arr        = Array_opt(gamma_tilt_deg=np.zeros(4))
 """Data of the reference array"""
-Tech_res       = PALC_classes.Technical_meas_results()
+Tech_res       = Technical_meas_results()
 """Results of the technical measures of the PALC optimized array"""
-Tech_res_ref   = PALC_classes.Technical_meas_results()
+Tech_res_ref   = Technical_meas_results()
 """Results of the technical measures of the reference array"""
-Opt_w          = PALC_classes.Opt_weight()
+Opt_w          = Opt_weight()
 """Data needed for the target slope optimization of PALC (SPL over distance)"""
-SPLoverX       = PALC_classes.Opt_weight(SPL_interp = [0])
+SPLoverX       = Opt_weight(SPL_interp = [0])
 """Result data of SPL over distance computation"""
-SPLoverX_ref   = PALC_classes.Opt_weight(SPL_interp = [0])
+SPLoverX_ref   = Opt_weight(SPL_interp = [0])
 """Result data of SPL over distance computation of reference LSA"""
 ############ Set up dictionaries for user interaction with the GUI ############
 x_init = np.array([0, 0]).astype(float)
@@ -431,16 +435,16 @@ def check_PAL():
     """
     try:
         # initialize objects
-        suggested_nal = PALC_classes.PAL(ind_iscut=[])
-        suggested_sfp = PALC_classes.PAL(ind_iscut=[])
+        suggested_nal = PAL(ind_iscut=[])
+        suggested_sfp = PAL(ind_iscut=[])
         # compute checking
-        checkPAL.suggestPAL(created_pal, suggested_nal, suggested_sfp)
+        suggestPAL(created_pal, suggested_nal, suggested_sfp)
         # plot the suggested lines
         guinalplt.data = dict(xnalplt=suggested_nal.plot_x, ynalplt=suggested_nal.plot_y)
         guisfpplt.data = dict(xsfpplt=suggested_sfp.plot_x, ysfpplt=suggested_sfp.plot_y)
         # initialize PALC compatible pal lines and create them
         PALC_pal.pal, PALC_pal.pal_no_nal = [], []
-        checkPAL.get_PALC_compatible_PAL(PALC_pal, created_pal, suggested_nal, suggested_sfp)
+        get_PALC_compatible_PAL(PALC_pal, created_pal, suggested_nal, suggested_sfp)
         PALC_pal.create_pal_without_nal(suggested_nal)
         change_start_pal_button(True)
         update_text(config_error_info,'')
@@ -825,7 +829,7 @@ def start_calc(arg):
         return
     # Start the PALC algorithm
     PALC_config.get_initial_weights()
-#    PALC_plots     = PALC_classes.PALC_plotting()
+#    PALC_plots     = PALC_plotting()
     ###################### RUN THE CALCUlATION ####################################
 
     try:
@@ -841,7 +845,7 @@ def start_calc(arg):
                                     Opt_arr, created_pal, Tech_res, SPLoverX, Opt_w, \
                                     200)
         else:
-            calcPALC.calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)        
+            calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)        
     except:
         gui_start.active = False
         update_text(config_error_info,'Error: PALC calculation failed')

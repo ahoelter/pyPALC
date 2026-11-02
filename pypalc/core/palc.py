@@ -1,406 +1,229 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
+"""The PALC algorithm.
+
+Configuration and result classes of the PALC algorithm, the main routine
+:func:`calc_angles` and the gap handling wrapper :func:`calcPALC`
+(formerly ``fun/calcPALC.py``, ``calc_angles`` from
+``fun/PALC_functions.py``, the configuration and array classes from
+``fun/PALC_classes.py`` and ``get_fixed_angle_borders`` from
+``fun/gui_algorithm_sfp.py``).
+
 author: Arne Hoelter
-
-This module contains function that are used in :py:meth:`calcPALC` and
-:any:`calc_angles`.
 """
+from __future__ import annotations
 
-import numpy as np
+import logging
+import time
 from copy import copy
 
-##    function is contained in the numpy.matlib module
-#     for further information, see: https://github.com/numpy/numpy/blob/v1.13.0/numpy/matlib.py#L310-L358 
-#
-def repmat(a, m, n): 
-    """ Contained in numpy.matlib module,
-        see https://github.com/numpy/numpy/blob/v1.13.0/numpy/matlib.py#L310-L358 """
-    a = np.asanyarray(a)
-    ndim = a.ndim
-    if ndim == 0:
-        origrows, origcols = (1, 1)
-    elif ndim == 1:
-        origrows, origcols = (1, a.shape[0])
-    else:
-        origrows, origcols = a.shape
-    rows = origrows * m
-    cols = origcols * n
-    c = a.reshape(1, a.size).repeat(m, 0).reshape(rows, origcols).repeat(n, 0)
-    return c.reshape(rows, cols)
+import numpy as np
 
-def list_sort(seq):
-    """
-    Sorts a sequence of lists. Actually not used.
+from .geometry import (LSA_visualization, calc_gamma, calc_intersection_PAL,
+                       source_pos)
 
-    Parameters
-    ----------
-    seq : list
-        List to sort.
-
-    Returns
-    -------
-    list
-        Sorted list.
-
-    """
-    return sorted(range(len(seq)), key=seq.__getitem__)
+logger = logging.getLogger(__name__)
 
 
-def calc_diff_tilt_angles(gamma_tilt_deg):
-    """
-    Calculates the intercabinet tilt angles. Called by :any:`start_calc`.
-
-    Parameters
-    ----------
-    gamma_tilt_deg : ndarray
-        Computed absolute tilt angles in degree.
-
-    Returns
-    -------
-    ndarray
-        Rounded intercabinet tilt angles and absolute tilt angles in degree.
-
-    """
-    gamma_tilt_deg_diff = np.zeros(np.shape(gamma_tilt_deg)[0],float)
-    gamma_tilt_deg_diff[0] = gamma_tilt_deg[0]
-    for n in range(1, np.shape(gamma_tilt_deg)[0]):
-        gamma_tilt_deg_diff[n] =  gamma_tilt_deg[n] - gamma_tilt_deg[n-1]
-    return np.round(gamma_tilt_deg_diff, decimals=2) , np.round(gamma_tilt_deg, decimals=2)
+class PALC_configuration():
+    """ Class to create a configuration object of the PALC algorithm. """
+    def __init__(self, Lambda_gap=0, Lambda_y=0.2, x_H=0, y_H=2, constraint='PALC 2', use_gamma_LSA=False, gamma_LSA=[], \
+                 use_weighting='Without', weighting_nu=1, weighting_factors=[], N=int(4), gap_handling='Without', strength_sm=1, \
+                 last_angle_hm=[], gap_weights=[], weighting_weights=[], use_fixed_angle=False, fixed_angle=0, \
+                 directivity = 'Circular Piston', psi_n=[0.0524], gamma_n=[0], tolerance=1.0, freq_range=(200,8000)):
+        self.x_H, self.y_H , self.Lambda_gap, self.Lambda_y = x_H, y_H, Lambda_gap, Lambda_y
+        self.tolerance, self.psi_n, self.gamma_n            = tolerance, psi_n, gamma_n
+        self.constraint, self.N, self.directivity           = constraint, N, directivity
+        self.use_weighting, self.weighting_nu               = use_weighting, weighting_nu
+        self.weighting_factors, self.weighting_weights      = weighting_factors, weighting_weights
+        self.gap_weights, self. gap_handling                = gap_weights, gap_handling
+        self.strength_sm, self.last_angle_hm                = strength_sm, last_angle_hm
+        self.use_fixed_angle, self.fixed_angle              = use_fixed_angle, fixed_angle
+        self.use_gamma_LSA, self.gamma_LSA                  = use_gamma_LSA, gamma_LSA
+        self.freq_range                                     = freq_range
 
 
-def calc_progressive_array(N, gamma_LSA=[], gamma_0 = 0, gamma_f = 38, use_dangles = "No"):
-    """
-    Calculates the absolute tilt angles of a progressive LSA curving. Called by
-    :any:`ref_array_angles`.
+    def store_config(self, *new_input):
+        """
+        Writes configuration input to the attributes of the object.
 
-    Parameters
-    ----------
-    N : int
-        Number of loudspeaker array cabinets.
-    gamma_LSA : list, optional
-        Possible discrete intercabinet tilt angles, if use_dangles is set to
-        'Yes'. The default is [].
-    gamma_0 : float, optional
-        Tilt angle of the highest (first) LSA cabinet in degree.
-        The default is 0.
-    gamma_f : float, optional
-        Angle of the last tilt angle in degree. The default is 38.
-    use_dangles : str, optional
-        If discrete tilt angles shall be used: 'Yes'. The default is 'No'.
+        Parameters
+        ----------
+        *new_input : list
+            First entry contains a list of attributes to update / store.
+            Second entry contains the list with corresponding data / values.
 
-    Returns
-    -------
-    gamma_deg : ndarray
-        Array with the progressive LSA curving in degree.
+        Returns
+        -------
+        str
+            Error message if storage failed.
+        str
+            Info message if storage failed.
 
-    """
-    gamma_deg = np.zeros(N)   
-    # calculate delta_gamma with given terminal angle gamma_f
-    delta_gamma = (gamma_f-gamma_0) / ((N/2)*(N-1))
-    #delta_gamma = 7/N
-    # calculate cabinet tilt angle for all LSA cabinets
-    for n in range(N):
-        gamma_deg[n] = gamma_0 + ((n+1)/2)*(n)*delta_gamma
-        if np.shape(gamma_LSA)[0] > 1 and n > 0 and use_dangles == "Yes":
-            val = np.abs(gamma_LSA / (np.pi / 180) - (gamma_deg[n] - gamma_deg[n-1]))
-            ind = np.unravel_index(np.argmin(val, axis=None), val.shape)
-            gamma_deg[n] = gamma_LSA[ind[0]] / (np.pi / 180) + gamma_deg[n-1]
-    return gamma_deg
-
-
-def calc_arc_array(N, gamma_LSA=[], gamma_0 = 0, gamma_delta = 1, use_dangles = "No"):
-    """
-    Calculates the absolute tilt angles of an arc LSA curving. Called by
-    :any:`ref_array_angles`.
-
-    Parameters
-    ----------
-    N : int
-        Number of loudspeaker array cabinets.
-    gamma_LSA : list, optional
-        Possible discrete intercabinet tilt angles, if use_dangles is set to
-        'Yes'. The default is [].
-    gamma_0 : float, optional
-        Tilt angle of the highest (first) LSA cabinet in degree.
-        The default is 0.
-    gamma_delta : float, optional
-        Angle of the intercabinet angles in degree. The default is 1.
-    use_dangles : str, optional
-        If discrete tilt angles shall be used: 'Yes'. The default is 'No'.
-
-    Returns
-    -------
-    gamma_deg : ndarray
-        Array with the progressive LSA curving in degree.
-
-    """
-    gamma_deg = np.zeros(N)
-    if np.shape(gamma_LSA)[0] > 1 and use_dangles == "Yes":
-        gamma_delta = gamma_LSA[np.argmin(np.abs((gamma_LSA/(np.pi/180))-gamma_delta))]*(180/np.pi)
-    for n in range(N):
-        gamma_deg[n] = gamma_0 + n * gamma_delta
-    return gamma_deg
-    
-
-def calc_gamma(gamma_n, psi_n, x_start, y_start, x_a_t_n, Lambda_y, m=0):
-    """
-    Calculates a specific loudspeaker tilt angle of a LSA cabinet. Called by
-    :any:`calc_angles`.
-
-    Parameters
-    ----------
-    gamma_n : ndarray
-        Set of LSA tilt angles.
-    psi_n : float
-        Splay / aperture angle of the loudspeaker cabinets or of the m-th LS cabinet.
-    x_start : float
-        Highest point of the LSA cabinet in x-coordinate.
-    y_start : float
-        Highest point of the LSA cabinet in y-coordinate.
-    x_a_t_n : float
-        Top position of covered audience line by m-th LSA cabinet (x- and y-coordinate).
-    Lambda_y : float
-        Height of m-th LSA cabinet.
-    m : int, optional
-        Variable which LSA cabinet is optimized. The default is 0.
-
-    Returns
-    -------
-    float
-        Tilt angle of m-th LSA cabinet in degree.
-
-    """
-    if m == 0:
-        dx_an = x_a_t_n[m,0] - x_start
-        dy_an = x_a_t_n[m,1] - y_start
-    else:
-        dx_an = x_a_t_n[m,0] - x_start[m]
-        dy_an = x_a_t_n[m,1] - y_start[m]
-    A_an = dx_an * np.sin(psi_n[m]) - dy_an * np.cos(psi_n[m])
-    B_an = -dx_an * np.cos(psi_n[m]) - dy_an * np.sin(psi_n[m])
-    C_an = (-Lambda_y / 2) * np.cos(psi_n[m])
-    if A_an > 0:
-        gamma_n[m] = np.arccos(-C_an / (np.sqrt(A_an**2 + B_an**2))) - np.arctan(-B_an / A_an)
-    else:
-        gamma_n[m] = -np.arccos(C_an / (np.sqrt(A_an**2 + B_an**2))) - np.arctan(-B_an / A_an)  
-    return gamma_n[m]
-
-
-def source_pos(gamma_n, PALC_config):
-    """
-    Calculates the positions of the LSA cabinets for a given tilt angles.
-    Called by :any:`calc_angles`.
-
-    Parameters
-    ----------
-    gamma_n : ndarray
-        Set of LSA tilt angles.
-    PALC_config : obj
-        Configuration of the PALC-algorithm.
-
-    Returns
-    -------
-    x_start : ndarray
-        Highest points of LSA cabinets in x-coordinates.
-    y_start : ndarray
-        Highest points of LSA cabinets in y-coordinates.
-    x_stop : ndarray
-        Lowest points of LSA cabinets in x-coordinates.
-    y_stop : ndarray
-        Lowest points of LSA cabinets in y-coordinates.
-    x_src : ndarray
-        Center points of LSA cabinets in x-coordinates.
-    y_src : ndarray
-        Center points of LSA cabinets in y-coordinates.
-    x_S : ndarray
-        Center of the whole LSA in x-coordinates.
-    y_S : ndarray
-        Center of the whole LSA in y-coordinates.
-
-    """
-    # initialize the information of the PALC_config list
-    Lambda_y = PALC_config.Lambda_y
-    Lambda_gap = PALC_config.Lambda_gap
-    x_H = PALC_config.x_H
-    y_H = PALC_config.y_H
-    gamma_n = np.reshape(gamma_n,[np.shape(gamma_n)[0],1])
-    
-    # calculate the source positions
-    X = -(Lambda_y + Lambda_gap) * np.sin(gamma_n)
-    Y = -(Lambda_y + Lambda_gap) * np.cos(gamma_n)
-    X_start = repmat(X, 1, np.shape(X)[0]) * np.triu(np.ones((np.shape(X)[0],np.shape(X)[0]),int),0)
-    Y_start = repmat(Y, 1, np.shape(Y)[0]) * np.triu(np.ones((np.shape(Y)[0],np.shape(Y)[0]),int),0)
-    x_start = np.transpose(np.sum(X_start,0)) + x_H
-    x_start = np.append([x_H],[x_start])
-    x_start = np.delete(x_start,[np.shape(x_start)[0]-1])
-    y_start = np.transpose(np.sum(Y_start,0)) + y_H
-    y_start = np.append([y_H],[y_start])
-    y_start = np.delete(y_start,[np.shape(y_start)[0]-1])
-    x_stop = x_start - Lambda_y * np.sin(gamma_n[:,0])
-    y_stop = y_start - Lambda_y * np.cos(gamma_n[:,0])
-    x_src = (x_start + x_stop) / 2
-    y_src = (y_start + y_stop) / 2
-    x_S = (x_start[0] + x_stop[np.shape(x_stop)[0]-1]) / 2
-    y_S = (y_start[0] + y_stop[np.shape(x_stop)[0]-1]) / 2
-    
-    return x_start, y_start, x_stop, y_stop, x_src, y_src, x_S, y_S
-
- 
-def calc_intersection_PAL(xy_1_a, xy_1_b, xy_2_a, xy_2_b):
-    """
-    Calculates intersection points of the polygonal audience lines
-    This function is necessary for the handling of gaps in the audience lines and
-    is used to create the non-audience lines.
-    Calculation of the intersection of two adjacent sections of the polygonal
-    audience line based on the intersection of two linear functions in vector
-    representation. Called by :any:`calc_angles`, :any:`pal_draw_condition_3`
-    and :any:`suggestPAL`.
-    
-    
-        * vec{OP_1} = vec{OA_1} + lambda_1 * ( vec{OB_1} - vec{OA_1} )
-        * vec{OP_2} = vec{OA_2} + lambda_2 * ( vec{OB_2} - vec{OA_2} )
-
-        * vec{OA_1} = [ xy_1_a(1) xy_1_a(2) ]
-        * vec{OB_1} = [ xy_1_b(1) xy_1_b(2) ]
-        * vec{OA_2} = [ xy_2_a(1) xy_2_a(2) ]
-        * vec{OB_2} = [ xy_2_b(1) xy_2_b(2) ]
-
-    Parameters
-    ----------
-    xy_1_a : list
-        Start position (x, y) of the pal section 1.
-    xy_1_b : list
-        Stop position (x, y) of the pal section 1.
-    xy_2_a : list
-        Start position (x, y) of the pal section 2.
-    xy_2_b : list
-        Stop position (x, y) of the pal section 2.
-
-    Returns
-    -------
-    xy_s : list
-        Intersection (x, y) of pal section 1 and pal section 2.
-    lambda_1 : float
-        Vector parameter 1 for the intersection.
-    lambda_2 : float
-        Vector parameter 2 for the intersection.
-    point_exist : bool
-        True, if a point of intersection exists. Otherwise False.
-
-    """
-    # initialize
-    xy_s_1 = np.zeros(2)
-    xy_s_2 = np.zeros(2)
-    xy_s = np.zeros(2)
-    if xy_1_a[0] != xy_1_b[0] and xy_2_a[0] != xy_2_b[0]:
-        slope_1 = (xy_1_a[1] - xy_1_b[1]) / (xy_1_a[0] - xy_1_b[0])
-        slope_2 = (xy_2_a[1] - xy_2_b[1]) / (xy_2_a[0] - xy_2_b[0])
-    elif xy_1_a[0] == xy_1_b[0] and xy_2_a[0] != xy_2_b[0]:
-        slope_1 = 5000
-        slope_2 = (xy_2_a[1] - xy_2_b[1]) / (xy_2_a[0] - xy_2_b[0])
-    elif xy_1_a[0] != xy_1_b[0] and xy_2_a[0] == xy_2_b[0]:
-        slope_1 = (xy_1_a[1] - xy_1_b[1]) / (xy_1_a[0] - xy_1_b[0])
-        slope_2 = 4900
-    else:
-        slope_1 = 5000
-        slope_2 = 4900
-    # check if the slope of both lines is infinity or slope of both lines is equal
-    if (xy_1_a[0] == xy_1_b[0] and xy_2_a[0] == xy_2_b[0]) or \
-    (np.abs(slope_1 - slope_2) <= 10**(-5)):
-        point_exist = False
-        lambda_1 = 0
-        lambda_2 = 0
-        xy_s = [0,0]
-    else:
-        # calculate vector parameters lambda_1 and lambda_2 for the
-        # intersection position
-        lambda_1 = ((xy_2_a[0] - xy_1_a[0]) * (xy_2_b[1] - xy_2_a[1]) + \
-                    (xy_2_b[0] - xy_2_a[0]) * (xy_1_a[1] - xy_2_a[1])) / \
-                   ((xy_1_b[0] - xy_1_a[0]) * (xy_2_b[1] - xy_2_a[1]) + \
-                    (xy_2_b[0] - xy_2_a[0]) * (xy_1_a[1] - xy_1_b[1]))
+        """
+        # convert to PALC compatible dtypes
+        if new_input[0] in ['x_H', 'y_H', 'fixed_angle', 'Lambda_gap', 'Lambda_y', 'tolerance']:
+            try:
+                val = float(new_input[1])
+            except (TypeError, ValueError):
+                return 'Error: only numbers are allowed. Set to Default', new_input[0]
+        elif new_input[0] in ['N', 'psi_n']:
+            try:
+                if new_input[0] in ['N']: 
+                    val = int(new_input[1])
+                if new_input[0] in ['psi_n']:
+                    val = self.N
+                    self.psi_n = [float(new_input[1])*np.pi/180]
+                self.psi_n = np.linspace(self.psi_n[0], self.psi_n[0], num=val)
+                self.gamma_n = np.linspace(-0.0428, 0.7147, num=val)
+                self.weighting_factors = np.ones(val)
+                # more than one LS necessary and maximum of 30
+                if val == 0: return 'Error: number of LS must be bigger than 0. Set to default', new_input[0]
+                if val > 30: return 'Error: maximum amount of LS is 30. Set to default', new_input[0]
+                if new_input[0] in ['psi_n']: return '', None
+            except (TypeError, ValueError):
+                return 'Error: only numbers are allowed. Set to default', new_input[0]
+        elif new_input[0] in ['strength_sm', 'fixed_angle']:
+            val = float(new_input[1])
         
-        lambda_2 = ((xy_1_b[0] - xy_1_a[0]) * (xy_1_a[1] - xy_2_a[1]) + \
-                    (xy_2_a[0] - xy_1_a[0]) * (xy_1_b[1] - xy_1_a[1])) / \
-                   ((xy_1_b[0] - xy_1_a[0]) * (xy_2_b[1] - xy_2_a[1]) + \
-                    (xy_2_b[0] - xy_2_a[0]) * (xy_1_a[1] - xy_1_b[1]))    
+        if hasattr(self, new_input[0]) and 'val' in locals():
+            setattr(self, new_input[0], val)
+        elif hasattr(self, new_input[0]):
+            setattr(self, new_input[0], new_input[1])
+        else:            
+            logger.error('PALC_config has no attribute %s', new_input[0])
         
-        # calculate intersection position based on the computed lambda_1 for pal section 1
-        xy_s_1[0] = xy_1_a[0] + lambda_1 * (xy_1_b[0] - xy_1_a[0])
-        xy_s_1[1] = xy_1_a[1] + lambda_1 * (xy_1_b[1] - xy_1_a[1])
-        # calculate intersction position based on the computed lambda_2 for pal section 2
-        xy_s_2[0] = xy_2_a[0] + lambda_2 * (xy_2_b[0] - xy_2_a[0])
-        xy_s_2[1] = xy_2_a[1] + lambda_2 * (xy_2_b[1] - xy_2_a[1])
-        # check of calculation: do the computed lambda_1 and lambda_2 result in the 
-        # same intersection position -- x-coordinates
-        if np.abs(xy_s_1[0] - xy_s_2[0]) < 10**(-8):
-            xy_s[0] = xy_s_1[0]
+        # array must be smaller than y_H
+        if self.N * (self.Lambda_y + self.Lambda_gap) > self.y_H:
+            self.y_H = np.round(self.N * (self.Lambda_y + self.Lambda_gap), \
+                                decimals=2)
+            return 'Warning: loudspeaker array is too long for the mounting height. Changed (14.)', 'too low'
+        
+        return '', None
+    
+    def get_initial_weights(self):
+        """
+        Initializes the weighting factors before starting the PALC algorithm.
+
+        Returns
+        -------
+        None.
+
+        """
+        # Reset gap_weights
+        self.gap_weights = np.ones(self.N)
+        # Set weights depending on initial weighting_nu
+        if self.use_weighting in ['Linear Spacing']:
+            self.weighting_weights = np.linspace(1, self.weighting_nu, num=self.N)
+        elif self.use_weighting in ['Logarithmic Spacing']:
+            self.weighting_weights = np.geomspace(1, self.weighting_nu, num=self.N)
         else:
-            xy_s[0] = 0
-        # check of calculation: do the computed lambda_1 and lambda_2 result in the 
-        # same intersection position -- y-coordinates
-        if np.abs(xy_s_1[1] - xy_s_2[1]) < 10**(-8):
-            xy_s[1] = xy_s_1[1]
-        else:
-            xy_s[1] = 0
-        point_exist = True
-    
-    return xy_s, lambda_1, lambda_2, point_exist
+            self.weighting_weights = np.ones(self.N)
+        # Set initial weighting factors
+        self.weighting_factors = self.weighting_weights * self.gap_weights
 
 
-def LSA_visualization(PALC_plots, PALC_config, gamma_n, N_margin=[]):
-    """
-    Calculates the positions of the LSA cabinet edges to visualize them in a
-    bokeh figure as patches. Called by :any:`start_calc`.
-
-    Parameters
-    ----------
-    PALC_plots : obj [out]
-        Contains plotting data of the PALC results.
-    PALC_config : obj [in]
-        Contains the PALC configuration.
-    gamma_n : ndarray
-        Absolute tilt angles of the LSA cabinets in degree.
-    N_margin : int, optional
-        If not all LSA cabinets shall be visualized. The default is [].
-
-    Returns
-    -------
-    x_patches : list
-        x-coordinates of the LSA patches.
-    y_patches : list
-        y-coordinates of the LSA patches.
-
-    """
-    if N_margin == []:
-        N = PALC_config.N
-    else:
-        N = N_margin
-    # Array visualization
-    # assign variables
-    x_start, x_stop, y_start, y_stop = np.zeros(N), np.zeros(N), \
-                                       np.zeros(N), np.zeros(N)
-    x_start[0], y_start[0] = PALC_config.x_H, PALC_config.y_H
-    x_stop[0] = x_start[0] - PALC_config.Lambda_y * np.sin(gamma_n[0])
-    y_stop[0] = y_start[0] - PALC_config.Lambda_y * np.cos(gamma_n[0])
-    for n in range(1,N):
-        x_start[n] = x_stop[n-1] - PALC_config.Lambda_gap * np.sin(gamma_n[n-1])
-        y_start[n] = y_stop[n-1] - PALC_config.Lambda_gap * np.cos(gamma_n[n-1])
-        x_stop[n] = x_start[n] - PALC_config.Lambda_y * np.sin(gamma_n[n])
-        y_stop[n] = y_start[n] - PALC_config.Lambda_y * np.cos(gamma_n[n])
+class PALC_plotting():
+    """ Class to create objects that contain data for visualization in bokeh
+        figures. """
+    def __init__(self):
+        self.x_c_n, self.y_c_n, self.x_start, self.x_stop             = [], [], [], []
+        self.y_start, self.y_stop, self.x_fin_unitn, self.y_fin_unitn = [], [], [], []
+        self.x_start_b, x_stop_b, y_start_b, y_stop_b                 = [], [], [], []
         
-    PALC_plots.x_start, PALC_plots.x_stop = x_start, x_stop
-    PALC_plots.y_start, PALC_plots.y_stop = y_start, y_stop
-    PALC_plots.x_start_b = list(np.array(PALC_plots.x_start) - 1*PALC_config.Lambda_y * (np.cos(gamma_n) + np.sin(gamma_n)*0.25))
-    PALC_plots.x_stop_b = list(np.array(PALC_plots.x_stop) - 1*PALC_config.Lambda_y * (np.cos(gamma_n) - np.sin(gamma_n)*0.25))
-    PALC_plots.y_start_b = list(np.array(PALC_plots.y_start) + 1*PALC_config.Lambda_y * (np.sin(gamma_n) - np.cos(gamma_n)*0.25))
-    PALC_plots.y_stop_b = list(np.array(PALC_plots.y_stop) + 1*PALC_config.Lambda_y * (np.sin(gamma_n) + np.cos(gamma_n)*0.25))
+        self.y_stop_unitn_stop, self.x_c_n_unitn, self.y_c_n_unitn    = [], [], []
+        self.x_c_n_unitn_psi1, self.y_c_n_unitn_psi1                  = [], []
+        self.x_c_n_unitn_psi2, self.y_c_n_unitn_psi2                  = [], []
 
-    x_patches, y_patches = [], []
-    for n in range(np.shape(PALC_plots.x_start)[0]):
-        x_patches.append([PALC_plots.x_start[n], PALC_plots.x_stop[n], PALC_plots.x_stop_b[n], PALC_plots.x_start_b[n]])
-        y_patches.append([PALC_plots.y_start[n], PALC_plots.y_stop[n], PALC_plots.y_stop_b[n], PALC_plots.y_start_b[n]])
-    return x_patches, y_patches
+    def update_plot_array(self, **new_input):
+        """
+        Updates the data of attributes.
+
+        Parameters
+        ----------
+        **new_input : dict
+            Key = value pair that shall be stored.
+
+        Returns
+        -------
+        None.
+
+        """
+        for key, val in new_input.items():
+            if hasattr(self, key):
+                setattr(self, key, val)
+                
+    def get_plot_array(self, Opt_arr):
+        """
+        Includes the results of the PALC optimization to plot them in a
+        bokeh figure.
+
+        Parameters
+        ----------
+        Opt_arr : obj [in]
+            Data of the optimized array by PALC.
+
+        Returns
+        -------
+        None.
+
+        """
+        setattr(self, 'x_c_n_unitn', list(zip(self.x_c_n, self.x_fin_unitn)))
+        setattr(self, 'y_c_n_unitn', list(zip(self.y_c_n, self.y_fin_unitn)))
+        setattr(self, 'x_c_n_unitn_psi1', list(zip(self.x_c_n, Opt_arr.x_fin_unitn_psi_1)))
+        setattr(self, 'y_c_n_unitn_psi1', list(zip(self.y_c_n, Opt_arr.y_fin_unitn_psi_1)))
+        setattr(self, 'x_c_n_unitn_psi2', list(zip(self.x_c_n, Opt_arr.x_fin_unitn_psi_2)))
+        setattr(self, 'y_c_n_unitn_psi2', list(zip(self.y_c_n, Opt_arr.y_fin_unitn_psi_2)))
+
+
+class Array_opt():
+    """ Class to create an object with optimized array data. """
+    def __init__(self, gamma_tilt_deg=[]):
+        self.gamma_n, self.gamma_tilt_deg    = [], gamma_tilt_deg
+        self.gamma_tilt_deg_diff, self.psi_n = [], []
+        self.Gamma_aud, self.thr_dist        = [], []
+        self.num_iter                        = []
+        # deg_opt
+        self.lin_eq_n_psi_1, self.lin_eq_n_psi_2            = [], []
+        self.x_fin_unitn_psi_1, self.x_fin_unitn_psi_2      = [], []
+        self.y_fin_unitn_psi_1, self.y_fin_unitn_psi_2      = [], []
+        self.seg_pos, self.seg_pos_start, self.seg_pos_stop = [], [], []
+        # fixed first angle (max, mid, min)
+        self.fixed_angle = [0,0,0]
+        if self.gamma_tilt_deg != [] : self.gamma_n = self.gamma_tilt_deg*np.pi/180
+
+
+    def update_opt_array(self, x_c_n=None, y_c_n=None, **new_input):
+        """
+        Updates the optimized array object.
+
+        Parameters
+        ----------
+        x_c_n : float, optional
+            Center of rays at receiver positions on x-axis. The default is None.
+        y_c_n : float, optional
+            Center of rays at receiver positions on y-axis. The default is None.
+        **new_input : dict
+            Key = value pair that shall be stored.
+
+        Returns
+        -------
+        None.
+
+        """
+        for key, val in new_input.items():
+            if hasattr(self, key):
+                setattr(self, key, val)
+        if np.all(x_c_n != None) and 'psi_n' in new_input.keys():
+            self.lin_eq_n_psi_1 = y_c_n - np.tan(-self.gamma_n + self.psi_n) * x_c_n
+            self.x_fin_unitn_psi_1 = new_input['x_a_t_n'][:,0]
+            self.y_fin_unitn_psi_1 = np.tan(-self.gamma_n + self.psi_n) \
+                                     * self.x_fin_unitn_psi_1 + self.lin_eq_n_psi_1
+            self.lin_eq_n_psi_2 = y_c_n - np.tan(-self.gamma_n - self.psi_n) * x_c_n
+            self.x_fin_unitn_psi_2 = new_input['x_a_b_n'][:,0]
+            self.y_fin_unitn_psi_2 = np.tan(-self.gamma_n - self.psi_n) \
+                                     * self.x_fin_unitn_psi_2 + self.lin_eq_n_psi_2
+            self.seg_pos = new_input['x_a_c_n']
+            self.seg_pos_start = new_input['x_a_t_n']
+            self.seg_pos_stop = new_input['x_a_b_n']
 
 
 def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr):
@@ -653,7 +476,7 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                                 aud_overlap -= np.sqrt(np.sum((x_a_t_n[m,:]-pal[-1-k][-1,:])**2)) # new k-th segment overlap
                         
                     if point_exists2 == False:
-                            print('Error in discrete tilt angles')
+                            logger.warning('Error in discrete tilt angles')
                             return
    
             ###############################################################################        
@@ -830,12 +653,11 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
 
         thr_dist = np.sqrt(np.sum((x_a_c_n[:,:] - np.transpose(np.array([x_c_n[:], y_c_n[:], x_c_n[:]*0])))**2,1))
         num_iter += 1
-        print('error is: ', Gamma_aud)
+        logger.debug('error is: %s', Gamma_aud)
         # if difference is to big, reset psi_n
         if np.abs(Gamma_aud) > 50:
             psi_n = PALC_config.psi_n
 
-    #PALC_plots  = PALC_classes.PALC_plotting()
     PALC_plots.update_plot_array(x_c_n=x_c_n, y_c_n=y_c_n, x_fin_unitn=x_fin_unitn, y_fin_unitn=y_fin_unitn)
     Opt_arr.update_opt_array(gamma_n=gamma_n, psi_n=psi_n, num_iter=num_iter, \
                              Gamma_aud=Gamma_aud, thr_dist = thr_dist, \
@@ -844,3 +666,195 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
     # set new gamma_n
     setattr(PALC_config,'gamma_n',gamma_n)
     return
+
+
+def calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr):
+    """
+    Handles the different PALC approaches. Offers the functionality of the
+    Hard Margin Gap Handling Approaches. Without and Soft Margin Gap Handling
+    Approach call directily :any:`calc_angles`.
+
+    Parameters
+    ----------
+    PALC_plots : obj [in, out]
+        Contains plotting information.
+    PALC_pal : obj [in]
+        Contains all venue information.
+    PALC_config : obj [in]
+        Contains PALC configuration data.
+    Opt_arr : obj [in, out]
+        Contains the data of the optimized LSA.
+
+    Returns
+    -------
+    None.
+
+    """
+    #### again: initialization ####
+    N       = int(PALC_config.N)
+    gamma_n = np.array(PALC_config.gamma_n)
+    psi_n   = np.array(PALC_config.psi_n)
+
+    pal_e = list(PALC_pal.pal_no_nal)
+    pal = list(PALC_pal.pal)
+
+    # no Gap Handling or Soft Margin
+    if PALC_config.gap_handling in ['Without', 'Soft Margin']:
+        t1 = time.time()
+        calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
+        t2 = time.time()
+        dt = t2 - t1
+        logger.debug('elapsed time in s: %s', dt)
+        return 
+    # Gap Handling: Hard Margin Approach
+    elif PALC_config.gap_handling in ['Hard Margin']:
+        calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
+        # create pal_h that contains lists with the continuous audience lines
+        pal_h = []
+        pal_h.append([])
+        m = 0
+        for n in range(np.shape(pal_e)[0]):
+            if pal_e[n][0,0] != pal[n+m][0,0] or pal_e[n][0,1] != pal[n+m][0,1]:
+                pal_h.append([])
+                m += 1
+            if pal_e[n][0,0] == pal[n+m][0,0] and pal_e[n][0,1] == pal[n+m][0,1]:
+                pal_h[m].append(pal[n+m])
+        # check which loudspeaker cabinets belong to which continuous audience line
+        ls2seg = np.empty(N).astype(int)
+        seg_dist_high = np.empty(np.shape(pal_h)[0])
+        seg_dist_low = np.empty(np.shape(pal_h)[0])
+        seg_dist = np.empty(np.shape(pal_h)[0])
+        for m in range(N):
+            # go from the highest audience line to the lowest
+            for n in range(np.shape(pal_h)[0]-1,-1,-1):
+                seg_dist_high[n] = np.abs(np.sqrt((pal_h[n][-1][-1,0]-Opt_arr.seg_pos[m,0])**2 \
+                              + (pal_h[n][-1][-1,1]-Opt_arr.seg_pos[m,1])**2))
+                seg_dist_low[n] = np.abs(np.sqrt((pal_h[n][0][0,0]-Opt_arr.seg_pos[m,0])**2 \
+                            + (pal_h[n][0][0,1]-Opt_arr.seg_pos[m,1])**2))
+                seg_dist[n] = np.minimum(seg_dist_high[n], seg_dist_low[n])
+            
+            # get the indice of the segment to which the LS belongs
+            ls2seg[m] = int(np.argmin(seg_dist))
+
+        # Run the calculation for each continuous audience line
+        for n in range(np.shape(pal_h)[0]-1,-1,-1):
+            N_margin = 0
+            for m in range(N):
+                if n == ls2seg[m]:
+                    N_margin += 1
+
+            if n == np.shape(pal_h)[0]-1:
+                gamma_n = np.linspace(-0.0428, 0.7147, num=N_margin)
+                psi_n = np.linspace(0.00524, 0.00524, num=N_margin)
+                calc_angles(PALC_plots, pal_h[n], psi_n, gamma_n, N_margin, PALC_config, pal_e, Opt_arr)
+                x_patches, y_patches = LSA_visualization(PALC_plots, PALC_config, Opt_arr.gamma_n, \
+                                                          N_margin=np.shape(Opt_arr.gamma_tilt_deg)[0])
+
+                Opt_arr_hm = copy(Opt_arr)
+                PALC_plots_hm = copy(PALC_plots)
+            else:
+
+                PALC_config.last_angle_hm = Opt_arr_hm.gamma_tilt_deg[-1] * np.pi / 180
+                PALC_config.gamma_n = gamma_n = np.linspace(-0.0428, 0.7147, num=N_margin)
+                PALC_config.psi_n = psi_n = np.linspace(0.00524, 0.00524, num=N_margin)
+
+                PALC_config.x_H = PALC_plots_hm.x_stop[-1] - np.sin(PALC_config.last_angle_hm) * PALC_config.Lambda_gap
+                PALC_config.y_H = PALC_plots_hm.y_stop[-1] - np.cos(PALC_config.last_angle_hm) * PALC_config.Lambda_gap
+
+                calc_angles(PALC_plots_hm, pal_h[n], psi_n, gamma_n, N_margin, PALC_config, pal_e, Opt_arr_hm)
+                x_patches_hm, y_patches_hm = LSA_visualization(PALC_plots_hm, PALC_config, Opt_arr_hm.gamma_n, \
+                                                          N_margin=np.shape(Opt_arr_hm.gamma_tilt_deg)[0])
+                for attr in ['x_c_n', 'y_c_n','x_start', 'y_start', 'x_stop', \
+                              'y_stop', 'x_fin_unitn', 'y_fin_unitn']:
+                    setattr(PALC_plots, attr, np.append(getattr(PALC_plots, attr), getattr(PALC_plots_hm, attr)))
+                for attr in ['seg_pos', 'seg_pos_start', 'seg_pos_stop', 'x_fin_unitn_psi_1', \
+                              'y_fin_unitn_psi_1', 'x_fin_unitn_psi_2', 'y_fin_unitn_psi_2', \
+                              'gamma_n', 'gamma_tilt_deg', 'thr_dist']:
+                    setattr(Opt_arr, attr, np.append(getattr(Opt_arr, attr), getattr(Opt_arr_hm, attr)))
+                    if attr in ['seg_pos', 'seg_pos_start', 'seg_pos_stop']:
+                        setattr(Opt_arr, attr, getattr(Opt_arr, attr).reshape(int(N),3))
+        return
+
+
+def get_fixed_angle_borders(last_pal_sec, PALC_config):
+    """
+    Calculates the average / mid and maximum tilt angle for the heighest LSA cabinet.
+    When functionality of fixing the heighest LSA cabinet on a specific tilt
+    angle, the borders of the maximum and minimum tilt angle can thus be found.
+    Called by :any:`use_fixed_angle`.
+
+    Parameters
+    ----------
+    last_pal_sec : list
+        Last PAL section, i.e., PALC_pal.pal[-1].
+    PALC_config : obj [in]
+        Configuration of the PALC algorithm.
+
+    Returns
+    -------
+    gamma_tilt_deg : list
+        Contains average (first entry) and maximum (seconed entry) tilt angle
+        of the heighest LSA cabinet.
+
+    """
+    gamma_tilt_deg = []
+    for n in [0,-1]:
+        dist_hy = np.sqrt((last_pal_sec[n,1]-(PALC_config.y_H-PALC_config.Lambda_y))**2 + \
+                          (last_pal_sec[n,0]-PALC_config.x_H)**2)
+        dist_an = np.abs(last_pal_sec[n,0]-PALC_config.x_H)
+        if PALC_config.y_H < last_pal_sec[n,1]:
+            gamma_tilt_deg.append(np.round(-np.arccos(dist_an /dist_hy) *(180/np.pi), decimals=2))
+        else:
+            gamma_tilt_deg.append(np.round(np.arccos(dist_an /dist_hy) *(180/np.pi), decimals=2))
+    return gamma_tilt_deg
+
+
+def fixed_angle_borders(last_pal_sec, PALC_config):
+    """
+    Allowed range of the fixed tilt angle of the highest LSA cabinet, as the
+    GUI computes it when "fix angle of uppermost cabinet" is enabled.
+
+    Parameters
+    ----------
+    last_pal_sec : ndarray
+        Last PAL section, i.e., PALC_pal.pal[-1].
+    PALC_config : obj [in]
+        Configuration of the PALC algorithm.
+
+    Returns
+    -------
+    list of float
+        Maximum, mid and minimum tilt angle in degree (the legacy
+        ``Opt_arr.fixed_angle``).
+
+    """
+    gamma_tilt_deg = get_fixed_angle_borders(last_pal_sec, PALC_config)
+    return [gamma_tilt_deg[0]-1, gamma_tilt_deg[1], gamma_tilt_deg[1]-10]
+
+
+def clamp_fixed_angle(fixed_angle, max_deg, min_deg):
+    """
+    Clamps the fixed tilt angle of the highest LSA cabinet into its allowed
+    range, rounded to two decimals like ``round_fixed_angle`` in the GUI.
+
+    Parameters
+    ----------
+    fixed_angle : float
+        Requested tilt angle in degree.
+    max_deg : float
+        Maximum tilt angle in degree.
+    min_deg : float
+        Minimum tilt angle in degree.
+
+    Returns
+    -------
+    float
+        The angle itself if it is within the range, otherwise the rounded
+        border it exceeds.
+
+    """
+    if fixed_angle > max_deg:
+        return np.round(max_deg, decimals=2)
+    elif fixed_angle < min_deg:
+        return np.round(min_deg, decimals=2)
+    return fixed_angle

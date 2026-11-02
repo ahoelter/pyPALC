@@ -1,17 +1,113 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-author: arne Hoelter
+"""Sound field prediction with the CDPS model.
 
-Function to be used to compute the sound field prediction with the
-Complex Directivity Point Source (CDPS)-model.
+Configuration and result classes of the sound field prediction, the
+Complex Directivity Point Source (CDPS) model, loudspeaker directivities and
+the parser of measured directivity data (formerly ``fun/sfp_functions.py``,
+``SFP_configuration`` and ``Technical_meas_results`` from
+``fun/PALC_classes.py`` and ``read_dir_data`` from ``fun/gui_ls_array.py``).
+
+author: Arne Hoelter
 """
+from __future__ import annotations
+
+import logging
 
 import numpy as np
-from PALC_functions import repmat, source_pos
-import scipy.special as sp
 import scipy.signal as sig
+import scipy.special as sp
 from scipy.stats.mstats import mquantiles
+
+from .geometry import repmat, source_pos
+from .palc import PALC_configuration
+
+logger = logging.getLogger(__name__)
+
+
+class SFP_configuration(PALC_configuration):
+    """ Child class of PALC_configuration, contains data that are additionally
+        needed for the sound field prediction. """
+    def __init__(self, directivity='Circular Piston', N=1, Lambda_gap=0, \
+                 Lambda_y=0.2, x_H=0, y_H=2, dir_meas=np.zeros([2,120]), \
+                 dir_meas_deg=np.zeros([2,120]), \
+                 dir_meas_amp=[], gamma_n=[0], f=[], plot_dir_amp=[], \
+                 plot_dir_amp_meas=[[0],[0],[0]], plot_beta_meas=[0], \
+                 freq_range=(200,8000)):
+        self.dir_meas, self.f                     = dir_meas, f 
+        self.dir_meas_deg, self.dir_meas_amp      = dir_meas_deg, dir_meas_amp
+        self.plot_dir_amp, self.plot_dir_amp_meas = plot_dir_amp, plot_dir_amp_meas
+        self.plot_beta_meas                       = plot_beta_meas
+        self.freq_range                           = freq_range
+        super(SFP_configuration, self).__init__()
+        
+    def get_plot_dir_amp(self, H_post, f2plot, meas=False):
+        """
+        Calculates the amplitude of the directivity to plot in :any:`pdir`.
+
+        Parameters
+        ----------
+        H_post : ndarray
+            (Complex) directivity data.
+        f2plot : int
+            frequency to plot.
+        meas : bool, optional
+            Must be True if measured loudspeaker data are used. The default
+            is False.
+
+        Returns
+        -------
+        None.
+
+        """
+        # get index
+        self.plot_dir_amp, ind_f = [], []
+        if meas: self.plot_dir_amp_meas = []
+        # get amplitude values
+        amplitude = 20*np.log10(np.abs(H_post))
+        # get amplitudes for frequencies to plot
+        for ind, n in enumerate(f2plot):
+            ind_f.append((np.abs(self.f-n)).argmin())
+            if meas:
+                self.plot_dir_amp_meas.append(list(amplitude[:,ind_f[ind]].transpose()))
+            else:
+                self.plot_dir_amp.append(list(amplitude[:,ind_f[ind]].transpose()))
+
+
+class Technical_meas_results():
+    """ Class to create objects that contain the results of the technical
+        measures based on the sound field prediction. """
+    def __init__(self):
+        self.f, self.p_SPL              = [], []
+        self.H, self.H_dist             = [], []
+        self.A_mean, self.hist_bins     = [], []
+        self.Hist_tops, self.Hist_steps = [], []
+        self.p_SPL_beam                 = []
+        
+        #for plotting
+        self.plot_f, self.plot_p_SPL = [], []
+        
+    
+    def update_tech_meas(self, **new_input):
+        """
+        Updates the technical measures. 
+
+        Parameters
+        ----------
+        **new_input : dict
+            Key = value pair that shall be stored.
+
+        Returns
+        -------
+        None.
+
+        """
+        for key, val in new_input.items():
+            if hasattr(self, key):
+                setattr(self, key, val)
+        if 'f' in new_input.keys() and 'p_SPL' in new_input.keys():
+            self.plot_p_SPL, self.plot_f = [], []
+            for n in range(np.shape(new_input['p_SPL'])[0]):
+                self.plot_p_SPL.append(list(self.p_SPL[n,:]))
+                self.plot_f.append(list(self.f))
 
 
 def get_freq_vec(N_freq, step_freq, freq_range):
@@ -200,7 +296,7 @@ def LinkwitzRileyCrossOver(f_c_m, fs, f):
     
     return D_xo_low, D_xo_high
 
-   
+
 def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_meas_deg, n):
     """
     Compute the LSA cabinets directivity. Possible directivities are Circular
@@ -277,12 +373,12 @@ def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_mea
         H_post = np.interp(beta*180/np.pi, dir_meas_deg, dir_meas)
 #        H_post_abs = np.interp(beta*180/np.pi, dir_meas_deg, np.abs(dir_meas))
 #        H_post_angle = np.interp(beta*180/np.pi, dir_meas_deg, np.angle(dir_meas))
-#        H_post2 = H_post_abs * np.exp(np.complex(0+1j) * H_post_angle)
+#        H_post2 = H_post_abs * np.exp(complex(0+1j) * H_post_angle)
     else:
         H_post = 1
     
     return H_post
-    
+
 
 def CalcGreenFunctions(x, y, z, x_src_l, y_src_l, alpha, dire, Lambda_y, \
                        gamma_l, c, omega, G_sen, dir_meas, dir_meas_deg, airloss_alpha, f, n):
@@ -360,7 +456,7 @@ def CalcGreenFunctions(x, y, z, x_src_l, y_src_l, alpha, dire, Lambda_y, \
     
     return G
 
- 
+
 def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     """
     Main function to compute 2D sound field prediction with a 3D transfer
@@ -516,51 +612,6 @@ def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_d
 
     return p_SPL, X, Y
 
-
-def getBeamplotRes(pBeam, mapper, PALC_config, SFP_config, gamma_n, plt_ranges, f, ind_f):
-    """
-    Computes the beamplot of a certain frequency regarding the simulated
-    venue slice. Calls :any:`calcBeamplot`. Called by :any:`get_beamplot`.
-
-    Parameters
-    ----------
-    pBeam : fig [out]
-        Bokeh beamplot figure.
-    mapper : LinearColorMapper [out]
-        Object that maps the Colors of the beamplot. Also used for the Colorbar.
-    PALC_config : obj [in]
-        Configuration of PALC algorithm.
-    SFP_config : obj [in]
-        Configuration of sound field prediction.
-    gamma_n : 1D-array
-        Set of LSA tilt angles in radian.
-    plt_ranges : obj [out]
-        Contains ranging information of the bokeh figures.
-    f : float
-        Considered frequency bin.
-    ind_f : int
-        Index of the frequency bin.
-
-    Returns
-    -------
-    p_SPL : ndarray
-        Sound pressure levels mapped on the mesh.
-
-    """
-    # Calculation
-    p_SPL, X, Y = calcBeamplot(PALC_config, gamma_n, plt_ranges, f, \
-                               np.array(SFP_config.dir_meas[:,ind_f]), \
-                               np.array(SFP_config.dir_meas_deg[:,1]))
-    high_ind = np.argwhere(p_SPL > 100)
-    low_ind = np.argwhere(p_SPL < 50)
-    for n in range(np.shape(high_ind)[0]):
-        p_SPL[high_ind[n,0], high_ind[n,1]] = 100
-    for n in range(np.shape(low_ind)[0]):
-        p_SPL[low_ind[n,0], low_ind[n,1]] = 50
-    mapper.low = np.amin(p_SPL)
-    mapper.high = np.amax(p_SPL)   
-    return p_SPL
-    
 
 def calcHomogeneity(Tech_res, x_S, y_S, x_vert, y_vert, objective = '0dB'):
     """
@@ -736,7 +787,7 @@ def calcAcousticContrast(p_SPL, p_SPL_na, x_a, y_a, x_na, y_na, p0):
         
     return L_p_a_na
 
-  
+
 def smoothSpectrum(f, X_f, r_oct):
     """
     Smoothes a frequency spectrum. Not used in bokeh.
@@ -766,10 +817,8 @@ def smoothSpectrum(f, X_f, r_oct):
         X_f_out[n] = np.sum(w * X_f)
     
     return X_f_out
-    
-   
-## Function only to initialize the Circular Piston Directivity Plot
-    
+
+
 def init_dir_plot():
     """
     Initializes the directivity plot in bokeh :any:`pdir`. Avoids error message
@@ -809,6 +858,67 @@ def init_dir_plot():
     dir_meas_deg = np.ones([np.shape(f)[0],np.shape(f)[0]])
     H_post = np.zeros([np.shape(beta)[0],np.shape(f)[0]], dtype=complex)
     return c0, alpha, beta_deg, beta, f, omega, dir_meas, dir_meas_deg, H_post
+
+
+def parse_measured_directivity(csv_text, SFP_config):
+    """
+    Reads (measured, complex) directivity data from the text of a .csv-file
+    and stores it in the sound field prediction configuration. The GUI
+    wrapper ``read_dir_data`` decodes the uploaded file and calls this
+    function.
+
+    The first row holds the frequencies in Hz, the first column the
+    radiation angles in degree; the other entries are the complex
+    directivity. The imaginary unit can be "j" or "i".
+
+    Parameters
+    ----------
+    csv_text : str
+        csv-data to read (decoded text).
+    SFP_config : obj [out]
+        Sound field prediction configuration data. The attributes f,
+        plot_beta_meas, plot_dir_amp_meas, dir_meas, dir_meas_deg and
+        dir_meas_amp are written.
+
+    Returns
+    -------
+    None.
+
+    """
+    # get data data frame
+    new_df = csv_text
+    counter = sum('\n' in s for s in new_df)+1
+    new_df = str(np.char.replace(np.array(new_df).astype(str),'\n',','))
+    new_df = new_df.split(',')
+    directivity = np.char.replace(np.array(new_df),'i','j').astype(complex).reshape([int(counter),int(np.shape(new_df)[0]/counter)])
+
+    # get an array of corresponding degree and frequency and delete these "header" and "index" from the directivity array
+    # and write it once for whole data in dictionary and second just for the frequencies to be plotted in another dictionary
+    # initialize the considered frequency bins
+    SFP_config.f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])          
+    # cut the degree and frequency vector out of the directivity array
+    degree = np.real(directivity[1:,0]).astype(float)
+    SFP_config.plot_beta_meas = list(degree)      
+    frequency = np.real(directivity[0,1:]).astype(float)
+    directivity = np.delete(np.delete(directivity,0,axis=0),0,axis=1)
+
+    # interpolate directivity to the frequency bins used in bokeh app 
+    directivity_f = np.array([])
+    for n in range(np.shape(directivity)[0]):
+        directivity_f = np.append(directivity_f, np.interp(SFP_config.f,frequency,directivity[n,:]))
+    directivity_f = np.reshape(directivity_f,(np.shape(degree)[0],np.shape(SFP_config.f)[0]))    
     
-  
+    # get the index of the three frequencies to be plotted
+    SFP_config.get_plot_dir_amp(directivity_f, [100, 1000, 10000], meas=True) 
     
+    # get frequency and degree in shape to upload in ColumnDataSource
+    #f = repmat(SFP_config.f, np.shape(directivity_f)[0], 1)
+    degree = repmat(degree, np.shape(directivity_f)[1]-1, 1).transpose()
+    
+    # amplitude and phase calculation of directivity
+    amplitude = 20*np.log10(np.abs(directivity_f))
+    #phase = np.angle(directivity_f)
+
+    # write data in ColumnDataSource
+    for key, val in [['dir_meas', directivity_f], ['dir_meas_deg', degree], ['dir_meas_amp', amplitude]]:
+        setattr(SFP_config, key, val)

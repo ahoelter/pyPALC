@@ -1,15 +1,169 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-author: Arne Hoelter
+"""Target slope optimization of the PALC weighting.
 
-Contains functions to compute the target slope optimization.
+The state of the target slope (:class:`Opt_weight`), the helpers of the
+optimization and its loop :func:`optimize_PALC` (formerly
+``fun/PALC_opt.py``, ``Opt_weight`` from ``fun/PALC_classes.py`` and
+``optimize_PALC`` from ``fun/gui_algorithm_sfp.py``).
+
+author: Arne Hoelter
 """
+from __future__ import annotations
+
+import logging
+
 import numpy as np
 from numpy import array as nar
-from scipy.stats.mstats import mquantiles
 from scipy.special import erf
-from PALC_opt import *
+from scipy.stats.mstats import mquantiles
+
+from .geometry import LSA_visualization
+from .palc import calcPALC
+from .sound_field import calcSFP, calcSPLoverX
+
+logger = logging.getLogger(__name__)
+
+
+class Opt_weight():
+    """ Class to optimize PALC by the target slope optimization. """
+    def __init__(self, SPL_interp=[0,0]):
+        self.x, self.SPL   = [], []
+        self.x_interp      = [0,0]
+        self.SPL_interp    = SPL_interp
+        self.init          = False
+        self.x_v, self.y_v = [0,0], [0,0]
+        self.diffLS        = []
+        self.diffps        = {'n-1':100, 'lowest':[],'same':0}
+        self.w_ps          = {'n-1':[], 'lowest':[]}
+        self.is2update     = 0
+        self.SPL_grad      = []
+        self.opt_ind       = 0
+        self.diffgradLS    = []
+        self.x_ref         = []
+        self.ref_ind       = []
+        
+    def calc_init(self):
+        """
+        Initializes the target slope optimization before starting the
+        optimization.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.diffLS        = []
+        self.diffps      = {'n-1':100, 'lowest':[]}
+        self.w_ps          = {'n-1':[], 'lowest':[]}
+        
+    def CDS2obj(self, CDS, keys):
+        """
+        Stores data from a ColumnDataSource in the object when the keys are
+        identic.
+
+        Parameters
+        ----------
+        CDS : ColumnDataSource
+            ColumnDataSource that contain the data.
+        keys : str
+            Key to write into the object.
+
+        Returns
+        -------
+        None.
+
+        """
+        for key in keys:
+            setattr(self, key, CDS.data[key])
+        
+        
+    def maxonref(self, ref=0):
+        """
+        Normalizes all data on a given reference value.
+
+        Parameters
+        ----------
+        ref : float, optional
+            Value on which data shall be normalized. The default is 0.
+
+        Returns
+        -------
+        None.
+
+        """
+        shift           = np.amax(self.SPL_interp)-ref
+        self.SPL        = self.SPL - shift
+        self.SPL_interp = self.SPL_interp - shift 
+
+
+    def shift2psval(self, PALC_config, diff_opt, num_iter):
+        """
+        Shifts the actual value to a list that stores the past value. These are
+        used to check if the actual loop improved that the difference between
+        target and computation result.
+
+        Parameters
+        ----------
+        PALC_config : obj [in, out]
+            Contains the configuration of the PALC algorithm.
+        diff_opt : float
+            Single value of the optimized PALC computation.
+
+        Returns
+        -------
+        bool
+            True, if diff_opt was 5 times higher than past value. Then break
+            of while optimization loop. Otherwise False.
+
+        """
+        if np.round(diff_opt, decimals=8) == np.round(self.diffps['n-1'], decimals=8):
+            self.diffps['same'] += 1
+        else:
+            self.diffps['same'] = 0
+        if diff_opt > self.diffps['n-1']:
+            self.diffps['lowest'].append(self.diffps['n-1'])
+            self.w_ps['lowest'].append(self.w_ps['n-1'])
+        self.diffps['n-1'] = diff_opt
+        self.w_ps['n-1'] = np.array(PALC_config.weighting_weights[:])
+        if len(self.w_ps['lowest']) == 10 or self.diffps['same'] == 5 or num_iter==500:
+            low_ind = np.argmin(self.diffps['lowest'])
+            PALC_config.weighting_weights = self.w_ps['lowest'][low_ind][:]
+            return True
+        return False
+            
+
+    def resort_opt_region(self):
+        """
+        Resorts the target slope hinge points, so that the x-axis / SPL pairs
+        begin with lowest x-axis values.
+
+        Returns
+        -------
+        None.
+
+        """
+        sort_key = np.argsort(self.x)
+        for key in ['x', 'SPL', 'x_v', 'y_v']:
+            setattr(self, key, list(np.array(getattr(self,key))[sort_key]))
+            
+    def interpolate_SPL(self):
+        """
+        Interpolates the drawn target slope line on the discrete distance
+        points, that are used von SPL over distance calculation of the
+        computed results.
+
+        Returns
+        -------
+        None.
+
+        """
+        self.SPL_interp, ap, ind = [], [], [0]
+        for n in range(1,len(self.x)):
+            ind.append(np.argwhere(self.x[n] == self.x_interp)[0,0])
+            ap.append(list((self.SPL[n]-self.SPL[n-1])/(self.x[n]-self.x[n-1])* \
+                                   (np.array(self.x_interp[ind[n-1]:ind[n]])- \
+                                    self.x[n-1])+self.SPL[n-1]))
+        ap.append([self.SPL[-1]])
+        list(map(self.SPL_interp.extend, ap))
 
 
 def get_weight_links(n_links, SPLoverX):
@@ -74,7 +228,7 @@ def get_opt_region(SPLoverX, Opt_w):
     SPLoverX.opt_ind    = ind
     return ind
 
-    
+
 def get_diff_optreg(comp, opt):
     """
     Returns difference between two arrays of same size. Actually unused.
@@ -241,6 +395,7 @@ def get_nbs_neighbours(N, ls_opt_ind, opt_ind):
             nebs[n,0] = min(ls_opt_ind[n]) - min(opt_ind)
             nebs[n,1] = max(opt_ind) - max(ls_opt_ind[n])
     return nebs
+
 
 def range_neighbours(comp, diff_comp_opt_LS):
     """
@@ -467,13 +622,14 @@ def calc_SingleValueDiff(comp, opt, mtype='mean', ef=True):
         svdiff = np.mean(np.abs(diff_opt)) 
         if twoD: svgrad = np.mean(np.abs(diff_grad))
     else:
-        print('wrong input')
+        raise ValueError('unknown mtype %r' % mtype)
     
     if twoD: 
         return svdiff, svgrad
     else:
         return svdiff
-    
+
+
 def err_func(x_l, x_in, x_out, l):
     """
     Computes gaussian like function with error function
@@ -502,7 +658,7 @@ def err_func(x_l, x_in, x_out, l):
     coeffs   = (erf((np.sqrt(np.pi)/l)*(x-x_in)) - erf((np.sqrt(np.pi)/l)*(x-x_out))) / 2
     out      = np.array([x, coeffs])
     return out
-    
+
 
 def gaussian(x_l, sig):
     """
@@ -525,6 +681,7 @@ def gaussian(x_l, sig):
     coeffs = np.exp(-np.power(x, 2.) / (2 * np.power(sig, 2.)))
     out    = np.array([x,coeffs])
     return out
+
 
 def sv_gaussian(x, sig, offset, mir=0):
     """
@@ -550,6 +707,7 @@ def sv_gaussian(x, sig, offset, mir=0):
         coeff = 1/coeff
     return coeff
 
+
 def mirror(arr, x_l, mir=0):
     """
     Flips arr if x is bigger than mir.
@@ -574,7 +732,6 @@ def mirror(arr, x_l, mir=0):
         if x[n] > mir:
             arr[n] = 1/arr[n]
     return arr
-
 
 
 def shift2ref(Opt_w, SPLoverX, opt_ind, SPLoverX_ref):
@@ -639,4 +796,128 @@ def shift_ref_on_zero(Opt_w, SPLoverX, SPLoverX_ref):
     shift_ref = SPLoverX_ref.SPL[int(len(SPLoverX_ref.SPL)/2)]
     SPLoverX.SPL     = [x - shift for x in SPLoverX.SPL]
     SPLoverX_ref.SPL = [x - shift_ref for x in SPLoverX_ref.SPL]
+
+
+def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
+                  Opt_arr, created_pal, Tech_res, SPLoverX, Opt_w, \
+                  max_loops=80):
+    """
+    Runs the while loop of target slope optimization. Will return the optimized
+    weighting factors in :any:`Opt_w`. Called by :any:`start_calc`. Calls mainly
+    methods of :py:class:`Opt_weight`, this module and
+    :py:mod:`pypalc.core.sound_field`.
+
+    Parameters
+    ----------
+    PALC_config : obj [in]
+        Configuration of the PALC algorithm.
+    SFP_config : obj [in]
+        Configuration of the sound field prediction.
+    PALC_pal : obj [in]
+        Data of the venue slice.
+    PALC_plots : obj [in, out]
+        Data to plot the venue slice information.
+    Opt_arr : obj [out]
+        Data of the optimized LSA.
+    created_pal : obj [in]
+        Venue slice that was drawn by the user.
+    Tech_res : obj [out]
+        Technical Measure results depending on the sound field prediction.
+    SPLoverX : obj [out]
+        Data of the Sound Pressure Level over Distance.
+    Opt_w : obj [out]
+        Optimized weighting data to run the target slope optimization.
+    max_loops : int, optional
+        Maximum of loops to compute. The default is 40.
+
+    Returns
+    -------
+    None.
+
+    """
+    loop = 0
+    while int(loop) < int(max_loops):
+        calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
+        x_patches, y_patches = LSA_visualization(PALC_plots, PALC_config, Opt_arr.gamma_n)
+        PALC_plots.get_plot_array(Opt_arr)
+        x_S, y_S = calcSFP(Opt_arr.gamma_tilt_deg, created_pal, SFP_config, \
+                            Tech_res)#, dir_meas_LSA, dir_meas_degree)
+        calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX, SFP_config.freq_range)
         
+        # get difference between reference and PALC at optimization points
+        # indices of optimization region
+        opt_ind = get_opt_region(SPLoverX, Opt_w)
+        
+        # shift Opt_w SPL at x_ref on SPLoverX
+        shift2ref(Opt_w, SPLoverX, opt_ind, [])
+        # indices that belong to the loudspeakers
+        ls_ind, ls_opt_ind = ls2pal(PALC_config.N, Opt_arr, created_pal, opt_ind=opt_ind)
+        # map values on LS
+        Opt_w.diffLS, Opt_w.diffgradLS = diff_on_ls(PALC_config.N, opt_ind, \
+                                                        ls_ind, ls_opt_ind, \
+                                                        Opt_w, SPLoverX)
+        Opt_w.diffLS = smooth_1D_list(Opt_w.diffLS)
+        # opt_ind: pal points that belong to opt region
+        # diff_opt: difference in opt_region
+        # ls_opt_ind: opt region pal points sorted to loudspeaker
+        # ls_ind: pal points sorted to loudspeaker 
+        # removed opt_ind behind, change mean of SPL_interp
+        svdiff, svgrad = calc_SingleValueDiff(np.array([SPLoverX.SPL_interp, \
+                                                            SPLoverX.SPL_grad]), \
+                                                  np.array([Opt_w.SPL_interp, \
+                                                            Opt_w.SPL_grad]), \
+                                                  mtype='quantiles', ef=True)
+        svtot = svdiff * svgrad
+        out = Opt_w.shift2psval(PALC_config, svtot, Opt_arr.num_iter)
+        if out:
+            calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
+            break
+        # update weighting
+        opt_weighting(PALC_config, Opt_w, loop)
+        loop += 1
+    return opt_ind
+
+
+def snap_to_distance_grid(Opt_w, x, x_v, y_v, target, x_ref):
+    """
+    Moves the target slope points and the reference point to the nearest
+    points of the SPL over distance grid and interpolates the target slope on
+    the grid between its first and last point. This is the computation of the
+    GUI callback ``update_draw``.
+
+    Parameters
+    ----------
+    Opt_w : obj [out]
+        Target slope state. The attributes x, SPL, x_v, y_v, x_interp,
+        SPL_interp, x_ref and ref_ind are written.
+    x : ndarray
+        Distance grid: distances between the center of the LSA and the
+        venue points.
+    x_v, y_v : ndarray
+        Venue points belonging to the distances in x.
+    target : dict
+        Target slope points with the keys 'x', 'SPL', 'x_v' and 'y_v' (lists
+        of equal length). Like the ColumnDataSource of the GUI, the lists
+        'x', 'x_v' and 'y_v' are snapped in place.
+    x_ref : list of float
+        One-element list with the distance of the reference point.
+
+    Returns
+    -------
+    None.
+
+    """
+    Opt_w.x, Opt_w.SPL = target['x'], target['SPL']
+    Opt_w.x_v, Opt_w.y_v = target['x_v'], target['y_v']
+    Opt_w.x_ref = x_ref
+    for ind, val in enumerate(Opt_w.x):
+        arg = np.argmin(np.abs(np.array(x)-val))
+        Opt_w.x[ind] = x[arg]
+        Opt_w.x_v[ind], Opt_w.y_v[ind] = x_v[arg], y_v[arg]
+    # sort so that smaller x value is on indice 0
+    Opt_w.resort_opt_region()
+    Opt_w.x_interp = list(x[np.argmin(np.abs(x-Opt_w.x[0])):np.argmin(np.abs(x-Opt_w.x[-1]))+1])
+    Opt_w.interpolate_SPL()
+    # find nearest index for x_ref
+    ref_ind = np.argmin(np.abs(Opt_w.x_ref[0] - np.array(Opt_w.x_interp)))
+    Opt_w.x_ref, Opt_w.ref_ind = Opt_w.x_interp[ref_ind], ref_ind
