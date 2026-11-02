@@ -1,8 +1,9 @@
 """Replay a setup through the legacy pyPALC GUI code and record the results.
 
 :func:`run_legacy` reproduces what a user who enters a :class:`Setup` in the
-Bokeh GUI (``main.py``) would get, using the unmodified legacy modules in
-``fun/``. The callbacks of ``main.py`` are re-implemented here one to one,
+Bokeh GUI (``main.py``) would get, using the legacy modules frozen in
+``tests/legacy/fun`` (a copy of ``fun/`` before the computation moved to
+:mod:`pypalc.core`; only bug fixes are applied to it). The callbacks of ``main.py`` are re-implemented here one to one,
 minus the purely visual effects (plot ranges, layouts, texts, glyphs).
 Widgets are replaced by :class:`_Widget` stand-ins that call their
 ``on_change`` callbacks only when the value really changes, like Bokeh does.
@@ -64,33 +65,71 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[2]
 CASES_DIR = REPO / "tests" / "cases"
 BASELINE_DIR = REPO / "tests" / "baseline"
+#: Frozen copy of the legacy ``fun/`` modules this replay runs on.
+LEGACY_FUN = Path(__file__).resolve().parent / "fun"
 
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
-if str(REPO / "fun") not in sys.path:
-    sys.path.insert(0, str(REPO / "fun"))
 
 from bokeh.models import ColumnDataSource  # noqa: E402
 
-import calcPALC  # noqa: E402
-import checkPAL  # noqa: E402
-import PALC_classes  # noqa: E402
-from gui_algorithm_sfp import (choose_gap_handling,  # noqa: E402
-                               get_fixed_angle_borders, optimize_PALC,
-                               round_fixed_angle, set_weighting_in,
-                               update_gh_w_select)
-from gui_ls_array import (arrange_ref_arr_in, read_dir_data,  # noqa: E402
-                          ref_array_angles)
-from gui_venue import check_all_draw_conditions  # noqa: E402
-from PALC_functions import (LSA_visualization,  # noqa: E402
-                            calc_diff_tilt_angles)
-from PALC_opt import (get_opt_region, get_weight_links,  # noqa: E402
-                      shift2ref, shift_ref_on_zero)
-from sfp_functions import (calc_directivity, calcHistogram,  # noqa: E402
-                           calcHomogeneity, calcSFP, calcSPLoverX,
-                           init_dir_plot)
-
 from pypalc.core.settings import Setup, load_setup  # noqa: E402
+
+_LEGACY_MODULES = ("PALC_classes", "PALC_functions", "PALC_opt", "calcPALC",
+                   "checkPAL", "gui_algorithm_sfp", "gui_help_text",
+                   "gui_helper", "gui_ls_array", "gui_venue",
+                   "sfp_functions")
+
+
+def _import_legacy() -> Dict[str, Any]:
+    """Import the legacy modules from :data:`LEGACY_FUN` in isolation.
+
+    The legacy modules import each other by bare module names, which the
+    application's ``fun/`` also uses. They are imported with
+    :data:`LEGACY_FUN` first on ``sys.path`` and afterwards removed from
+    ``sys.modules`` and ``sys.path`` again, so that code imported later in
+    the same process (e.g. ``main.py``) gets its own modules.
+    """
+    import importlib
+    saved = {name: sys.modules.pop(name) for name in _LEGACY_MODULES
+             if name in sys.modules}
+    sys.path.insert(0, str(LEGACY_FUN))
+    try:
+        return {name: importlib.import_module(name)
+                for name in _LEGACY_MODULES}
+    finally:
+        sys.path.remove(str(LEGACY_FUN))
+        for name in _LEGACY_MODULES:
+            sys.modules.pop(name, None)
+        sys.modules.update(saved)
+
+
+_LEGACY = _import_legacy()
+calcPALC = _LEGACY["calcPALC"]
+checkPAL = _LEGACY["checkPAL"]
+PALC_classes = _LEGACY["PALC_classes"]
+choose_gap_handling = _LEGACY["gui_algorithm_sfp"].choose_gap_handling
+get_fixed_angle_borders = _LEGACY["gui_algorithm_sfp"].get_fixed_angle_borders
+optimize_PALC = _LEGACY["gui_algorithm_sfp"].optimize_PALC
+round_fixed_angle = _LEGACY["gui_algorithm_sfp"].round_fixed_angle
+set_weighting_in = _LEGACY["gui_algorithm_sfp"].set_weighting_in
+update_gh_w_select = _LEGACY["gui_algorithm_sfp"].update_gh_w_select
+arrange_ref_arr_in = _LEGACY["gui_ls_array"].arrange_ref_arr_in
+read_dir_data = _LEGACY["gui_ls_array"].read_dir_data
+ref_array_angles = _LEGACY["gui_ls_array"].ref_array_angles
+check_all_draw_conditions = _LEGACY["gui_venue"].check_all_draw_conditions
+LSA_visualization = _LEGACY["PALC_functions"].LSA_visualization
+calc_diff_tilt_angles = _LEGACY["PALC_functions"].calc_diff_tilt_angles
+get_opt_region = _LEGACY["PALC_opt"].get_opt_region
+get_weight_links = _LEGACY["PALC_opt"].get_weight_links
+shift2ref = _LEGACY["PALC_opt"].shift2ref
+shift_ref_on_zero = _LEGACY["PALC_opt"].shift_ref_on_zero
+calc_directivity = _LEGACY["sfp_functions"].calc_directivity
+calcHistogram = _LEGACY["sfp_functions"].calcHistogram
+calcHomogeneity = _LEGACY["sfp_functions"].calcHomogeneity
+calcSFP = _LEGACY["sfp_functions"].calcSFP
+calcSPLoverX = _LEGACY["sfp_functions"].calcSPLoverX
+init_dir_plot = _LEGACY["sfp_functions"].init_dir_plot
 
 #: Cases recorded in ``tests/baseline``.
 CASES = (
