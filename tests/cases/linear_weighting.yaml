@@ -1,0 +1,8 @@
+version: 1
+venue:
+  audience_lines:
+  - {start: [2.0, 0.0], stop: [10.0, 1.0], points_per_meter: 5.0}
+  - {start: [10.0, 1.0], stop: [20.0, 3.0], points_per_meter: 5.0}
+algorithm:
+  weighting: linear
+  weighting_nu: 2.0

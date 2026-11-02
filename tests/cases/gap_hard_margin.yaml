@@ -1,0 +1,9 @@
+version: 1
+venue:
+  audience_lines:
+  - {start: [2.0, 0.0], stop: [10.0, 1.0], points_per_meter: 5.0}
+  - {start: [12.0, 2.0], stop: [20.0, 4.0], points_per_meter: 5.0}
+array:
+  cabinet_count: 6
+algorithm:
+  gap_handling: hard_margin

@@ -1,0 +1,12 @@
+version: 1
+venue:
+  audience_lines:
+  - {start: [2.0, 0.0], stop: [10.0, 1.0], points_per_meter: 5.0}
+  - {start: [10.0, 1.0], stop: [20.0, 3.0], points_per_meter: 5.0}
+array:
+  discrete_tilt_angles_deg: [0.0, 0.5, 1.0, 2.0, 3.5, 5.0, 7.0, 10.0]
+reference_array:
+  type: progressive
+  top_angle_deg: 0.0
+  angle_param_deg: 10.0
+  use_discrete_angles: true
