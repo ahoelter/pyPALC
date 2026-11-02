@@ -14,6 +14,10 @@ Run the app locally:
 `bokeh serve --show pyPALC`
 "pyPALC" is the folder that contains the app.
 
+The colors and fonts of the app are set in `pypalc/gui/theme.py`. After
+changing them, regenerate `theme.yaml` and `templates/index.html` with
+`python -m pypalc.gui.theme`.
+
 More info soon!
 
 ### Run without the GUI
