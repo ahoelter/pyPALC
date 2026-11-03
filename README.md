@@ -55,8 +55,9 @@ Run a setup file headless and write the results as CSV:
 are overwritten. A relative measured-directivity `path` in the setup file is
 resolved against the directory of the setup file. [`examples/simple.yaml`](examples/simple.yaml)
 is a small example setup. Exit codes: 0 ok, 2 invalid setup (or unreadable
-setup file), 3 venue error, 4 no convergence or calculation error; messages go
-to stderr.
+setup file), 3 venue error, 4 no convergence or calculation error, 5 output
+could not be written; messages go to stderr, with the cause of the error.
+`--traceback` also prints the full traceback.
 
 Output files and their columns:
 

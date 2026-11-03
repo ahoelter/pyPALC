@@ -538,14 +538,16 @@ class _Calculation:
             array_center_x, array_center_y = predict_sound_field(
                 optimized_array.tilt_angles_deg, drawn_lines,
                 sound_field_config, self.evaluation)
+            compute_spl_over_distance(self.ray_plot, drawn_lines,
+                                      self.evaluation.spl_db,
+                                      self.spl_over_distance,
+                                      frequency_range_hz)
+            compute_homogeneity(self.evaluation, array_center_x,
+                                array_center_y, drawn_lines.points_x,
+                                drawn_lines.points_y)
+            compute_histogram(self.evaluation)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation failed') from exc
-        compute_spl_over_distance(self.ray_plot, drawn_lines,
-                                  self.evaluation.spl_db,
-                                  self.spl_over_distance, frequency_range_hz)
-        compute_homogeneity(self.evaluation, array_center_x, array_center_y,
-                            drawn_lines.points_x, drawn_lines.points_y)
-        compute_histogram(self.evaluation)
         try:
             array_center_x, array_center_y = predict_sound_field(
                 self.reference_array.tilt_angles_deg, drawn_lines,
@@ -555,14 +557,18 @@ class _Calculation:
                                    'array failed') from exc
         self.reference_cabinet_patches = cabinet_outlines(
             self.reference_ray_plot, config, self.reference_array.tilt_angles)
-        compute_spl_over_distance(self.reference_ray_plot, drawn_lines,
-                                  self.evaluation_reference.spl_db,
-                                  self.reference_spl_over_distance,
-                                  frequency_range_hz)
-        compute_homogeneity(self.evaluation_reference, array_center_x,
-                            array_center_y, drawn_lines.points_x,
-                            drawn_lines.points_y)
-        compute_histogram(self.evaluation_reference)
+        try:
+            compute_spl_over_distance(self.reference_ray_plot, drawn_lines,
+                                      self.evaluation_reference.spl_db,
+                                      self.reference_spl_over_distance,
+                                      frequency_range_hz)
+            compute_homogeneity(self.evaluation_reference, array_center_x,
+                                array_center_y, drawn_lines.points_x,
+                                drawn_lines.points_y)
+            compute_histogram(self.evaluation_reference)
+        except _CALCULATION_ERRORS as exc:
+            raise CalculationError('Error: SFP calculation of reference '
+                                   'array failed') from exc
         self.grid = (self.spl_over_distance.distances, drawn_lines.points_x,
                      drawn_lines.points_y)
         if not self.target.initialized:

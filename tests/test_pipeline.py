@@ -5,7 +5,8 @@ import dataclasses
 import numpy as np
 import pytest
 
-from pypalc.core.errors import VenueError
+from pypalc.core import pipeline
+from pypalc.core.errors import CalculationError, VenueError
 from pypalc.core.pipeline import (build_venue, check_line, fixed_angle_limits,
                                   initial_target_slope, result_arrays, run)
 from pypalc.core.settings import (AudienceLine, Setup, VenueSettings,
@@ -154,3 +155,31 @@ def test_default_aperture_is_not_special():
             base.loudspeaker, aperture_angle_deg=aperture))
         results.append(run(setup).geometry.tilt_angles_deg)
     np.testing.assert_allclose(results[0], results[1], rtol=0, atol=1e-4)
+
+
+@pytest.mark.parametrize("name", ["compute_spl_over_distance",
+                                  "compute_homogeneity", "compute_histogram"])
+def test_evaluation_failure_is_a_calculation_error(monkeypatch, name):
+    def fail(*args, **kwargs):
+        raise IndexError("evaluation failed")
+
+    monkeypatch.setattr(pipeline, name, fail)
+    with pytest.raises(CalculationError) as info:
+        run(load_setup(case_path("simple")))
+    assert str(info.value) == 'Error: SFP calculation failed'
+    assert isinstance(info.value.__cause__, IndexError)
+
+
+def test_reference_evaluation_failure_is_a_calculation_error(monkeypatch):
+    calls = []
+
+    def fail_second(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 2:
+            raise ValueError("reference evaluation failed")
+
+    monkeypatch.setattr(pipeline, "compute_histogram", fail_second)
+    with pytest.raises(CalculationError) as info:
+        run(load_setup(case_path("simple")))
+    assert str(info.value) == \
+        'Error: SFP calculation of reference array failed'

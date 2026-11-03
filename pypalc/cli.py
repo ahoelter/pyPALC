@@ -16,6 +16,7 @@ from .core.settings import load_setup
 EXIT_SETUP = 2
 EXIT_VENUE = 3
 EXIT_CALCULATION = 4
+EXIT_OUTPUT = 5
 
 #: Prefix of the core's error texts, which the GUI shows as they are.
 _GUI_PREFIX = "Error: "
@@ -56,7 +57,7 @@ def _describe(exc: PalcError) -> str:
     return message
 
 
-def _report(exc: PalcError, text: str, show_traceback: bool) -> None:
+def _report(exc: BaseException, text: str, show_traceback: bool) -> None:
     """Print an error to stderr, with its traceback if asked for."""
     if show_traceback:
         traceback.print_exception(type(exc), exc, exc.__traceback__,
@@ -76,8 +77,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     -------
     int
         Exit code: 0 ok, 2 invalid setup, 3 venue error, 4 no convergence
-        or calculation error. An error is printed to stderr with its cause;
-        with ``--traceback`` the full (chained) traceback is printed too.
+        or calculation error, 5 output could not be written. An error is
+        printed to stderr with its cause; with ``--traceback`` the full
+        (chained) traceback is printed too.
     """
     args = _parser().parse_args(argv)
     try:
@@ -98,6 +100,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         _report(exc, "calculation error: %s" % _describe(exc),
                 args.traceback)
         return EXIT_CALCULATION
-    for path in write_results(result, Path(args.out)):
+    try:
+        paths = write_results(result, Path(args.out))
+    except OSError as exc:
+        _report(exc, "output error: cannot write the results to %s: %s"
+                % (args.out, exc), args.traceback)
+        return EXIT_OUTPUT
+    for path in paths:
         print(path)
     return 0

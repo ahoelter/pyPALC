@@ -150,3 +150,13 @@ def test_cli_setup_error_does_not_repeat_its_cause(tmp_path, capsys):
     err = capsys.readouterr().err
     assert err.startswith("setup error at setup: cannot read ")
     assert "caused by" not in err
+
+
+def test_cli_unwritable_output_exit_code(tmp_path, capsys):
+    blocker = tmp_path / "file"
+    blocker.write_text("not a directory")
+    assert main(["run", str(CASES / "simple.yaml"),
+                 "--out", str(blocker / "out")]) == 5
+    err = capsys.readouterr().err
+    assert err.startswith("output error: cannot write the results to %s: "
+                          % (blocker / "out"))
