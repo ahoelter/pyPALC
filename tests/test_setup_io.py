@@ -67,10 +67,10 @@ def test_setup_lines_follow_drawn_lines():
     venue.remove_selected_line()
     venue.lines_source.selected.indices = []
     venue.remove_line()
-    drawn = app.state.drawn
+    drawn_lines = app.state.drawn_lines
     lines = setup_from_app(app).venue.audience_lines
     assert [(line.start, line.stop) for line in lines] == [
         ((x0, y0), (x1, y1)) for x0, y0, x1, y1 in zip(
-            drawn.line_start_x, drawn.line_start_y, drawn.line_stop_x,
-            drawn.line_stop_y)]
+            drawn_lines.line_start_x, drawn_lines.line_start_y, drawn_lines.line_stop_x,
+            drawn_lines.line_stop_y)]
     assert [line.points_per_meter for line in lines] == [4.0, 5.0]

@@ -113,14 +113,18 @@ def test_legacy_classes_do_not_share_default_lists():
         for name in names:
             assert getattr(a, name) is not getattr(b, name), (cls, name)
 
-    attrs(AudienceLines, ["line_start_x", "points_x", "line_end_indices", "plot_x", "cut_lines"])
+    attrs(AudienceLines, ["line_start_x", "points_x", "line_end_indices",
+                          "plot_x", "cut_lines"])
     attrs(PalcVenue, ["segments", "audience_segments", "points_x"])
-    attrs(PalcConfig, ["discrete_tilt_angles", "weighting_factors", "aperture_angles",
-                               "tilt_angles", "hard_margin_last_angle", "gap_weights",
-                               "weighting_weights"])
-    attrs(SoundFieldConfig, ["measured_directivity_data", "measured_angles_deg", "frequencies",
-                              "plot_measured_directivity_db", "plot_measured_angles_deg",
-                              "discrete_tilt_angles", "aperture_angles"])
+    attrs(PalcConfig, ["discrete_tilt_angles", "weighting_factors",
+                       "aperture_angles", "tilt_angles",
+                       "hard_margin_last_angle", "gap_weights",
+                       "weighting_weights"])
+    attrs(SoundFieldConfig, ["measured_directivity_data",
+                             "measured_angles_deg", "frequencies",
+                             "plot_measured_directivity_db",
+                             "plot_measured_angles_deg",
+                             "discrete_tilt_angles", "aperture_angles"])
     attrs(ArrayGeometry, ["tilt_angles_deg"])
     attrs(TargetSlopeState, ["region_levels_db"])
     attrs(Plot_ranges, ["p_x", "p_y", "bar_range", "SPLoverX_y"])

@@ -19,9 +19,10 @@ that is not visible in a setup:
   aperture angles to it.
 * A mounting height that is too low for the array is raised as the GUI does
   (see :func:`top_position_y`).
-* After the PALC run the GUI resets ``top_x``, ``top_y``, the aperture angles
-  (and with them the start tilt angles) and ``hard_margin_last_angle``, which the
-  hard margin approach changes, before the results are visualized.
+* After the PALC run the GUI resets ``top_x``, ``top_y``, the aperture
+  angles (and with them the start tilt angles) and
+  ``hard_margin_last_angle``, which the hard margin approach changes, before
+  the results are visualized.
 * Target slope weighting is two runs: an initial run without weighting
   (selecting "Target Slope" in the GUI), whose SPL over distance grid the
   target points and the reference point snap to, and the optimization run,
@@ -40,16 +41,17 @@ import numpy as np
 from .errors import CalculationError, ConvergenceError, SetupError, VenueError
 from .geometry import (cabinet_outlines, inter_cabinet_angles,
                        reference_tilt_angles_deg)
-from .palc import (ArrayGeometry, PalcConfig, RayPlotData, run_palc,
-                   clamp_fixed_angle, fixed_angle_borders)
+from .palc import (ArrayGeometry, PalcConfig, RayPlotData, clamp_fixed_angle,
+                   fixed_angle_borders, run_palc)
 from .settings import (ArraySettings, AudienceLine, Setup, TargetPoint,
                        TargetSlopeSettings, VenueSettings)
-from .sound_field import (SoundFieldConfig, ArrayEvaluation,
-                          compute_histogram, compute_homogeneity, predict_sound_field,
+from .sound_field import (ArrayEvaluation, SoundFieldConfig,
+                          compute_histogram, compute_homogeneity,
                           compute_spl_over_distance, frequency_vector,
-                          parse_measured_directivity)
-from .target_slope import (TargetSlopeState, optimization_region, hinge_indices,
-                           optimize_target_slope, shift_to_reference, shift_to_zero,
+                          parse_measured_directivity, predict_sound_field)
+from .target_slope import (TargetSlopeState, hinge_indices,
+                           optimization_region, optimize_target_slope,
+                           shift_to_reference, shift_to_zero,
                            snap_to_distance_grid)
 from .venue import (AudienceLines, PalcVenue, check_draw_conditions,
                     fill_palc_venue, suggest_venue)
@@ -70,7 +72,7 @@ GUI_INITIAL_REFERENCE_DISTANCE = 10.0
 _CALCULATION_ERRORS = (ArithmeticError, AttributeError, LookupError,
                        TypeError, ValueError)
 
-# Setting values -> option labels used by the legacy configuration objects.
+# Setting values -> option labels used by the configuration objects.
 _VARIANTS = {"palc1": "PALC 1", "palc2": "PALC 2", "palc3": "PALC 3"}
 _GAP_HANDLING = {"without": "Without", "hard_margin": "Hard Margin",
                  "soft_margin": "Soft Margin"}
@@ -89,20 +91,19 @@ class VenueResult:
 
     Attributes
     ----------
-    drawn : AudienceLines
-        The audience lines as drawn, discretized (legacy ``created_pal``).
+    drawn_lines : AudienceLines
+        The audience lines as drawn, discretized.
     palc_venue : PalcVenue
-        Venue in the format of the PALC algorithm (legacy ``PALC_pal``).
-    non_audience : AudienceLines
-        Suggested non-audience lines in gaps (legacy ``suggested_nal``).
-    sound_field_only : AudienceLines
-        Audience lines only used in the sound field prediction (legacy
-        ``suggested_sfp``).
+        Venue in the format of the PALC algorithm.
+    non_audience_lines : AudienceLines
+        Suggested non-audience lines in gaps.
+    sound_field_only_lines : AudienceLines
+        Audience lines only used in the sound field prediction.
     """
-    drawn: AudienceLines
+    drawn_lines: AudienceLines
     palc_venue: PalcVenue
-    non_audience: AudienceLines
-    sound_field_only: AudienceLines
+    non_audience_lines: AudienceLines
+    sound_field_only_lines: AudienceLines
 
 
 @dataclass
@@ -119,7 +120,8 @@ class ArrayResult:
     evaluation : ArrayEvaluation
         Sound field prediction, homogeneity and histogram.
     spl_over_distance : TargetSlopeState
-        SPL over distance (attributes ``x`` and ``SPL``) as plotted.
+        SPL over distance (attributes ``distances`` and ``levels_db``) as
+        plotted.
     patches_x, patches_y : list
         Cabinet outlines for plotting.
     """
@@ -146,7 +148,8 @@ class RunResult:
     reference : ArrayResult
         Results of the reference array.
     geometry : ArrayGeometry
-        Geometry of the optimized array (rays, hit points, ``iteration_count``).
+        Geometry of the optimized array (rays, hit points,
+        ``iteration_count``).
     ray_plot : RayPlotData
         Plot data of the optimized array.
     target : TargetSlopeState or None
@@ -241,26 +244,26 @@ def build_venue(venue: VenueSettings, array: ArraySettings) -> VenueResult:
     """
     if not venue.audience_lines:
         raise VenueError('Error: Please create audience lines first')
-    drawn = _new_audience_lines()
-    drawn.line_end_indices = np.array([0]).astype(int)
+    drawn_lines = _new_audience_lines()
+    drawn_lines.line_end_indices = np.array([0]).astype(int)
     for line in venue.audience_lines:
-        values = _checked_line(drawn, line)
-        drawn.append_line(*values)
-    non_audience = _new_audience_lines()
-    sound_field_only = _new_audience_lines()
+        values = _checked_line(drawn_lines, line)
+        drawn_lines.append_line(*values)
+    non_audience_lines = _new_audience_lines()
+    sound_field_only_lines = _new_audience_lines()
     palc_venue = PalcVenue(segments=[], audience_segments=[])
     try:
-        suggest_venue(drawn, non_audience, sound_field_only)
-        fill_palc_venue(palc_venue, drawn, non_audience,
-                                sound_field_only)
-        palc_venue.collect_audience_segments(non_audience)
+        suggest_venue(drawn_lines, non_audience_lines, sound_field_only_lines)
+        fill_palc_venue(palc_venue, drawn_lines, non_audience_lines,
+                                sound_field_only_lines)
+        palc_venue.collect_audience_segments(non_audience_lines)
     except _CALCULATION_ERRORS as exc:
         raise VenueError('Error: Could not create PAL proposal') from exc
     if len(palc_venue.segments) == 0:
         raise VenueError('Error: Could not create PAL proposal')
-    return VenueResult(drawn=drawn, palc_venue=palc_venue,
-                       non_audience=non_audience,
-                       sound_field_only=sound_field_only)
+    return VenueResult(drawn_lines=drawn_lines, palc_venue=palc_venue,
+                       non_audience_lines=non_audience_lines,
+                       sound_field_only_lines=sound_field_only_lines)
 
 
 # --------------------------------------------------------------------------
@@ -296,8 +299,8 @@ def _palc_config(setup: Setup, use_weighting: Optional[str] = None
     """PALC configuration as the GUI holds it before the first run."""
     ls, ar, alg = setup.loudspeaker, setup.array, setup.algorithm
     if ar.discrete_tilt_angles_deg is not None:
-        discrete_tilt_angles = np.array([float(a) for a in ar.discrete_tilt_angles_deg]) \
-            * (np.pi / 180)
+        discrete_tilt_angles = np.array(
+            [float(a) for a in ar.discrete_tilt_angles_deg]) * (np.pi / 180)
     else:
         discrete_tilt_angles = []
     if use_weighting is None:
@@ -305,11 +308,13 @@ def _palc_config(setup: Setup, use_weighting: Optional[str] = None
     weighting_nu = alg.weighting_nu \
         if alg.weighting in ("linear", "logarithmic") else 1
     config = PalcConfig(
-        cabinet_gap=float(ar.cabinet_gap), cabinet_height=float(ls.cabinet_height),
+        cabinet_gap=float(ar.cabinet_gap),
+        cabinet_height=float(ls.cabinet_height),
         top_x=float(ar.top_position[0]), top_y=top_position_y(setup),
         palc_variant=_VARIANTS[alg.variant],
         use_discrete_angles=ar.discrete_tilt_angles_deg is not None,
-        discrete_tilt_angles=discrete_tilt_angles, use_weighting=use_weighting,
+        discrete_tilt_angles=discrete_tilt_angles,
+        use_weighting=use_weighting,
         weighting_nu=weighting_nu, weighting_factors=[],
         cabinet_count=GUI_INITIAL_CABINET_COUNT,
         gap_handling=_GAP_HANDLING[alg.gap_handling],
@@ -317,9 +322,11 @@ def _palc_config(setup: Setup, use_weighting: Optional[str] = None
         if alg.gap_handling == "soft_margin" else 1,
         hard_margin_last_angle=[], gap_weights=[], weighting_weights=[],
         use_fixed_angle=False, fixed_angle=0,
-        directivity=_DIRECTIVITY[ls.directivity], tolerance=float(alg.tolerance),
+        directivity=_DIRECTIVITY[ls.directivity],
+        tolerance=float(alg.tolerance),
         frequency_range_hz=tuple(alg.frequency_range_hz))
-    # sets the start values of aperture and tilt angles, then cabinet_count, as the GUI
+    # sets the start values of aperture and tilt angles, then the cabinet
+    # count, as the GUI
     config.store_config('aperture_angles', float(ls.aperture_angle_deg))
     config.store_config('cabinet_count', ar.cabinet_count)
     return config
@@ -343,9 +350,11 @@ def _sound_field_config(setup: Setup) -> SoundFieldConfig:
     """Sound field prediction configuration as the GUI holds it."""
     ls, ar, alg = setup.loudspeaker, setup.array, setup.algorithm
     config = SoundFieldConfig(
-        measured_directivity_data=np.zeros([2, 120]), measured_angles_deg=np.zeros([2, 120]),
-        measured_amplitude_db=[], tilt_angles=[0], frequencies=[], plot_directivity_db=[],
-        plot_measured_directivity_db=[[0], [0], [0]], plot_measured_angles_deg=[0])
+        measured_directivity_data=np.zeros([2, 120]),
+        measured_angles_deg=np.zeros([2, 120]), measured_amplitude_db=[],
+        tilt_angles=[0], frequencies=[], plot_directivity_db=[],
+        plot_measured_directivity_db=[[0], [0], [0]],
+        plot_measured_angles_deg=[0])
     # SoundFieldConfig.__init__ calls PalcConfig.__init__() with
     # its defaults, which also resets frequency_range_hz (set below).
     config.cabinet_count = ar.cabinet_count
@@ -355,8 +364,9 @@ def _sound_field_config(setup: Setup) -> SoundFieldConfig:
     config.top_y = top_position_y(setup)
     config.directivity = _DIRECTIVITY[ls.directivity]
     config.frequency_range_hz = tuple(alg.frequency_range_hz)
-    config.frequencies = frequency_vector(frequency_count=120, octave_step=1/12,
-                            frequency_range_hz=[20, 20000])
+    config.frequencies = frequency_vector(frequency_count=120,
+                                          octave_step=1/12,
+                                          frequency_range_hz=[20, 20000])
     if ls.directivity == "measured":
         try:
             parse_measured_directivity(_measured_csv_text(setup), config)
@@ -372,8 +382,8 @@ def _reference_array(setup: Setup, config: PalcConfig) -> ArrayGeometry:
     ref = setup.reference_array
     try:
         tilt_angles_deg = reference_tilt_angles_deg(
-            ref.type, config.cabinet_count, config.discrete_tilt_angles, ref.top_angle_deg,
-            ref.angle_param_deg,
+            ref.type, config.cabinet_count, config.discrete_tilt_angles,
+            ref.top_angle_deg, ref.angle_param_deg,
             ref.use_discrete_angles and bool(config.use_discrete_angles),
             ref.tilt_angles_deg)
     except ValueError as exc:
@@ -422,28 +432,29 @@ class _Calculation:
                  use_weighting: Optional[str] = None) -> None:
         self.setup, self.venue = setup, venue
         self.config = _palc_config(setup, use_weighting)
-        self.sf_config = _sound_field_config(setup)
-        self.optimized = ArrayGeometry(tilt_angles_deg=[])
-        self.reference = _reference_array(setup, self.config)
-        self.plots, self.plots_ref = RayPlotData(), RayPlotData()
+        self.sound_field_config = _sound_field_config(setup)
+        self.optimized_array = ArrayGeometry(tilt_angles_deg=[])
+        self.reference_array = _reference_array(setup, self.config)
+        self.ray_plot, self.reference_ray_plot = RayPlotData(), RayPlotData()
         self.evaluation = ArrayEvaluation()
-        self.evaluation_ref = ArrayEvaluation()
+        self.evaluation_reference = ArrayEvaluation()
         self.target = TargetSlopeState(region_levels_db=[0, 0])
-        self.spl = TargetSlopeState(region_levels_db=[0])
-        self.spl_ref = TargetSlopeState(region_levels_db=[0])
+        self.spl_over_distance = TargetSlopeState(region_levels_db=[0])
+        self.reference_spl_over_distance = TargetSlopeState(
+            region_levels_db=[0])
         # SPL over distance grid as shown (distance, venue x, venue y), and
         # the target points and reference point as shown in the GUI
         self.grid: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None
         self.shown_target: Optional[Dict[str, list]] = None
         self.shown_reference: List[float] = [GUI_INITIAL_REFERENCE_DISTANCE]
         self.tilt_angles_deg: Optional[np.ndarray] = None
-        self.patches: Tuple[list, list] = ([], [])
-        self.patches_ref: Tuple[list, list] = ([], [])
+        self.cabinet_patches: Tuple[list, list] = ([], [])
+        self.reference_cabinet_patches: Tuple[list, list] = ([], [])
         fixed = setup.algorithm.fixed_top_angle_deg
         if fixed is not None:
             borders = fixed_angle_borders(venue.palc_venue.segments[-1],
                                           self.config)
-            self.optimized.fixed_angle = borders
+            self.optimized_array.fixed_angle = borders
             self.config.use_fixed_angle = True
             self.config.fixed_angle = clamp_fixed_angle(
                 float(fixed), borders[0], borders[2])
@@ -465,7 +476,8 @@ class _Calculation:
         snap_to_distance_grid(self.target, x, x_v, y_v, self.shown_target,
                               self.shown_reference)
         t = self.target
-        self.shown_target = dict(x=t.distances, SPL=t.levels_db, x_v=t.points_x, y_v=t.points_y)
+        self.shown_target = dict(x=t.distances, SPL=t.levels_db,
+                                 x_v=t.points_x, y_v=t.points_y)
         self.shown_reference = [t.reference_distance]
 
     def _reset_config(self) -> None:
@@ -487,62 +499,77 @@ class _Calculation:
         CalculationError
             If the calculation failed.
         """
-        P, S = self.config, self.sf_config
-        drawn, palc_venue = self.venue.drawn, self.venue.palc_venue
-        P.get_initial_weights()
-        target_run = P.use_weighting == 'Target Slope' and self.target.initialized
+        config, sound_field_config = self.config, self.sound_field_config
+        drawn_lines = self.venue.drawn_lines
+        palc_venue = self.venue.palc_venue
+        optimized_array = self.optimized_array
+        config.get_initial_weights()
+        target_run = config.use_weighting == 'Target Slope' and \
+            self.target.initialized
         region_indices = None
         try:
             if target_run:
                 self.target.reset_optimization()
                 self.snap_target()
-                region_indices = optimize_target_slope(P, S, palc_venue, self.plots,
-                                        self.optimized, drawn,
-                                        self.evaluation, self.spl,
-                                        self.target, TARGET_SLOPE_MAX_LOOPS)
+                region_indices = optimize_target_slope(
+                    config, sound_field_config, palc_venue, self.ray_plot,
+                    optimized_array, drawn_lines, self.evaluation,
+                    self.spl_over_distance, self.target,
+                    TARGET_SLOPE_MAX_LOOPS)
             else:
-                run_palc(self.plots, palc_venue, P, self.optimized)
+                run_palc(self.ray_plot, palc_venue, config, optimized_array)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: PALC calculation failed') from exc
         self._reset_config()
-        if self.optimized.iteration_count == 500 or \
-                np.shape(self.optimized.tilt_angles_deg)[0] == 0:
+        if optimized_array.iteration_count == 500 or \
+                np.shape(optimized_array.tilt_angles_deg)[0] == 0:
             raise ConvergenceError('Error: No convergence reached')
-        self.patches = cabinet_outlines(self.plots, P,
-                                         self.optimized.tilt_angles)
-        self.plots.get_plot_array(self.optimized)
+        self.cabinet_patches = cabinet_outlines(self.ray_plot, config,
+                                                optimized_array.tilt_angles)
+        self.ray_plot.get_plot_array(optimized_array)
         inter_cabinet_angles_deg, self.tilt_angles_deg = \
-            inter_cabinet_angles(self.optimized.tilt_angles_deg)
-        self.optimized.inter_cabinet_angles_deg = inter_cabinet_angles_deg
+            inter_cabinet_angles(optimized_array.tilt_angles_deg)
+        optimized_array.inter_cabinet_angles_deg = inter_cabinet_angles_deg
+        frequency_range_hz = sound_field_config.frequency_range_hz
         try:
-            x_S, y_S = predict_sound_field(self.optimized.tilt_angles_deg, drawn, S,
-                               self.evaluation)
+            array_center_x, array_center_y = predict_sound_field(
+                optimized_array.tilt_angles_deg, drawn_lines,
+                sound_field_config, self.evaluation)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation failed') from exc
-        compute_spl_over_distance(self.plots, drawn, self.evaluation.spl_db, self.spl,
-                     S.frequency_range_hz)
-        compute_homogeneity(self.evaluation, x_S, y_S, drawn.points_x,
-                        drawn.points_y)
+        compute_spl_over_distance(self.ray_plot, drawn_lines,
+                                  self.evaluation.spl_db,
+                                  self.spl_over_distance, frequency_range_hz)
+        compute_homogeneity(self.evaluation, array_center_x, array_center_y,
+                            drawn_lines.points_x, drawn_lines.points_y)
         compute_histogram(self.evaluation)
         try:
-            x_S, y_S = predict_sound_field(self.reference.tilt_angles_deg, drawn, S,
-                               self.evaluation_ref)
+            array_center_x, array_center_y = predict_sound_field(
+                self.reference_array.tilt_angles_deg, drawn_lines,
+                sound_field_config, self.evaluation_reference)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation of reference '
                                    'array failed') from exc
-        self.patches_ref = cabinet_outlines(self.plots_ref, P,
-                                             self.reference.tilt_angles)
-        compute_spl_over_distance(self.plots_ref, drawn, self.evaluation_ref.spl_db,
-                     self.spl_ref, S.frequency_range_hz)
-        compute_homogeneity(self.evaluation_ref, x_S, y_S, drawn.points_x,
-                        drawn.points_y)
-        compute_histogram(self.evaluation_ref)
-        self.grid = (self.spl.distances, drawn.points_x, drawn.points_y)
+        self.reference_cabinet_patches = cabinet_outlines(
+            self.reference_ray_plot, config, self.reference_array.tilt_angles)
+        compute_spl_over_distance(self.reference_ray_plot, drawn_lines,
+                                  self.evaluation_reference.spl_db,
+                                  self.reference_spl_over_distance,
+                                  frequency_range_hz)
+        compute_homogeneity(self.evaluation_reference, array_center_x,
+                            array_center_y, drawn_lines.points_x,
+                            drawn_lines.points_y)
+        compute_histogram(self.evaluation_reference)
+        self.grid = (self.spl_over_distance.distances, drawn_lines.points_x,
+                     drawn_lines.points_y)
         if not self.target.initialized:
-            shift_to_zero(self.target, self.spl, self.spl_ref)
+            shift_to_zero(self.target, self.spl_over_distance,
+                          self.reference_spl_over_distance)
         elif target_run:
-            shift_to_reference(self.target, self.spl, region_indices, self.spl_ref)
-            optimization_region(self.spl, self.target)
+            shift_to_reference(self.target, self.spl_over_distance,
+                               region_indices,
+                               self.reference_spl_over_distance)
+            optimization_region(self.spl_over_distance, self.target)
             self.shown_target['SPL'] = self.target.levels_db
             self.snap_target()
 
@@ -555,36 +582,43 @@ class _Calculation:
         (``chg_weight_links``).
         """
         x, x_v, y_v = self.grid
-        SPL = self.spl.levels_db
-        self.show_target([x[0], x[-1]], [SPL[0], SPL[-1]],
+        levels_db = self.spl_over_distance.levels_db
+        self.show_target([x[0], x[-1]], [levels_db[0], levels_db[-1]],
                          [x_v[0], x_v[-1]], [y_v[0], y_v[-1]])
         region_distances = self.target.region_distances
         self.show_reference(region_distances[int(len(region_distances) / 2)])
         if hinges != 0:
-            ind = hinge_indices(int(hinges), self.spl)
-            self.show_target(list(self.spl.distances[ind]),
-                             list(np.array(self.spl.levels_db)[ind]),
+            spl = self.spl_over_distance
+            ind = hinge_indices(int(hinges), spl)
+            self.show_target(list(spl.distances[ind]),
+                             list(np.array(spl.levels_db)[ind]),
                              list(x_v[ind]), list(y_v[ind]))
 
     def result(self) -> RunResult:
         """Collect the results of the last :meth:`calculate`."""
-        diff_ref, _ = inter_cabinet_angles(self.reference.tilt_angles_deg)
+        reference_inter_cabinet_angles_deg, _ = inter_cabinet_angles(
+            self.reference_array.tilt_angles_deg)
         optimized = ArrayResult(
             tilt_angles_deg=self.tilt_angles_deg,
-            inter_cabinet_angles_deg=self.optimized.inter_cabinet_angles_deg,
-            evaluation=self.evaluation, spl_over_distance=self.spl,
-            patches_x=self.patches[0], patches_y=self.patches[1])
+            inter_cabinet_angles_deg=(
+                self.optimized_array.inter_cabinet_angles_deg),
+            evaluation=self.evaluation,
+            spl_over_distance=self.spl_over_distance,
+            patches_x=self.cabinet_patches[0],
+            patches_y=self.cabinet_patches[1])
         reference = ArrayResult(
-            tilt_angles_deg=self.reference.tilt_angles_deg,
-            inter_cabinet_angles_deg=diff_ref,
-            evaluation=self.evaluation_ref, spl_over_distance=self.spl_ref,
-            patches_x=self.patches_ref[0], patches_y=self.patches_ref[1])
+            tilt_angles_deg=self.reference_array.tilt_angles_deg,
+            inter_cabinet_angles_deg=reference_inter_cabinet_angles_deg,
+            evaluation=self.evaluation_reference,
+            spl_over_distance=self.reference_spl_over_distance,
+            patches_x=self.reference_cabinet_patches[0],
+            patches_y=self.reference_cabinet_patches[1])
         target_slope = self.config.use_weighting == 'Target Slope' \
             and self.target.initialized
         return RunResult(
             setup=self.setup, venue=self.venue, optimized=optimized,
-            reference=reference, geometry=self.optimized,
-            ray_plot=self.plots,
+            reference=reference, geometry=self.optimized_array,
+            ray_plot=self.ray_plot,
             target=self.target if target_slope else None,
             weighting_weights=np.array(self.config.weighting_weights,
                                        dtype=float))
@@ -711,7 +745,8 @@ def result_arrays(result: RunResult) -> Dict[str, np.ndarray]:
         "reference_spl_db": _arr(ev_ref.spl_db),
         "spl_over_distance_x": _arr(opt.spl_over_distance.distances),
         "spl_over_distance_db": _arr(opt.spl_over_distance.levels_db),
-        "reference_spl_over_distance_db": _arr(ref.spl_over_distance.levels_db),
+        "reference_spl_over_distance_db":
+            _arr(ref.spl_over_distance.levels_db),
         "homogeneity_db": _arr(ev.homogeneity_db),
         "homogeneity_low_db": _arr(ev.homogeneity_low_db),
         "homogeneity_high_db": _arr(ev.homogeneity_high_db),
@@ -720,8 +755,8 @@ def result_arrays(result: RunResult) -> Dict[str, np.ndarray]:
         "histogram_tops": _arr(ev.histogram_tops),
         "reference_histogram_steps": _arr(ev_ref.histogram_steps),
         "reference_histogram_tops": _arr(ev_ref.histogram_tops),
-        "venue_x": _arr(result.venue.drawn.points_x),
-        "venue_y": _arr(result.venue.drawn.points_y),
+        "venue_x": _arr(result.venue.drawn_lines.points_x),
+        "venue_y": _arr(result.venue.drawn_lines.points_y),
     }
     if result.target is not None:
         out["target_x"] = _arr(result.target.distances)

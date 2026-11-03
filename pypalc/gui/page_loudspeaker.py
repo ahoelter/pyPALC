@@ -108,7 +108,7 @@ class LoudspeakerPage:
     def compute_modeled_directivity(self) -> None:
         """Compute and plot the modeled directivity of the configuration."""
         config = self.app.state.config
-        sf_config = self.app.state.sound_field_config
+        sound_field_config = self.app.state.sound_field_config
         c0, alpha, beta_deg, beta, f, omega, measured_directivity_data, measured_angles_deg, H_post = \
             initial_directivity_plot()
         for n in range(np.shape(f)[0]):
@@ -116,21 +116,21 @@ class LoudspeakerPage:
                                             config.cabinet_height, beta, omega[n],
                                             c0, f, measured_directivity_data[:, n],
                                             measured_angles_deg[:, 1], n)
-        setattr(sf_config, 'frequencies', f)
-        sf_config.set_plot_directivity(H_post, [100, 1000, 10000])
+        setattr(sound_field_config, 'frequencies', f)
+        sound_field_config.set_plot_directivity(H_post, [100, 1000, 10000])
         self.directivity_source.data = dict(
-            amplitude_100=sf_config.plot_directivity_db[0],
-            amplitude_1k=sf_config.plot_directivity_db[1],
-            amplitude_10k=sf_config.plot_directivity_db[2], degree=list(beta_deg))
+            amplitude_100=sound_field_config.plot_directivity_db[0],
+            amplitude_1k=sound_field_config.plot_directivity_db[1],
+            amplitude_10k=sound_field_config.plot_directivity_db[2], degree=list(beta_deg))
 
     def _show_measured_directivity(self) -> None:
         """Plot the uploaded measured directivity."""
-        sf_config = self.app.state.sound_field_config
+        sound_field_config = self.app.state.sound_field_config
         self.directivity_source.data = dict(
-            amplitude_100=sf_config.plot_measured_directivity_db[0],
-            amplitude_1k=sf_config.plot_measured_directivity_db[1],
-            amplitude_10k=sf_config.plot_measured_directivity_db[2],
-            degree=sf_config.plot_measured_angles_deg)
+            amplitude_100=sound_field_config.plot_measured_directivity_db[0],
+            amplitude_1k=sound_field_config.plot_measured_directivity_db[1],
+            amplitude_10k=sound_field_config.plot_measured_directivity_db[2],
+            degree=sound_field_config.plot_measured_angles_deg)
 
     def update_directivity_plot(self) -> None:
         """Show the upload for measured data or plot the modeled directivity.

@@ -558,11 +558,11 @@ class AlgorithmPage:
         if state.result is None:
             return
         SPLoverX = state.result.optimized.spl_over_distance
-        drawn = state.drawn
+        drawn_lines = state.drawn_lines
         ind = hinge_indices(hinges, SPLoverX)
         self.target_source.data.update(dict(
             SPL=np.array(SPLoverX.levels_db)[ind], x=SPLoverX.distances[ind],
-            x_v=drawn.points_x[ind], y_v=drawn.points_y[ind]))
+            x_v=drawn_lines.points_x[ind], y_v=drawn_lines.points_y[ind]))
 
     def snap_target(self, attr, old, new) -> None:
         """Snap the dragged target slope to the SPL over distance grid.

@@ -237,7 +237,7 @@ class VenuePage:
         [x_start, x_stop] = self.point_source.data['x']
         [y_start, y_stop] = self.point_source.data['y']
         try:
-            check_line(self.app.state.drawn,
+            check_line(self.app.state.drawn_lines,
                        AudienceLine(start=(x_start, y_start),
                                     stop=(x_stop, y_stop),
                                     points_per_meter=points_per_meter))
@@ -267,13 +267,13 @@ class VenuePage:
         self.venue_error_info.text = ''
         if failed:
             self.venue_error_info.text = _DISCRETIZATION_ERROR
-        self.app.state.drawn.append_line(*line)
+        self.app.state.drawn_lines.append_line(*line)
         self.app.state.audience_lines.append(
             _audience_line(line, points_per_meter))
         self.app.update_venue_ranges()
-        drawn = self.app.state.drawn
-        self.lines_source.data = dict(xlineplt=drawn.plot_x,
-                                      ylineplt=drawn.plot_y)
+        drawn_lines = self.app.state.drawn_lines
+        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
+                                      ylineplt=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
 
@@ -299,14 +299,14 @@ class VenuePage:
             If a line is rejected.
         """
         state = self.app.state
-        drawn = state.drawn
+        drawn_lines = state.drawn_lines
         for line in lines:
-            check_line(drawn, line)
+            check_line(drawn_lines, line)
             (x_start, y_start), (x_stop, y_stop) = line.start, line.stop
             slope, intercept = slope_and_intercept(x_start, x_stop,
                                                    y_start, y_stop)
             diff = np.sqrt((x_stop - x_start)**2 + (y_stop - y_start)**2)
-            drawn.append_line(x_start, x_stop, y_start, y_stop, slope,
+            drawn_lines.append_line(x_start, x_stop, y_start, y_stop, slope,
                               intercept,
                               diff*line.points_per_meter)
             state.audience_lines.append(line)
@@ -320,8 +320,8 @@ class VenuePage:
             x=np.array([float(last.start[0]), float(last.stop[0])]),
             y=np.array([float(last.start[1]), float(last.stop[1])]))
         self.venue_error_info.text = ''
-        self.lines_source.data = dict(xlineplt=drawn.plot_x,
-                                      ylineplt=drawn.plot_y)
+        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
+                                      ylineplt=drawn_lines.plot_y)
         self.app.update_venue_ranges()
 
     def remove_line(self) -> None:
@@ -331,14 +331,14 @@ class VenuePage:
         -------
         None.
         """
-        drawn = self.app.state.drawn
-        if np.shape(drawn.line_end_indices)[0] > 1:
-            drawn.remove_last_line()
+        drawn_lines = self.app.state.drawn_lines
+        if np.shape(drawn_lines.line_end_indices)[0] > 1:
+            drawn_lines.remove_last_line()
             del self.app.state.audience_lines[-1]
-        if np.shape(drawn.line_end_indices)[0] > 1:
+        if np.shape(drawn_lines.line_end_indices)[0] > 1:
             self.app.update_venue_ranges()
-        self.lines_source.data = dict(xlineplt=drawn.plot_x,
-                                      ylineplt=drawn.plot_y)
+        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
+                                      ylineplt=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
 
     def insert_line(self) -> None:
@@ -357,12 +357,12 @@ class VenuePage:
         if line is None:
             return
         self.venue_error_info.text = ''
-        drawn = self.app.state.drawn
-        drawn.insert_previous_line(selected_index, *line)
+        drawn_lines = self.app.state.drawn_lines
+        drawn_lines.insert_previous_line(selected_index, *line)
         self.app.state.audience_lines.insert(
             selected_index, _audience_line(line, points_per_meter))
-        self.lines_source.data = dict(xlineplt=drawn.plot_x,
-                                      ylineplt=drawn.plot_y)
+        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
+                                      ylineplt=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
 
@@ -374,11 +374,11 @@ class VenuePage:
         None.
         """
         selected_index = self.tapped_line_source.data['tapped'][0]
-        drawn = self.app.state.drawn
-        drawn.remove_selected_line(selected_index)
+        drawn_lines = self.app.state.drawn_lines
+        drawn_lines.remove_selected_line(selected_index)
         del self.app.state.audience_lines[selected_index]
-        self.lines_source.data = dict(xlineplt=drawn.plot_x,
-                                      ylineplt=drawn.plot_y)
+        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
+                                      ylineplt=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
 

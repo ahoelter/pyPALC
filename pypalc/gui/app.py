@@ -81,8 +81,8 @@ class SessionState:
 
     Attributes
     ----------
-    drawn : AudienceLines
-        Audience lines drawn by the user (legacy ``created_pal``).
+    drawn_lines : AudienceLines
+        Audience lines drawn by the user.
     audience_lines : list of AudienceLine
         The drawn audience lines as settings, in the order of ``drawn``,
         with the discretization each line was saved with.
@@ -119,7 +119,7 @@ class SessionState:
         widget callbacks then do nothing
         (:func:`~pypalc.gui.skipped_while_applying_setup`).
     """
-    drawn: AudienceLines = field(default_factory=_initial_drawn_lines)
+    drawn_lines: AudienceLines = field(default_factory=_initial_drawn_lines)
     audience_lines: List[AudienceLine] = field(default_factory=list)
     venue: Optional[VenueResult] = None
     measured_directivity_csv: Optional[str] = None
@@ -306,7 +306,7 @@ class PalcApp:
         try:
             non_audience_lines = AudienceLines(cut_lines=[])
             sound_field_only_lines = AudienceLines(cut_lines=[])
-            suggest_venue(st.drawn, non_audience_lines,
+            suggest_venue(st.drawn_lines, non_audience_lines,
                           sound_field_only_lines)
             venue_page.non_audience_source.data = dict(
                 xnalplt=non_audience_lines.plot_x,
@@ -316,12 +316,12 @@ class PalcApp:
                 ysfpplt=sound_field_only_lines.plot_y)
             st.venue = None
             palc_venue = PalcVenue(segments=[], audience_segments=[])
-            fill_palc_venue(palc_venue, st.drawn, non_audience_lines,
+            fill_palc_venue(palc_venue, st.drawn_lines, non_audience_lines,
                             sound_field_only_lines)
             palc_venue.collect_audience_segments(non_audience_lines)
-            st.venue = VenueResult(drawn=st.drawn, palc_venue=palc_venue,
-                                   non_audience=non_audience_lines,
-                                   sound_field_only=sound_field_only_lines)
+            st.venue = VenueResult(drawn_lines=st.drawn_lines, palc_venue=palc_venue,
+                                   non_audience_lines=non_audience_lines,
+                                   sound_field_only_lines=sound_field_only_lines)
             self.set_venue_checked(True)
             self.config_error_info.text = ''
             self.show()
@@ -329,7 +329,7 @@ class PalcApp:
                 algorithm.weighting_select.value = 'Without'
                 st.target.initialized = False
                 algorithm.choose_weighting(0, 0, 0)
-            weight_links = np.arange(np.shape(st.drawn.line_start_x)[0]+1)
+            weight_links = np.arange(np.shape(st.drawn_lines.line_start_x)[0]+1)
             algorithm.hinges_select.options = [str(n) for n in
                                                list(weight_links)]
             algorithm.hinges_select.value = '0'
@@ -384,10 +384,10 @@ class PalcApp:
         """
         st = self.state
         results = self.pages[5]
-        x_range = st.ranges.update_range('p_x', [-2, 2], st.drawn.line_start_x,
-                                         st.drawn.line_stop_x, st.config.top_x)
-        y_range = st.ranges.update_range('p_y', [-2, 2], st.drawn.line_start_y,
-                                         st.drawn.line_stop_y, st.config.top_y)
+        x_range = st.ranges.update_range('p_x', [-2, 2], st.drawn_lines.line_start_x,
+                                         st.drawn_lines.line_stop_x, st.config.top_x)
+        y_range = st.ranges.update_range('p_y', [-2, 2], st.drawn_lines.line_start_y,
+                                         st.drawn_lines.line_stop_y, st.config.top_y)
         self.scale_venue_axes(call=False)
         set_figure_ranges(st.ranges, [results.beam_figure,
                                       results.reference_beam_figure,
@@ -489,7 +489,7 @@ class PalcApp:
         algorithm.exclude_hard_margin_target_slope()
         loudspeaker.update_directivity_plot()
         # more than one venue point (the legacy test ``xline != []``)
-        if np.size(st.drawn.points_x) > 1:
+        if np.size(st.drawn_lines.points_x) > 1:
             self.update_venue_ranges()
 
     @skipped_while_applying_setup
@@ -638,7 +638,7 @@ class PalcApp:
         Tech_res, Tech_res_ref = optimized.evaluation, reference.evaluation
         SPLoverX, SPLoverX_ref = optimized.spl_over_distance, \
             reference.spl_over_distance
-        created_pal = result.venue.drawn
+        created_pal = result.venue.drawn_lines
         Opt_w = st.target
         self.config_error_info.text = ''
         # array and rays in the venue figure
