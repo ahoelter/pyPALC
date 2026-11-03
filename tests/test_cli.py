@@ -19,6 +19,8 @@ from tests.baseline_cases import assert_matches_baseline
 
 ROOT = Path(__file__).resolve().parent.parent
 CASES = ROOT / "tests" / "cases"
+#: Setups that fail; not baseline cases.
+FAILING = ROOT / "tests" / "cli_setups"
 BASELINE = ROOT / "tests" / "baseline"
 SOUND_HEADER_START = ["x_m", "y_m"]
 
@@ -160,3 +162,20 @@ def test_cli_unwritable_output_exit_code(tmp_path, capsys):
     err = capsys.readouterr().err
     assert err.startswith("output error: cannot write the results to %s: "
                           % (blocker / "out"))
+
+
+def test_cli_venue_error_exit_code(tmp_path, capsys):
+    assert main(["run", str(FAILING / "venue_error.yaml"),
+                 "--out", str(tmp_path / "o")]) == 3
+    err = capsys.readouterr().err
+    assert err.startswith("venue error: Stop values must be higher")
+    assert "Error:" not in err
+    assert not (tmp_path / "o").exists()
+
+
+def test_cli_no_convergence_exit_code(tmp_path, capsys):
+    assert main(["run", str(FAILING / "no_convergence.yaml"),
+                 "--out", str(tmp_path / "o")]) == 4
+    assert capsys.readouterr().err == \
+        "calculation error: No convergence reached\n"
+    assert not (tmp_path / "o").exists()
