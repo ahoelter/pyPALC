@@ -1,7 +1,7 @@
 # pyPALC code cleanup: design
 
 Date: 2026-10-30
-Status: draft, awaiting approval
+Status: approved (2026-10-30), implemented on branch code-cleanup
 
 This is the first of four projects, in this order:
 

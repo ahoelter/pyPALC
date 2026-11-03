@@ -7,7 +7,8 @@ The application is based on different scientific publication, which can be found
 Install dependencies in a conda environment:
 `conda create -n pyPALC --file requirements.txt`
 
-Or install depencencies with pip:
+Or install depencencies with pip, in a Python 3.8 environment (the pinned
+versions need Python 3.8):
 `pip install -r requirements_pip.txt`
 
 Run the app locally:
