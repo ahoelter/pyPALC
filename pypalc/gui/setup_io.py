@@ -426,9 +426,13 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
     session is changed; then a :class:`SetupError` is raised and nothing
     changes. Other exceptions (a bug) are not caught here: the session is
     then already replaced and may be partly applied. If the calculation
-    itself fails (e.g. no convergence), the
-    setup stays applied, the error text is shown like for a failed "PALC
-    Run" and page 4 stays open.
+    itself fails (e.g. no convergence), the setup stays applied, the error
+    text is shown like for a failed "PALC Run" and page 4 stays open.
+    Unlike a failed "PALC Run", which keeps the previous results, the
+    results of the previous setup are then cleared
+    (:meth:`~.app.PalcApp.clear_results`), unless the initial calculation
+    of a target slope setup succeeded (its results stay shown, as in
+    ``state.result``).
 
     Parameters
     ----------
@@ -475,5 +479,9 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
         _set_fixed_angle(app, setup.algorithm.fixed_top_angle_deg)
         if _set_weighting(app, setup) and app.run_calculation():
             app.page_select.active = 5
+        elif state.result is None:
+            # nothing of this setup was calculated: show no results
+            # instead of those of the previous setup
+            app.clear_results()
     finally:
         state.applying_setup = False

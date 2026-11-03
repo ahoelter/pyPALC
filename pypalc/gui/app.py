@@ -137,6 +137,21 @@ class SessionState:
     applying_setup: bool = False
 
 
+def _copied(value):
+    """A copy of a property value that may be changed in place (the dicts,
+    lists and arrays of source data); other values (models, numbers) as
+    they are. Bokeh's wrappers become plain dicts and lists."""
+    if isinstance(value, dict):
+        return {key: _copied(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_copied(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_copied(item) for item in value)
+    if isinstance(value, np.ndarray):
+        return value.copy()
+    return value
+
+
 def _error_text(exc: PalcError) -> str:
     """Error text shown for a failed calculation."""
     if isinstance(exc, SetupError):
@@ -225,6 +240,10 @@ class PalcApp:
                                        self.pages[2].aperture_input.value)
         self.state.config.store_config('cabinet_count',
                                        self.pages[3].cabinet_count_input.value)
+        # what the session shows before the first result (clear_results)
+        self._new_session_results = [
+            (model, name, _copied(getattr(model, name)))
+            for model, name in self._result_properties()]
 
     def _build_shared_widgets(self) -> None:
         """Header, page selection and the widgets shown on several pages."""
@@ -413,6 +432,63 @@ class PalcApp:
                        self.venue_axes_select)
         if call:
             self.show()
+
+    def _result_properties(self) -> list:
+        """(model, property) pairs that showing a result writes
+        (:meth:`_show_result`)."""
+        algorithm, results = self.pages[4], self.pages[5]
+        data_sources = (
+            self.cabinet_patches_source, self.hit_points_source,
+            self.rays_source, algorithm.results_source,
+            algorithm.spl_over_distance_source,
+            algorithm.reference_spl_over_distance_source,
+            algorithm.target_source, algorithm.target_reference_source,
+            algorithm.target_region_source, results.venue_points_source,
+            results.sound_field_source, results.homogeneity_source,
+            results.histogram_source, results.reference_histogram_source,
+            results.beam_source)
+        ranges = (
+            (algorithm.spl_over_distance_figure, 'y_range'),
+            (results.histogram_figure, 'x_range'),
+            (results.histogram_figure, 'y_range'),
+            (results.reference_histogram_figure, 'x_range'),
+            (results.reference_histogram_figure, 'y_range'),
+            (results.homogeneity_figure, 'y_range'),
+            (results.sound_field_figure, 'y_range'),
+            (results.reference_sound_field_figure, 'y_range'))
+        return ([(results.beam_checkbox, 'active'),
+                 (results.beam_checkbox, 'disabled'),
+                 (results.beam_figure, 'visible'),
+                 (results.reference_beam_figure, 'visible')]
+                + [(source, 'data') for source in data_sources]
+                + list(ranges))
+
+    def clear_results(self) -> None:
+        """Show no results, as a new session does.
+
+        Sets every source, figure range and widget that showing a result
+        writes (:meth:`_show_result`) to its value in a new session; the
+        target slope sources are reset without snapping them to the
+        cleared distance grid. Used by :func:`~.setup_io.apply_setup` when
+        a loaded setup cannot be calculated, so that no results of the
+        previous setup stay visible or can be downloaded. The error text
+        and ``state`` are not changed.
+
+        Returns
+        -------
+        None.
+        """
+        algorithm = self.pages[4]
+        targets = (algorithm.target_source,
+                   algorithm.target_reference_source)
+        for source in targets:
+            source.remove_on_change('data', algorithm.snap_target)
+        try:
+            for model, name, value in self._new_session_results:
+                setattr(model, name, _copied(value))
+        finally:
+            for source in targets:
+                source.on_change('data', algorithm.snap_target)
 
     def clear_result_figure(self) -> None:
         """Remove the array and its rays from the venue figure (legacy

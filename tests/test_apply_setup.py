@@ -342,6 +342,55 @@ def test_failed_run_after_load_shows_error(monkeypatch):
     assert setup_from_app(app) == load_setup_text(case_text("simple"))
 
 
+def _failing_text(case):
+    """A case that loads but cannot be calculated (no convergence)."""
+    setup = case_setup(case)
+    return dump_setup(dataclasses.replace(setup, loudspeaker=dataclasses.replace(
+        setup.loudspeaker, aperture_angle_deg=-5.0)))
+
+
+@pytest.mark.parametrize("previous, failing", [
+    ("simple", "simple"), ("target_slope", "simple"),
+    ("simple", "target_slope")])
+def test_failed_load_clears_previous_results(previous, failing):
+    """After a failed load the session shows what a new session shows
+    after the same failed load: no results of the previous setup."""
+    app = new_app()
+    app.page_select.active = 4
+    load(app, case_text(previous))
+    assert app.state.result is not None
+    load(app, _failing_text(failing))
+    assert app.config_error_info.text == 'Error: No convergence reached'
+    assert app.state.result is None
+    fresh = new_app()
+    fresh.page_select.active = 4
+    load(fresh, _failing_text(failing))
+    assert not differences(state_of(app), state_of(fresh))
+    assert len(app.pages[4].results_source.data['tilt_angle_deg']) == 0
+    # the target slope still snaps when dragged after the clearing
+    assert app.pages[4].snap_target in \
+        app.pages[4].target_source._callbacks['data']
+
+
+def test_failed_run_keeps_previous_results(monkeypatch):
+    app = new_app()
+    app.page_select.active = 4
+    load(app, case_text("simple"))
+    results = dict(app.pages[4].results_source.data)
+    previous = app.state.result
+
+    def fail(*args, **kwargs):
+        raise ConvergenceError('Error: No convergence reached')
+
+    monkeypatch.setattr(pipeline, "run", fail)
+    app.pages[4].start_toggle.active = True
+    assert app.config_error_info.text == 'Error: No convergence reached'
+    assert app.state.result is previous
+    np.testing.assert_array_equal(
+        app.pages[4].results_source.data['tilt_angle_deg'],
+        results['tilt_angle_deg'])
+
+
 def saved_text(app):
     """Click "Save Setup" and return the text the browser downloads."""
     algorithm = app.pages[4]
