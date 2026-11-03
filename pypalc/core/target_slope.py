@@ -108,7 +108,10 @@ class TargetSlopeState():
         diff_opt : float
             Single value of the optimized PALC computation.
         iteration_count : int
-            Number of the current optimization loop. At 500 the loop stops.
+            Iteration count of the PALC run of this loop
+            (``optimized_array.iteration_count`` after :func:`run_palc`);
+            500 means that PALC did not converge, and the optimization
+            stops.
 
         Returns
         -------
@@ -808,14 +811,24 @@ def optimize_target_slope(config, sound_field_config, palc_venue, ray_plot, \
                   max_loops=80):
     """
     Runs the while loop of target slope optimization. Will return the optimized
-    weighting factors in ``target``. Called by :func:`pypalc.core.pipeline.run`.
+    weighting factors in ``config``. Called by :func:`pypalc.core.pipeline.run`.
     Calls mainly methods of :py:class:`TargetSlopeState`, this module and
     :py:mod:`pypalc.core.sound_field`.
 
+    Every loop runs PALC and the sound field prediction with the weighting
+    factors in ``config``, compares the SPL over distance with the target
+    (:meth:`TargetSlopeState.store_previous`) and updates the weighting
+    factors for the next loop (:func:`update_weighting`). If
+    :meth:`~TargetSlopeState.store_previous` stops the optimization, PALC
+    runs once more with the weighting factors it restored and the loop
+    ends. After ``max_loops`` loops without such a stop the loop ends after
+    the update: ``optimized_array`` holds the PALC result of the last loop,
+    and ``config`` the weighting factors updated after it.
+
     Parameters
     ----------
-    config : obj [in]
-        Configuration of the PALC algorithm.
+    config : obj [in, out]
+        Configuration of the PALC algorithm; holds the weighting factors.
     sound_field_config : obj [in]
         Configuration of the sound field prediction.
     palc_venue : obj [in]
@@ -833,11 +846,14 @@ def optimize_target_slope(config, sound_field_config, palc_venue, ray_plot, \
     target : obj [out]
         Optimized weighting data to run the target slope optimization.
     max_loops : int, optional
-        Maximum of loops to compute. The default is 40.
+        Maximum number of loops. The default is 80; the pipeline passes
+        :data:`pypalc.core.pipeline.TARGET_SLOPE_MAX_LOOPS`.
 
     Returns
     -------
-    None.
+    region_indices : list of int
+        Indices of the SPL over distance points in the optimization region
+        (:func:`optimization_region`) of the last loop.
 
     """
     loop = 0
