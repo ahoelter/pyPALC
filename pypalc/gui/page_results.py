@@ -129,7 +129,7 @@ class ResultsPage:
                                   title_text_font_style="normal"), 'right')
         pBeam.image(image='SPL', x='x', y='y', dw='dw', dh='dh',
                     source=self.beam_source, palette=Cividis256)
-        pBeam.multi_line('xlineplt', 'ylineplt', source=lines_source,
+        pBeam.multi_line('lines_x', 'lines_y', source=lines_source,
                          line_dash='solid', line_color="black", line_width=4,
                          selection_color="darkred")
         pBeam.patches('x_list', 'y_list', source=patches_source,
@@ -153,7 +153,7 @@ class ResultsPage:
                              'right')
         pBeam_ref.image(image='SPL_ref', x='x', y='y', dw='dw', dh='dh',
                         source=self.beam_source, palette=Cividis256)
-        pBeam_ref.multi_line('xlineplt', 'ylineplt', source=lines_source,
+        pBeam_ref.multi_line('lines_x', 'lines_y', source=lines_source,
                              line_dash='solid', line_color="black",
                              line_width=4, selection_color="darkred")
         pBeam_ref.patches('x_list_ref', 'y_list_ref', source=patches_source,

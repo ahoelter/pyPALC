@@ -94,14 +94,14 @@ class VenuePage:
         x_init = np.array([0, 0]).astype(float)
         self.point_source = ColumnDataSource(data=dict(x=x_init, y=x_init))
         """Start and end point entered by the user."""
-        self.lines_source = ColumnDataSource(data=dict(xlineplt=[],
-                                                       ylineplt=[]))
+        self.lines_source = ColumnDataSource(data=dict(lines_x=[],
+                                                       lines_y=[]))
         """The drawn audience lines."""
-        self.non_audience_source = ColumnDataSource(data=dict(xnalplt=[],
-                                                              ynalplt=[]))
+        self.non_audience_source = ColumnDataSource(data=dict(lines_x=[],
+                                                              lines_y=[]))
         """Non-audience lines, e.g., gaps between audience lines."""
         self.sound_field_only_source = ColumnDataSource(data=dict(
-            xsfpplt=[], ysfpplt=[]))
+            lines_x=[], lines_y=[]))
         """Audience lines only used in the sound field prediction."""
         self.tapped_line_source = ColumnDataSource(data=dict(tapped=[]))
         """Index of the tapped audience line."""
@@ -119,42 +119,50 @@ class VenuePage:
     def _build_venue_figure(self) -> None:
         """Add the glyphs to the venue figure of the app."""
         app = self.app
-        p = app.venue_figure
-        p.xaxis.axis_label_text_font_style = "normal"
-        p.yaxis.axis_label_text_font_style = "normal"
-        p.x('x', 'y', source=self.point_source, line_color="lightskyblue")
-        p.multi_line('xlineplt', 'ylineplt', source=self.lines_source,
-                     legend_label='PALC and SFP', line_dash='solid',
-                     line_color="lightskyblue", line_width=2,
-                     selection_color="crimson", nonselection_line_alpha=0.5)
-        p.multi_line('xnalplt', 'ynalplt', source=self.non_audience_source,
-                     legend_label='PALC (non-audience line)',
-                     line_dash='dashed', line_color="lime", line_width=2,
-                     nonselection_line_alpha=0.5)
-        p.multi_line('xsfpplt', 'ysfpplt', source=self.sound_field_only_source,
-                     legend_label='only SFP', line_dash='solid',
-                     line_color="orange", line_width=2,
-                     nonselection_line_alpha=0.5)
-        p.patches('x_list', 'y_list', source=app.cabinet_patches_source,
-                  color="white")
+        venue_figure = app.venue_figure
+        venue_figure.xaxis.axis_label_text_font_style = "normal"
+        venue_figure.yaxis.axis_label_text_font_style = "normal"
+        venue_figure.x('x', 'y', source=self.point_source,
+                       line_color="lightskyblue")
+        venue_figure.multi_line('lines_x', 'lines_y', source=self.lines_source,
+                                legend_label='PALC and SFP', line_dash='solid',
+                                line_color="lightskyblue", line_width=2,
+                                selection_color="crimson",
+                                nonselection_line_alpha=0.5)
+        venue_figure.multi_line('lines_x', 'lines_y',
+                                source=self.non_audience_source,
+                                legend_label='PALC (non-audience line)',
+                                line_dash='dashed', line_color="lime",
+                                line_width=2, nonselection_line_alpha=0.5)
+        venue_figure.multi_line('lines_x', 'lines_y',
+                                source=self.sound_field_only_source,
+                                legend_label='only SFP', line_dash='solid',
+                                line_color="orange", line_width=2,
+                                nonselection_line_alpha=0.5)
+        venue_figure.patches('x_list', 'y_list',
+                             source=app.cabinet_patches_source, color="white")
         # array and its rays
-        p.multi_line('center_rays_x', 'center_rays_y', source=app.rays_source,
-                     color="white", line_dash="solid")
-        p.multi_line('start_rays_x', 'start_rays_y',
-                     source=app.rays_source, color="red", line_dash="dashed")
-        p.multi_line('stop_rays_x', 'stop_rays_y',
-                     source=app.rays_source, color="green", line_dash="dashed")
-        p.x('hit_points_x', 'hit_points_y', source=app.hit_points_source,
-            color="white")
-        p.x('hit_points_start_x', 'hit_points_start_y', source=app.hit_points_source,
-            color="red")
-        p.x('hit_points_stop_x', 'hit_points_stop_y', source=app.hit_points_source,
-            color="green")
+        venue_figure.multi_line('center_rays_x', 'center_rays_y',
+                                source=app.rays_source, color="white",
+                                line_dash="solid")
+        venue_figure.multi_line('start_rays_x', 'start_rays_y',
+                                source=app.rays_source, color="red",
+                                line_dash="dashed")
+        venue_figure.multi_line('stop_rays_x', 'stop_rays_y',
+                                source=app.rays_source, color="green",
+                                line_dash="dashed")
+        venue_figure.x('hit_points_x', 'hit_points_y',
+                       source=app.hit_points_source, color="white")
+        venue_figure.x('hit_points_start_x', 'hit_points_start_y',
+                       source=app.hit_points_source, color="red")
+        venue_figure.x('hit_points_stop_x', 'hit_points_stop_y',
+                       source=app.hit_points_source, color="green")
         # tap on a line to insert a line before it or to delete it
         self.lines_source.selected.on_change('indices', self.line_tapped)
-        p.legend.location, p.legend.orientation, p.legend.margin = \
+        legend = venue_figure.legend
+        legend.location, legend.orientation, legend.margin = \
             'top_center', 'horizontal', 0
-        p.legend.background_fill_alpha, p.legend.spacing, p.legend.visible = \
+        legend.background_fill_alpha, legend.spacing, legend.visible = \
             0.5, 15, False
 
     def layout(self) -> LayoutDOM:
@@ -272,8 +280,8 @@ class VenuePage:
             _audience_line(line, points_per_meter))
         self.app.update_venue_ranges()
         drawn_lines = self.app.state.drawn_lines
-        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
-                                      ylineplt=drawn_lines.plot_y)
+        self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
+                                      lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
 
@@ -320,8 +328,8 @@ class VenuePage:
             x=np.array([float(last.start[0]), float(last.stop[0])]),
             y=np.array([float(last.start[1]), float(last.stop[1])]))
         self.venue_error_info.text = ''
-        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
-                                      ylineplt=drawn_lines.plot_y)
+        self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
+                                      lines_y=drawn_lines.plot_y)
         self.app.update_venue_ranges()
 
     def remove_line(self) -> None:
@@ -337,8 +345,8 @@ class VenuePage:
             del self.app.state.audience_lines[-1]
         if np.shape(drawn_lines.line_end_indices)[0] > 1:
             self.app.update_venue_ranges()
-        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
-                                      ylineplt=drawn_lines.plot_y)
+        self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
+                                      lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
 
     def insert_line(self) -> None:
@@ -361,8 +369,8 @@ class VenuePage:
         drawn_lines.insert_previous_line(selected_index, *line)
         self.app.state.audience_lines.insert(
             selected_index, _audience_line(line, points_per_meter))
-        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
-                                      ylineplt=drawn_lines.plot_y)
+        self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
+                                      lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
 
@@ -377,8 +385,8 @@ class VenuePage:
         drawn_lines = self.app.state.drawn_lines
         drawn_lines.remove_selected_line(selected_index)
         del self.app.state.audience_lines[selected_index]
-        self.lines_source.data = dict(xlineplt=drawn_lines.plot_x,
-                                      ylineplt=drawn_lines.plot_y)
+        self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
+                                      lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
 

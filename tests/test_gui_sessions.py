@@ -36,7 +36,7 @@ def test_sessions_do_not_share_state():
     assert len(a.state.drawn_lines.line_start_x) == 1
     assert len(b.state.drawn_lines.line_start_x) == 0
     assert len(b.state.drawn_lines.points_x) == 0
-    assert b.pages[1].lines_source.data['xlineplt'] == []
+    assert b.pages[1].lines_source.data['lines_x'] == []
     assert a.pages[1].lines_source is not b.pages[1].lines_source
     assert a.state.config is not b.state.config
     assert a.venue_figure is not b.venue_figure

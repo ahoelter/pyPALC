@@ -19,13 +19,13 @@
 "1.insert_line_button.label": "6. Add Line before Selected Line",
 "1.insert_line_button.visible": false,
 "1.lines_source.data": {
-"xlineplt": [],
-"ylineplt": []
+"lines_x": [],
+"lines_y": []
 },
 "1.lines_source.selected": [],
 "1.non_audience_source.data": {
-"xnalplt": [],
-"ynalplt": []
+"lines_x": [],
+"lines_y": []
 },
 "1.non_audience_source.selected": [],
 "1.points_per_meter_input.disabled": false,
@@ -45,8 +45,8 @@
 "1.save_line_button.label": "6. Save Current Audience Line",
 "1.save_line_button.visible": true,
 "1.sound_field_only_source.data": {
-"xsfpplt": [],
-"ysfpplt": []
+"lines_x": [],
+"lines_y": []
 },
 "1.sound_field_only_source.selected": [],
 "1.start_x_input.disabled": false,
@@ -732,13 +732,13 @@ null
 "save",
 {
 "1.lines_source.data": {
-"xlineplt": [
+"lines_x": [
 [
 2.0,
 10.0
 ]
 ],
-"ylineplt": [
+"lines_y": [
 [
 0.0,
 1.0
@@ -835,7 +835,7 @@ null
 "save2",
 {
 "1.lines_source.data": {
-"xlineplt": [
+"lines_x": [
 [
 2.0,
 10.0
@@ -845,7 +845,7 @@ null
 20.0
 ]
 ],
-"ylineplt": [
+"lines_y": [
 [
 0.0,
 1.0
@@ -941,7 +941,7 @@ null
 "save3",
 {
 "1.lines_source.data": {
-"xlineplt": [
+"lines_x": [
 [
 2.0,
 10.0
@@ -955,7 +955,7 @@ null
 30.0
 ]
 ],
-"ylineplt": [
+"lines_y": [
 [
 0.0,
 1.0
@@ -1129,7 +1129,7 @@ null
 "remove_sel",
 {
 "1.lines_source.data": {
-"xlineplt": [
+"lines_x": [
 [
 2.0,
 10.0
@@ -1139,7 +1139,7 @@ null
 30.0
 ]
 ],
-"ylineplt": [
+"lines_y": [
 [
 0.0,
 1.0
@@ -1177,13 +1177,13 @@ null
 "1.check_venue_button.button_type": "success",
 "1.check_venue_button.label": "8. Venue is PALC compatible!",
 "1.non_audience_source.data": {
-"xnalplt": [
+"lines_x": [
 [
 10.0,
 20.0
 ]
 ],
-"ynalplt": [
+"lines_y": [
 [
 1.0,
 5.0
@@ -2343,13 +2343,13 @@ null
 "1.check_venue_button.button_type": "warning",
 "1.check_venue_button.label": "8. Get PALC Venue Proposal",
 "1.lines_source.data": {
-"xlineplt": [
+"lines_x": [
 [
 2.0,
 10.0
 ]
 ],
-"ylineplt": [
+"lines_y": [
 [
 0.0,
 1.0
@@ -2414,8 +2414,8 @@ null
 "1.check_venue_button.button_type": "success",
 "1.check_venue_button.label": "8. Venue is PALC compatible!",
 "1.non_audience_source.data": {
-"xnalplt": [],
-"ynalplt": []
+"lines_x": [],
+"lines_y": []
 },
 "4.hinges_select.options": [
 "0",

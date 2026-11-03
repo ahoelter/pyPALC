@@ -309,11 +309,11 @@ class PalcApp:
             suggest_venue(st.drawn_lines, non_audience_lines,
                           sound_field_only_lines)
             venue_page.non_audience_source.data = dict(
-                xnalplt=non_audience_lines.plot_x,
-                ynalplt=non_audience_lines.plot_y)
+                lines_x=non_audience_lines.plot_x,
+                lines_y=non_audience_lines.plot_y)
             venue_page.sound_field_only_source.data = dict(
-                xsfpplt=sound_field_only_lines.plot_x,
-                ysfpplt=sound_field_only_lines.plot_y)
+                lines_x=sound_field_only_lines.plot_x,
+                lines_y=sound_field_only_lines.plot_y)
             st.venue = None
             palc_venue = PalcVenue(segments=[], audience_segments=[])
             fill_palc_venue(palc_venue, st.drawn_lines, non_audience_lines,
