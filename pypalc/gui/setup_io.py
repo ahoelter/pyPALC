@@ -10,6 +10,7 @@ author: Arne Hoelter
 """
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 from typing import TYPE_CHECKING, Optional, Tuple
 
@@ -44,21 +45,34 @@ DIRECTIVITIES = {"Circular Piston": "circular_piston",
                  "Measured Loudspeaker Data": "measured"}
 
 
+def _finite(number: float, text: str, key: str) -> float:
+    """``number``, or a :class:`SetupError` if it is nan or infinite.
+
+    Load and the headless runner reject non-finite numbers, so Save must
+    not write them.
+    """
+    if not math.isfinite(number):
+        raise SetupError(key, "expected a finite number, got %r" % (text,))
+    return number
+
+
 def _number(text: str, key: str) -> float:
-    """A number typed into a text input."""
+    """A finite number typed into a text input."""
     try:
-        return float(text)
+        number = float(text)
     except (TypeError, ValueError):
         raise SetupError(key, "expected a number, got %r" % (text,)) from None
+    return _finite(number, text, key)
 
 
 def _numbers(text: str, key: str) -> Tuple[float, ...]:
-    """Numbers typed into a text input, separated by ','."""
+    """Finite numbers typed into a text input, separated by ','."""
     try:
-        return tuple(float(s) for s in text.split(','))
+        numbers = tuple(float(s) for s in text.split(','))
     except (TypeError, ValueError):
         raise SetupError(key, "expected numbers separated by ',', got %r"
                          % (text,)) from None
+    return tuple(_finite(number, text, key) for number in numbers)
 
 
 def _loudspeaker(app: PalcApp) -> LoudspeakerSettings:

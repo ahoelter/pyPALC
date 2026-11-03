@@ -9,7 +9,8 @@ from bokeh.document import Document
 
 from pypalc.core.settings import Setup, load_setup
 from pypalc.gui.app import PalcApp
-from pypalc.gui.setup_io import setup_from_app
+from pypalc.core.errors import SetupError
+from pypalc.gui.setup_io import _number, _numbers, setup_from_app
 from tests.baseline_cases import CASES
 from tests.test_gui_equivalence import enter
 
@@ -75,3 +76,14 @@ def test_setup_lines_follow_drawn_lines():
             drawn_lines.line_start_x, drawn_lines.line_start_y, drawn_lines.line_stop_x,
             drawn_lines.line_stop_y)]
     assert [line.points_per_meter for line in lines] == [4.0, 5.0]
+
+
+@pytest.mark.parametrize("text", ["nan", "inf", "-inf", "1e400"])
+def test_save_rejects_non_finite_numbers(text):
+    """Load and the headless runner reject them, so Save must not write them."""
+    with pytest.raises(SetupError, match="finite"):
+        _number(text, "array.cabinet_gap")
+    with pytest.raises(SetupError, match="finite"):
+        _numbers("1, %s" % text, "array.discrete_tilt_angles_deg")
+    assert _number("0.1", "array.cabinet_gap") == 0.1
+    assert _numbers("1, 2.5", "array.discrete_tilt_angles_deg") == (1.0, 2.5)
