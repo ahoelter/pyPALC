@@ -18,7 +18,7 @@ from scipy.stats.mstats import mquantiles
 
 from .geometry import cabinet_outlines
 from .palc import run_palc
-from .sound_field import calcSFP, calcSPLoverX
+from .sound_field import predict_sound_field, compute_spl_over_distance
 
 logger = logging.getLogger(__name__)
 
@@ -840,9 +840,9 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
         run_palc(PALC_plots, PALC_pal, PALC_config, Opt_arr)
         x_patches, y_patches = cabinet_outlines(PALC_plots, PALC_config, Opt_arr.tilt_angles)
         PALC_plots.get_plot_array(Opt_arr)
-        x_S, y_S = calcSFP(Opt_arr.tilt_angles_deg, created_pal, SFP_config, \
+        x_S, y_S = predict_sound_field(Opt_arr.tilt_angles_deg, created_pal, SFP_config, \
                             Tech_res)#, dir_meas_LSA, dir_meas_degree)
-        calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX, SFP_config.frequency_range_hz)
+        compute_spl_over_distance(PALC_plots, created_pal, Tech_res.spl_db, SPLoverX, SFP_config.frequency_range_hz)
         
         # get difference between reference and PALC at optimization points
         # indices of optimization region

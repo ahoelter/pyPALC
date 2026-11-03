@@ -158,9 +158,9 @@ def drive(app, setup):
         'inter_cabinet_angles_deg':
             a(algorithm.results_source.data['c_gamma_tilt_deg_diff']),
         'reference_tilt_angles_deg': a(st.result.reference.tilt_angles_deg),
-        'frequencies_hz': a(st.result.optimized.evaluation.f),
-        'spl_db': a(st.result.optimized.evaluation.p_SPL),
-        'reference_spl_db': a(st.result.reference.evaluation.p_SPL),
+        'frequencies_hz': a(st.result.optimized.evaluation.frequencies),
+        'spl_db': a(st.result.optimized.evaluation.spl_db),
+        'reference_spl_db': a(st.result.reference.evaluation.spl_db),
         'spl_over_distance_x':
             a(algorithm.spl_over_distance_source.data['x']),
         'spl_over_distance_db':

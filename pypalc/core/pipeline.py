@@ -44,9 +44,9 @@ from .palc import (ArrayGeometry, PalcConfig, RayPlotData, run_palc,
                    clamp_fixed_angle, fixed_angle_borders)
 from .settings import (ArraySettings, AudienceLine, Setup, TargetPoint,
                        TargetSlopeSettings, VenueSettings)
-from .sound_field import (SFP_configuration, Technical_meas_results,
-                          calcHistogram, calcHomogeneity, calcSFP,
-                          calcSPLoverX, get_freq_vec,
+from .sound_field import (SoundFieldConfig, ArrayEvaluation,
+                          compute_histogram, compute_homogeneity, predict_sound_field,
+                          compute_spl_over_distance, frequency_vector,
                           parse_measured_directivity)
 from .target_slope import (Opt_weight, get_opt_region, get_weight_links,
                            optimize_PALC, shift2ref, shift_ref_on_zero,
@@ -57,7 +57,6 @@ from .venue import (AudienceLines, PalcVenue, check_draw_conditions,
 logger = logging.getLogger(__name__)
 
 # Final names of the legacy classes (renamed in a later step).
-ArrayEvaluation = Technical_meas_results
 TargetSlopeState = Opt_weight
 
 #: Maximum number of discrete venue points.
@@ -343,14 +342,14 @@ def _measured_csv_text(setup: Setup) -> str:
                          "cannot read %s: %s" % (md.path, exc)) from exc
 
 
-def _sound_field_config(setup: Setup) -> SFP_configuration:
+def _sound_field_config(setup: Setup) -> SoundFieldConfig:
     """Sound field prediction configuration as the GUI holds it."""
     ls, ar, alg = setup.loudspeaker, setup.array, setup.algorithm
-    config = SFP_configuration(
-        dir_meas=np.zeros([2, 120]), dir_meas_deg=np.zeros([2, 120]),
-        dir_meas_amp=[], tilt_angles=[0], f=[], plot_dir_amp=[],
-        plot_dir_amp_meas=[[0], [0], [0]], plot_beta_meas=[0])
-    # SFP_configuration.__init__ calls PalcConfig.__init__() with
+    config = SoundFieldConfig(
+        measured_directivity_data=np.zeros([2, 120]), measured_angles_deg=np.zeros([2, 120]),
+        measured_amplitude_db=[], tilt_angles=[0], frequencies=[], plot_directivity_db=[],
+        plot_measured_directivity_db=[[0], [0], [0]], plot_measured_angles_deg=[0])
+    # SoundFieldConfig.__init__ calls PalcConfig.__init__() with
     # its defaults, which also resets frequency_range_hz (set below).
     config.cabinet_count = ar.cabinet_count
     config.cabinet_height = float(ls.cabinet_height)
@@ -359,7 +358,7 @@ def _sound_field_config(setup: Setup) -> SFP_configuration:
     config.top_y = top_position_y(setup)
     config.directivity = _DIRECTIVITY[ls.directivity]
     config.frequency_range_hz = tuple(alg.frequency_range_hz)
-    config.f = get_freq_vec(N_freq=120, step_freq=1/12,
+    config.frequencies = frequency_vector(frequency_count=120, octave_step=1/12,
                             frequency_range_hz=[20, 20000])
     if ls.directivity == "measured":
         try:
@@ -430,8 +429,8 @@ class _Calculation:
         self.optimized = ArrayGeometry(tilt_angles_deg=[])
         self.reference = _reference_array(setup, self.config)
         self.plots, self.plots_ref = RayPlotData(), RayPlotData()
-        self.evaluation = Technical_meas_results()
-        self.evaluation_ref = Technical_meas_results()
+        self.evaluation = ArrayEvaluation()
+        self.evaluation_ref = ArrayEvaluation()
         self.target = Opt_weight(SPL_interp=[0, 0])
         self.spl = Opt_weight(SPL_interp=[0])
         self.spl_ref = Opt_weight(SPL_interp=[0])
@@ -519,28 +518,28 @@ class _Calculation:
             inter_cabinet_angles(self.optimized.tilt_angles_deg)
         self.optimized.inter_cabinet_angles_deg = inter_cabinet_angles_deg
         try:
-            x_S, y_S = calcSFP(self.optimized.tilt_angles_deg, drawn, S,
+            x_S, y_S = predict_sound_field(self.optimized.tilt_angles_deg, drawn, S,
                                self.evaluation)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation failed') from exc
-        calcSPLoverX(self.plots, drawn, self.evaluation.p_SPL, self.spl,
+        compute_spl_over_distance(self.plots, drawn, self.evaluation.spl_db, self.spl,
                      S.frequency_range_hz)
-        calcHomogeneity(self.evaluation, x_S, y_S, drawn.points_x,
+        compute_homogeneity(self.evaluation, x_S, y_S, drawn.points_x,
                         drawn.points_y)
-        calcHistogram(self.evaluation)
+        compute_histogram(self.evaluation)
         try:
-            x_S, y_S = calcSFP(self.reference.tilt_angles_deg, drawn, S,
+            x_S, y_S = predict_sound_field(self.reference.tilt_angles_deg, drawn, S,
                                self.evaluation_ref)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation of reference '
                                    'array failed') from exc
         self.patches_ref = cabinet_outlines(self.plots_ref, P,
                                              self.reference.tilt_angles)
-        calcSPLoverX(self.plots_ref, drawn, self.evaluation_ref.p_SPL,
+        compute_spl_over_distance(self.plots_ref, drawn, self.evaluation_ref.spl_db,
                      self.spl_ref, S.frequency_range_hz)
-        calcHomogeneity(self.evaluation_ref, x_S, y_S, drawn.points_x,
+        compute_homogeneity(self.evaluation_ref, x_S, y_S, drawn.points_x,
                         drawn.points_y)
-        calcHistogram(self.evaluation_ref)
+        compute_histogram(self.evaluation_ref)
         self.grid = (self.spl.x, drawn.points_x, drawn.points_y)
         if not self.target.init:
             shift_ref_on_zero(self.target, self.spl, self.spl_ref)
@@ -710,20 +709,20 @@ def result_arrays(result: RunResult) -> Dict[str, np.ndarray]:
         "tilt_angles_deg": _arr(opt.tilt_angles_deg),
         "inter_cabinet_angles_deg": _arr(opt.inter_cabinet_angles_deg),
         "reference_tilt_angles_deg": _arr(ref.tilt_angles_deg),
-        "frequencies_hz": _arr(ev.f),
-        "spl_db": _arr(ev.p_SPL),
-        "reference_spl_db": _arr(ev_ref.p_SPL),
+        "frequencies_hz": _arr(ev.frequencies),
+        "spl_db": _arr(ev.spl_db),
+        "reference_spl_db": _arr(ev_ref.spl_db),
         "spl_over_distance_x": _arr(opt.spl_over_distance.x),
         "spl_over_distance_db": _arr(opt.spl_over_distance.SPL),
         "reference_spl_over_distance_db": _arr(ref.spl_over_distance.SPL),
-        "homogeneity_db": _arr(ev.H),
-        "homogeneity_low_db": _arr(ev.H_dist[0]),
-        "homogeneity_high_db": _arr(ev.H_dist[1]),
-        "reference_homogeneity_db": _arr(ev_ref.H),
-        "histogram_steps": _arr(ev.Hist_steps),
-        "histogram_tops": _arr(ev.Hist_tops),
-        "reference_histogram_steps": _arr(ev_ref.Hist_steps),
-        "reference_histogram_tops": _arr(ev_ref.Hist_tops),
+        "homogeneity_db": _arr(ev.homogeneity_db),
+        "homogeneity_low_db": _arr(ev.homogeneity_low_db),
+        "homogeneity_high_db": _arr(ev.homogeneity_high_db),
+        "reference_homogeneity_db": _arr(ev_ref.homogeneity_db),
+        "histogram_steps": _arr(ev.histogram_steps),
+        "histogram_tops": _arr(ev.histogram_tops),
+        "reference_histogram_steps": _arr(ev_ref.histogram_steps),
+        "reference_histogram_tops": _arr(ev_ref.histogram_tops),
         "venue_x": _arr(result.venue.drawn.points_x),
         "venue_y": _arr(result.venue.drawn.points_y),
     }

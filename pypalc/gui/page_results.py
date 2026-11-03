@@ -15,7 +15,7 @@ from bokeh.models.widgets import CheckboxGroup, Div, Panel, Select, Tabs
 from bokeh.palettes import Cividis256
 from bokeh.plotting import figure
 
-from pypalc.core.sound_field import calcBeamplot
+from pypalc.core.sound_field import beam_plot_spl
 from pypalc.gui import CALLBACK_ERRORS
 
 if TYPE_CHECKING:
@@ -244,9 +244,9 @@ class ResultsPage:
         """
         st = self.app.state
         S = st.sound_field_config
-        p_SPL, X, Y = calcBeamplot(st.config, tilt_angles, st.ranges, f,
-                                   np.array(S.dir_meas[:, ind_f]),
-                                   np.array(S.dir_meas_deg[:, 1]))
+        p_SPL, X, Y = beam_plot_spl(st.config, tilt_angles, st.ranges, f,
+                                   np.array(S.measured_directivity_data[:, ind_f]),
+                                   np.array(S.measured_angles_deg[:, 1]))
         high_ind = np.argwhere(p_SPL > 100)
         low_ind = np.argwhere(p_SPL < 50)
         for n in range(np.shape(high_ind)[0]):
@@ -289,7 +289,7 @@ class ResultsPage:
                 new = [int(new)]
             f = float(self.beam_frequency_select.value)
             # index of the frequency (for measured loudspeaker data)
-            ind_f = (np.abs(f-st.sound_field_config.f).argmin())
+            ind_f = (np.abs(f-st.sound_field_config.frequencies).argmin())
             f_int = int(self.beam_frequency_select.value)
             for n in self.beam_checkbox.active:
                 if n == 0 and 0 not in old and (0 in new or f_int in new):
@@ -333,14 +333,14 @@ class ResultsPage:
         f, p_SPL, p_SPL_ref = [], [], []
         if np.shape(new)[0] >= 1:
             for n in range(np.shape(new)[0]):
-                f.append(Tech_res.plot_f[new[n]])
-                p_SPL.append(Tech_res.plot_p_SPL[new[n]])
-                p_SPL_ref.append(Tech_res_ref.plot_p_SPL[new[n]])
+                f.append(Tech_res.plot_frequencies[new[n]])
+                p_SPL.append(Tech_res.plot_spl_db[new[n]])
+                p_SPL_ref.append(Tech_res_ref.plot_spl_db[new[n]])
             self.sound_field_source.data = dict(
                 f=f, p_SPL=p_SPL, foo=list(np.arange(np.shape(p_SPL)[0])),
                 p_SPL_ref=p_SPL_ref)
         else:
             self.sound_field_source.data = dict(
-                f=Tech_res.plot_f, p_SPL=Tech_res.plot_p_SPL,
-                foo=list(np.arange(np.shape(Tech_res.plot_p_SPL)[0])),
-                p_SPL_ref=Tech_res_ref.plot_p_SPL)
+                f=Tech_res.plot_frequencies, p_SPL=Tech_res.plot_spl_db,
+                foo=list(np.arange(np.shape(Tech_res.plot_spl_db)[0])),
+                p_SPL_ref=Tech_res_ref.plot_spl_db)

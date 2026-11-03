@@ -47,7 +47,7 @@ from pypalc.core.errors import PalcError, SetupError
 from pypalc.core.palc import ArrayGeometry, PalcConfig
 from pypalc.core.pipeline import AudienceLines, RunResult, VenueResult
 from pypalc.core.settings import AudienceLine, Setup
-from pypalc.core.sound_field import SFP_configuration
+from pypalc.core.sound_field import SoundFieldConfig
 from pypalc.core.target_slope import Opt_weight
 from pypalc.core.venue import (AudienceLines, PalcVenue,
                                fill_palc_venue, suggest_venue)
@@ -95,7 +95,7 @@ class SessionState:
     config : PalcConfig
         PALC configuration (legacy ``PALC_config``), holding the values of
         the configuration widgets. Calculations do not change it.
-    sound_field_config : SFP_configuration
+    sound_field_config : SoundFieldConfig
         Sound field prediction configuration (legacy ``SFP_config``), used
         for the directivity and beam plots.
     ranges : Plot_ranges
@@ -124,8 +124,8 @@ class SessionState:
     venue: Optional[VenueResult] = None
     measured_directivity_csv: Optional[str] = None
     config: PalcConfig = field(default_factory=PalcConfig)
-    sound_field_config: SFP_configuration = field(
-        default_factory=SFP_configuration)
+    sound_field_config: SoundFieldConfig = field(
+        default_factory=SoundFieldConfig)
     ranges: Plot_ranges = field(default_factory=Plot_ranges)
     optimized_array: ArrayGeometry = field(default_factory=ArrayGeometry)
     reference_array: ArrayGeometry = field(
@@ -656,20 +656,20 @@ class PalcApp:
         results.venue_points_figure.x(
             'x_vert', 'y_vert', source=results.venue_points_source,
             color=linear_cmap('foo', rainbow[::-1], 0,
-                              np.shape(Tech_res.p_SPL)[0]-1))
+                              np.shape(Tech_res.spl_db)[0]-1))
         results.sound_field_source.data = dict(
-            p_SPL=Tech_res.plot_p_SPL, f=Tech_res.plot_f,
-            foo=list(np.arange(np.shape(Tech_res.plot_p_SPL)[0])),
-            p_SPL_ref=Tech_res_ref.plot_p_SPL)
+            p_SPL=Tech_res.plot_spl_db, f=Tech_res.plot_frequencies,
+            foo=list(np.arange(np.shape(Tech_res.plot_spl_db)[0])),
+            p_SPL_ref=Tech_res_ref.plot_spl_db)
         results.sound_field_figure.multi_line(
             'f', 'p_SPL', source=results.sound_field_source,
             color=linear_cmap(field_name='foo', palette=rainbow[::-1], low=0,
-                              high=np.shape(Tech_res.p_SPL)[0]-1),
+                              high=np.shape(Tech_res.spl_db)[0]-1),
             line_alpha=0.9)
         results.reference_sound_field_figure.multi_line(
             'f', 'p_SPL_ref', source=results.sound_field_source,
             color=linear_cmap(field_name='foo', palette=rainbow[::-1], low=0,
-                              high=np.shape(Tech_res_ref.p_SPL)[0]-1),
+                              high=np.shape(Tech_res_ref.spl_db)[0]-1),
             line_alpha=0.9)
         # SPL over distance and target slope; writing the target sources
         # snaps the shown target to the new distance grid (snap_target)
@@ -711,27 +711,27 @@ class PalcApp:
                                             y_v=created_pal.points_y))
         # Homogeneity
         results.homogeneity_source.data = dict(
-            H=Tech_res.H, f=Tech_res.f, H_dist_high=Tech_res.H_dist[1],
-            H_dist_low=Tech_res.H_dist[0], H_str=Tech_res_ref.H)
+            H=Tech_res.homogeneity_db, f=Tech_res.frequencies, H_dist_high=Tech_res.homogeneity_high_db,
+            H_dist_low=Tech_res.homogeneity_low_db, H_str=Tech_res_ref.homogeneity_db)
         # Histogram
-        results.histogram_source.data = dict(top=Tech_res.Hist_tops,
-                                             x=Tech_res.Hist_steps)
+        results.histogram_source.data = dict(top=Tech_res.histogram_tops,
+                                             x=Tech_res.histogram_steps)
         results.reference_histogram_source.data = dict(
-            top_ref=Tech_res_ref.Hist_tops, x_ref=Tech_res_ref.Hist_steps)
+            top_ref=Tech_res_ref.histogram_tops, x_ref=Tech_res_ref.histogram_steps)
         # Ranges of bar charts, homogeneity, sound field and SPL over distance
         rng = st.ranges
-        bar_range = rng.update_range('bar_range', [-1, 1], Tech_res.Hist_steps,
-                                     Tech_res_ref.Hist_steps)
-        bar_top_range = rng.update_range('bartop', [-1, 2], Tech_res.Hist_tops,
-                                         Tech_res_ref.Hist_tops)
+        bar_range = rng.update_range('bar_range', [-1, 1], Tech_res.histogram_steps,
+                                     Tech_res_ref.histogram_steps)
+        bar_top_range = rng.update_range('bartop', [-1, 2], Tech_res.histogram_tops,
+                                         Tech_res_ref.histogram_tops)
         results.histogram_figure.x_range = bar_range
         results.histogram_figure.y_range = bar_top_range
         results.reference_histogram_figure.x_range = bar_range
         results.reference_histogram_figure.y_range = bar_top_range
         results.homogeneity_figure.y_range = rng.update_range(
-            'h_y', [-2, 2], Tech_res.H, Tech_res_ref.H)
-        psfp_y_range = rng.update_range('sfp_y', [-5, 5], Tech_res.p_SPL,
-                                        Tech_res_ref.p_SPL)
+            'h_y', [-2, 2], Tech_res.homogeneity_db, Tech_res_ref.homogeneity_db)
+        psfp_y_range = rng.update_range('sfp_y', [-5, 5], Tech_res.spl_db,
+                                        Tech_res_ref.spl_db)
         results.sound_field_figure.y_range = psfp_y_range
         results.reference_sound_field_figure.y_range = psfp_y_range
         algorithm.spl_over_distance_figure.y_range = rng.update_range(

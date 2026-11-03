@@ -23,7 +23,7 @@ from pypalc.core.settings import (AlgorithmSettings, ArraySettings,
                                   ReferenceArraySettings, Setup,
                                   TargetPoint, TargetSlopeSettings,
                                   VenueSettings, validate)
-from pypalc.core.sound_field import (SFP_configuration,
+from pypalc.core.sound_field import (SoundFieldConfig,
                                      parse_measured_directivity)
 from pypalc.gui import CALLBACK_ERRORS
 from pypalc.gui.page_array import REFERENCE_TYPES
@@ -256,7 +256,7 @@ def _check_applicable(setup: Setup) -> None:
                          "the GUI cannot read a file path")
     if md is not None and md.csv is not None:
         try:
-            parse_measured_directivity(md.csv, SFP_configuration())
+            parse_measured_directivity(md.csv, SoundFieldConfig())
         except CALLBACK_ERRORS:
             raise SetupError("loudspeaker.measured_directivity.csv",
                              "cannot be read as measured loudspeaker data"
