@@ -2,7 +2,7 @@
 
 Source positions of the cabinets, intersections of audience lines, the
 cabinet outlines for plotting and the curvings of the reference array
-(formerly ``fun/PALC_functions.py`` without ``calc_angles``, plus the
+(formerly ``fun/PALC_functions.py`` without ``compute_tilt_angles``, plus the
 computation of ``ref_array_angles`` from ``fun/gui_ls_array.py``).
 
 author: Arne Hoelter
@@ -149,7 +149,7 @@ def arc_tilt_angles_deg(cabinet_count, discrete_tilt_angles=[], top_angle_deg = 
 def cabinet_tilt_angle(tilt_angles, aperture_angles, x_start, y_start, hit_points_start, cabinet_height, m=0):
     """
     Calculates a specific loudspeaker tilt angle of a LSA cabinet. Called by
-    :any:`calc_angles`.
+    :any:`compute_tilt_angles`.
 
     Parameters
     ----------
@@ -193,7 +193,7 @@ def cabinet_tilt_angle(tilt_angles, aperture_angles, x_start, y_start, hit_point
 def source_positions(tilt_angles, config):
     """
     Calculates the positions of the LSA cabinets for a given tilt angles.
-    Called by :any:`calc_angles`.
+    Called by :any:`compute_tilt_angles`.
 
     Parameters
     ----------
@@ -223,10 +223,10 @@ def source_positions(tilt_angles, config):
 
     """
     # initialize the information of the config list
-    cabinet_height = config.Lambda_y
-    cabinet_gap = config.Lambda_gap
-    top_x = config.x_H
-    top_y = config.y_H
+    cabinet_height = config.cabinet_height
+    cabinet_gap = config.cabinet_gap
+    top_x = config.top_x
+    top_y = config.top_y
     tilt_angles = np.reshape(tilt_angles,[np.shape(tilt_angles)[0],1])
     
     # calculate the source positions
@@ -257,7 +257,7 @@ def line_intersection(xy_1_a, xy_1_b, xy_2_a, xy_2_b):
     is used to create the non-audience lines.
     Calculation of the intersection of two adjacent sections of the polygonal
     audience line based on the intersection of two linear functions in vector
-    representation. Called by :any:`calc_angles`, :any:`draw_condition_3`
+    representation. Called by :any:`compute_tilt_angles`, :any:`draw_condition_3`
     and :any:`suggest_venue`.
     
     
@@ -376,28 +376,28 @@ def cabinet_outlines(ray_plot, config, tilt_angles, margin_cabinet_count=[]):
 
     """
     if margin_cabinet_count == []:
-        cabinet_count = config.N
+        cabinet_count = config.cabinet_count
     else:
         cabinet_count = margin_cabinet_count
     # Array visualization
     # assign variables
     x_start, x_stop, y_start, y_stop = np.zeros(cabinet_count), np.zeros(cabinet_count), \
                                        np.zeros(cabinet_count), np.zeros(cabinet_count)
-    x_start[0], y_start[0] = config.x_H, config.y_H
-    x_stop[0] = x_start[0] - config.Lambda_y * np.sin(tilt_angles[0])
-    y_stop[0] = y_start[0] - config.Lambda_y * np.cos(tilt_angles[0])
+    x_start[0], y_start[0] = config.top_x, config.top_y
+    x_stop[0] = x_start[0] - config.cabinet_height * np.sin(tilt_angles[0])
+    y_stop[0] = y_start[0] - config.cabinet_height * np.cos(tilt_angles[0])
     for n in range(1,cabinet_count):
-        x_start[n] = x_stop[n-1] - config.Lambda_gap * np.sin(tilt_angles[n-1])
-        y_start[n] = y_stop[n-1] - config.Lambda_gap * np.cos(tilt_angles[n-1])
-        x_stop[n] = x_start[n] - config.Lambda_y * np.sin(tilt_angles[n])
-        y_stop[n] = y_start[n] - config.Lambda_y * np.cos(tilt_angles[n])
+        x_start[n] = x_stop[n-1] - config.cabinet_gap * np.sin(tilt_angles[n-1])
+        y_start[n] = y_stop[n-1] - config.cabinet_gap * np.cos(tilt_angles[n-1])
+        x_stop[n] = x_start[n] - config.cabinet_height * np.sin(tilt_angles[n])
+        y_stop[n] = y_start[n] - config.cabinet_height * np.cos(tilt_angles[n])
         
     ray_plot.x_start, ray_plot.x_stop = x_start, x_stop
     ray_plot.y_start, ray_plot.y_stop = y_start, y_stop
-    ray_plot.x_start_b = list(np.array(ray_plot.x_start) - 1*config.Lambda_y * (np.cos(tilt_angles) + np.sin(tilt_angles)*0.25))
-    ray_plot.x_stop_b = list(np.array(ray_plot.x_stop) - 1*config.Lambda_y * (np.cos(tilt_angles) - np.sin(tilt_angles)*0.25))
-    ray_plot.y_start_b = list(np.array(ray_plot.y_start) + 1*config.Lambda_y * (np.sin(tilt_angles) - np.cos(tilt_angles)*0.25))
-    ray_plot.y_stop_b = list(np.array(ray_plot.y_stop) + 1*config.Lambda_y * (np.sin(tilt_angles) + np.cos(tilt_angles)*0.25))
+    ray_plot.x_start_b = list(np.array(ray_plot.x_start) - 1*config.cabinet_height * (np.cos(tilt_angles) + np.sin(tilt_angles)*0.25))
+    ray_plot.x_stop_b = list(np.array(ray_plot.x_stop) - 1*config.cabinet_height * (np.cos(tilt_angles) - np.sin(tilt_angles)*0.25))
+    ray_plot.y_start_b = list(np.array(ray_plot.y_start) + 1*config.cabinet_height * (np.sin(tilt_angles) - np.cos(tilt_angles)*0.25))
+    ray_plot.y_stop_b = list(np.array(ray_plot.y_stop) + 1*config.cabinet_height * (np.sin(tilt_angles) + np.cos(tilt_angles)*0.25))
 
     x_patches, y_patches = [], []
     for n in range(np.shape(ray_plot.x_start)[0]):

@@ -113,7 +113,7 @@ class LoudspeakerPage:
             init_dir_plot()
         for n in range(np.shape(f)[0]):
             H_post[:, n] = calc_directivity(config.directivity, alpha,
-                                            config.Lambda_y, beta, omega[n],
+                                            config.cabinet_height, beta, omega[n],
                                             c0, f, dir_meas[:, n],
                                             dir_meas_deg[:, 1], n)
         setattr(sf_config, 'f', f)

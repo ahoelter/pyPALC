@@ -65,7 +65,7 @@ class AlgorithmPage:
         p_SPL = list(zip([0, 0]))
         x_vert = list(zip([0, 0]))
         self.results_source = ColumnDataSource(data=dict(
-            a_num_LS=np.linspace(1, state.config.N, num=0),
+            a_num_LS=np.linspace(1, state.config.cabinet_count, num=0),
             b_gamma_tilt_deg=np.array([]), c_gamma_tilt_deg_diff=np.array([])))
         """Tilt angles of the cabinets computed by PALC."""
         self.spl_over_distance_source = ColumnDataSource(data=dict(

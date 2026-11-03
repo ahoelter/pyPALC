@@ -17,7 +17,7 @@ from scipy.special import erf
 from scipy.stats.mstats import mquantiles
 
 from .geometry import cabinet_outlines
-from .palc import calcPALC
+from .palc import run_palc
 from .sound_field import calcSFP, calcSPLoverX
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ class Opt_weight():
         self.SPL_interp = self.SPL_interp - shift 
 
 
-    def shift2psval(self, PALC_config, diff_opt, num_iter):
+    def shift2psval(self, PALC_config, diff_opt, iteration_count):
         """
         Shifts the actual value to a list that stores the past value. These are
         used to check if the actual loop improved that the difference between
@@ -124,7 +124,7 @@ class Opt_weight():
             self.w_ps['lowest'].append(self.w_ps['n-1'])
         self.diffps['n-1'] = diff_opt
         self.w_ps['n-1'] = np.array(PALC_config.weighting_weights[:])
-        if len(self.w_ps['lowest']) == 10 or self.diffps['same'] == 5 or num_iter==500:
+        if len(self.w_ps['lowest']) == 10 or self.diffps['same'] == 5 or iteration_count==500:
             low_ind = np.argmin(self.diffps['lowest'])
             PALC_config.weighting_weights = self.w_ps['lowest'][low_ind][:]
             return True
@@ -249,14 +249,14 @@ def get_diff_optreg(comp, opt):
     return comp - opt
 
 
-def ls2pal(N, Opt_arr, created_pal, **kwargs):
+def ls2pal(cabinet_count, Opt_arr, created_pal, **kwargs):
     """
     Maps LSA cabinets to discrete venue points depending on the assumed splay
     angle. Called by :any:`optimize_PALC`.
 
     Parameters
     ----------
-    N : int
+    cabinet_count : int
         Number of LSA cabinets.
     Opt_arr : obj [in]
         Contains results of the PALC computation.
@@ -281,33 +281,33 @@ def ls2pal(N, Opt_arr, created_pal, **kwargs):
     tol = kwargs['tol']
     # list to store index of pal for each ls
     ls2pal, ls2pal_opt = [], []
-    for n in range(N):
+    for n in range(cabinet_count):
         ind = [[],[]]
         # check x-values
         for m,val in enumerate(created_pal.points_x):
-            if val >= Opt_arr.seg_pos_stop[n][0]-tol and val <= Opt_arr.seg_pos_start[n][0]+tol:
+            if val >= Opt_arr.hit_points_stop[n][0]-tol and val <= Opt_arr.hit_points_start[n][0]+tol:
                 ind[0].append(m)
         # check y-values
         for m,val in enumerate(created_pal.points_y):
-            if val >= Opt_arr.seg_pos_stop[n][1]-tol and val <= Opt_arr.seg_pos_start[n][1]+tol:
+            if val >= Opt_arr.hit_points_stop[n][1]-tol and val <= Opt_arr.hit_points_start[n][1]+tol:
                 ind[1].append(m)
         # check for matching index
         ls2pal.append(list(set(ind[0]) & set(ind[1])))
     if 'opt_ind' in kwargs.keys():
-        for n in range(N):
+        for n in range(cabinet_count):
             ls2pal_opt.append(list(set(ls2pal[n]) & set(kwargs['opt_ind'])))
         return ls2pal, ls2pal_opt
     return ls2pal
 
 
-def diff_on_ls(N, opt_ind, ls_ind, ls_opt_ind, Opt_w, SPLoverX, **kwargs):
+def diff_on_ls(cabinet_count, opt_ind, ls_ind, ls_opt_ind, Opt_w, SPLoverX, **kwargs):
     """
     Maps diference in optimization region to LSA cabinets. Called by
     :any:`optimize_PALC`.
 
     Parameters
     ----------
-    N : int
+    cabinet_count : int
         Number of LSA cabinets.
     opt_ind : list
         Indices of optimization region.
@@ -340,10 +340,10 @@ def diff_on_ls(N, opt_ind, ls_ind, ls_opt_ind, Opt_w, SPLoverX, **kwargs):
     grad_opt  = np.array(Opt_w.SPL_grad)
     grad_comp = np.array(SPLoverX.SPL_grad)# removed opt_ind
     # compute maximum neighbouring points of each loudspeaker impact point
-    nebs = get_nbs_neighbours(N, ls_opt_ind, opt_ind)
+    nebs = get_nbs_neighbours(cabinet_count, ls_opt_ind, opt_ind)
     # first list in diff_comp_opt is computed results and secont optization target
     diffLS, diffgradLS, diff_comp_opt_LS, diff_grad = [], [], [[],[]], [[],[]]
-    for n in range(N):
+    for n in range(cabinet_count):
         diffLS.append([])
         diffgradLS.append([])
         for m,val in enumerate(opt_ind):
@@ -369,14 +369,14 @@ def diff_on_ls(N, opt_ind, ls_ind, ls_opt_ind, Opt_w, SPLoverX, **kwargs):
     return diffLS, diffgradLS
 
 
-def get_nbs_neighbours(N, ls_opt_ind, opt_ind):
+def get_nbs_neighbours(cabinet_count, ls_opt_ind, opt_ind):
     """
     Computes the number of neighbours on which it could be smoothed. Called
     by :any:`diff_on_ls`.
 
     Parameters
     ----------
-    N : int
+    cabinet_count : int
         Number of LSA cabinets.
     ls_opt_ind : list
         List of LSA cabinets mapped to audience positions.
@@ -389,8 +389,8 @@ def get_nbs_neighbours(N, ls_opt_ind, opt_ind):
         Number of possible neighbouring points for each cabinet.
 
     """
-    nebs = np.zeros((N,2),dtype=int)
-    for n in range(N):
+    nebs = np.zeros((cabinet_count,2),dtype=int)
+    for n in range(cabinet_count):
         if ls_opt_ind[n] != []:
             nebs[n,0] = min(ls_opt_ind[n]) - min(opt_ind)
             nebs[n,1] = max(opt_ind) - max(ls_opt_ind[n])
@@ -541,14 +541,14 @@ def opt_weighting(PALC_config, Opt_w, loop):
     """
 
     w    = PALC_config.weighting_weights
-    news = np.ones(PALC_config.N)
+    news = np.ones(PALC_config.cabinet_count)
     PALC_config.weighting_weights[0] = 1.0
     
     grad_coeff = gaussian([-.4,.4,0.01], .15)
     grad_coeff[1,:] = mirror(0.8+grad_coeff[1,:]*.2,[-.4,.4,0.01])
     in_opt     = False
 
-    for n in range(1,PALC_config.N):
+    for n in range(1,PALC_config.cabinet_count):
         if Opt_w.diffLS[n] == 100:
             if not in_opt:
                 coeff = 1.2
@@ -837,12 +837,12 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
     """
     loop = 0
     while int(loop) < int(max_loops):
-        calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
-        x_patches, y_patches = cabinet_outlines(PALC_plots, PALC_config, Opt_arr.gamma_n)
+        run_palc(PALC_plots, PALC_pal, PALC_config, Opt_arr)
+        x_patches, y_patches = cabinet_outlines(PALC_plots, PALC_config, Opt_arr.tilt_angles)
         PALC_plots.get_plot_array(Opt_arr)
-        x_S, y_S = calcSFP(Opt_arr.gamma_tilt_deg, created_pal, SFP_config, \
+        x_S, y_S = calcSFP(Opt_arr.tilt_angles_deg, created_pal, SFP_config, \
                             Tech_res)#, dir_meas_LSA, dir_meas_degree)
-        calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX, SFP_config.freq_range)
+        calcSPLoverX(PALC_plots, created_pal, Tech_res.p_SPL, SPLoverX, SFP_config.frequency_range_hz)
         
         # get difference between reference and PALC at optimization points
         # indices of optimization region
@@ -851,9 +851,9 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
         # shift Opt_w SPL at x_ref on SPLoverX
         shift2ref(Opt_w, SPLoverX, opt_ind, [])
         # indices that belong to the loudspeakers
-        ls_ind, ls_opt_ind = ls2pal(PALC_config.N, Opt_arr, created_pal, opt_ind=opt_ind)
+        ls_ind, ls_opt_ind = ls2pal(PALC_config.cabinet_count, Opt_arr, created_pal, opt_ind=opt_ind)
         # map values on LS
-        Opt_w.diffLS, Opt_w.diffgradLS = diff_on_ls(PALC_config.N, opt_ind, \
+        Opt_w.diffLS, Opt_w.diffgradLS = diff_on_ls(PALC_config.cabinet_count, opt_ind, \
                                                         ls_ind, ls_opt_ind, \
                                                         Opt_w, SPLoverX)
         Opt_w.diffLS = smooth_1D_list(Opt_w.diffLS)
@@ -868,9 +868,9 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
                                                             Opt_w.SPL_grad]), \
                                                   mtype='quantiles', ef=True)
         svtot = svdiff * svgrad
-        out = Opt_w.shift2psval(PALC_config, svtot, Opt_arr.num_iter)
+        out = Opt_w.shift2psval(PALC_config, svtot, Opt_arr.iteration_count)
         if out:
-            calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
+            run_palc(PALC_plots, PALC_pal, PALC_config, Opt_arr)
             break
         # update weighting
         opt_weighting(PALC_config, Opt_w, loop)

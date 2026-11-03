@@ -465,7 +465,7 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
         if md is not None:
             loudspeaker.read_measured_directivity(md.csv)
         state.config.store_config(
-            'use_gamma_LSA', setup.array.discrete_tilt_angles_deg is not None)
+            'use_discrete_angles', setup.array.discrete_tilt_angles_deg is not None)
         array.store_discrete_angles()
         app.store_config_widgets()
         array.update_reference_angles()

@@ -119,7 +119,7 @@ def state_of(app):
     state['state.measured_directivity_csv'] = st.measured_directivity_csv
     state['state.fixed_angle_range'] = _norm(st.optimized_array.fixed_angle)
     state['state.reference_tilt_angles'] = _norm(
-        st.reference_array.gamma_tilt_deg)
+        st.reference_array.tilt_angles_deg)
     for name in ('init', 'x', 'SPL', 'x_ref', 'x_interp', 'SPL_interp'):
         state['state.target.' + name] = compact(_norm(getattr(st.target,
                                                               name)))

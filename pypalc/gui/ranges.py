@@ -90,18 +90,18 @@ def venue_slice2CDS(plt_venue_slice_1, plt_venue_slice_2, \
 
     """
     if Opt_arr != []:
-        plt_venue_slice_1.data = dict(x_c_n_unitn      = PALC_plots.x_c_n_unitn, \
-                                     y_c_n_unitn       = PALC_plots.y_c_n_unitn, \
-                                     x_c_n_unitn_psi1  = PALC_plots.x_c_n_unitn_psi1, \
-                                     y_c_n_unitn_psi1  = PALC_plots.y_c_n_unitn_psi1, \
-                                     x_c_n_unitn_psi2  = PALC_plots.x_c_n_unitn_psi2, \
-                                     y_c_n_unitn_psi2  = PALC_plots.y_c_n_unitn_psi2)
-        plt_venue_slice_2.data = dict(seg_pos_x        = Opt_arr.seg_pos[:,0], \
-                                     seg_pos_y         = Opt_arr.seg_pos[:,1], \
-                                     seg_pos_start_x   = Opt_arr.seg_pos_start[:,0], \
-                                     seg_pos_start_y   = Opt_arr.seg_pos_start[:,1], \
-                                     seg_pos_stop_x    = Opt_arr.seg_pos_stop[:,0], \
-                                     seg_pos_stop_y    = Opt_arr.seg_pos_stop[:,1])
+        plt_venue_slice_1.data = dict(center_rays_x      = PALC_plots.center_rays_x, \
+                                     center_rays_y       = PALC_plots.center_rays_y, \
+                                     start_rays_x  = PALC_plots.start_rays_x, \
+                                     start_rays_y  = PALC_plots.start_rays_y, \
+                                     stop_rays_x  = PALC_plots.stop_rays_x, \
+                                     stop_rays_y  = PALC_plots.stop_rays_y)
+        plt_venue_slice_2.data = dict(seg_pos_x        = Opt_arr.hit_points[:,0], \
+                                     seg_pos_y         = Opt_arr.hit_points[:,1], \
+                                     seg_pos_start_x   = Opt_arr.hit_points_start[:,0], \
+                                     seg_pos_start_y   = Opt_arr.hit_points_start[:,1], \
+                                     seg_pos_stop_x    = Opt_arr.hit_points_stop[:,0], \
+                                     seg_pos_stop_y    = Opt_arr.hit_points_stop[:,1])
     else:
         plt_venue_slice_2.data = dict(seg_pos_x=[], seg_pos_y=[], \
                                       seg_pos_start_x=[], seg_pos_start_y=[], \
@@ -113,9 +113,9 @@ def venue_slice2CDS(plt_venue_slice_1, plt_venue_slice_2, \
                                       y_start_unitn_start=[], \
                                       x_stop_unitn_stop=[], \
                                       y_stop_unitn_stop=[], \
-                                      x_c_n_unitn=[], y_c_n_unitn=[], \
-                                      x_c_n_unitn_psi1=[], y_c_n_unitn_psi1=[], \
-                                      x_c_n_unitn_psi2=[], y_c_n_unitn_psi2=[])
+                                      center_rays_x=[], center_rays_y=[], \
+                                      start_rays_x=[], start_rays_y=[], \
+                                      stop_rays_x=[], stop_rays_y=[])
 
 
 def get_p_axis_rng(p, plt_ranges, p_equal_axis):

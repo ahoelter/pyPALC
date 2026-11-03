@@ -138,11 +138,11 @@ class VenuePage:
         p.patches('x_list', 'y_list', source=app.cabinet_patches_source,
                   color="white")
         # array and its rays
-        p.multi_line('x_c_n_unitn', 'y_c_n_unitn', source=app.rays_source,
+        p.multi_line('center_rays_x', 'center_rays_y', source=app.rays_source,
                      color="white", line_dash="solid")
-        p.multi_line('x_c_n_unitn_psi1', 'y_c_n_unitn_psi1',
+        p.multi_line('start_rays_x', 'start_rays_y',
                      source=app.rays_source, color="red", line_dash="dashed")
-        p.multi_line('x_c_n_unitn_psi2', 'y_c_n_unitn_psi2',
+        p.multi_line('stop_rays_x', 'stop_rays_y',
                      source=app.rays_source, color="green", line_dash="dashed")
         p.x('seg_pos_x', 'seg_pos_y', source=app.hit_points_source,
             color="white")

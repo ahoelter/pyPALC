@@ -116,10 +116,12 @@ PROPS = ('visible', 'disabled', 'value', 'options', 'label', 'button_type',
          'frame_height', 'x_range', 'y_range', 'min_border')
 
 #: Values of the PALC configuration the configuration widgets store.
-CONFIG_KEYS = ('Lambda_gap', 'Lambda_y', 'N', 'constraint', 'directivity',
-               'fixed_angle', 'freq_range', 'gamma_LSA', 'gap_handling',
-               'psi_n', 'strength_sm', 'tolerance', 'use_fixed_angle',
-               'use_gamma_LSA', 'use_weighting', 'weighting_nu', 'x_H', 'y_H')
+CONFIG_KEYS = ('aperture_angles', 'cabinet_count', 'cabinet_gap',
+               'cabinet_height', 'directivity', 'discrete_tilt_angles',
+               'fixed_angle', 'frequency_range_hz', 'gap_handling',
+               'palc_variant', 'soft_margin_strength', 'tolerance', 'top_x',
+               'top_y', 'use_discrete_angles', 'use_fixed_angle',
+               'use_weighting', 'weighting_nu')
 
 
 def _model(app, path):

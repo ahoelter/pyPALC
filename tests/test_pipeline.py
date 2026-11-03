@@ -102,7 +102,7 @@ def test_initial_target_slope_lies_on_the_distance_grid():
 
 
 def test_legacy_classes_do_not_share_default_lists():
-    from pypalc.core.palc import Array_opt, PALC_configuration
+    from pypalc.core.palc import ArrayGeometry, PalcConfig
     from pypalc.core.sound_field import SFP_configuration
     from pypalc.core.target_slope import Opt_weight
     from pypalc.core.venue import PalcVenue
@@ -115,16 +115,16 @@ def test_legacy_classes_do_not_share_default_lists():
 
     attrs(AudienceLines, ["line_start_x", "points_x", "line_end_indices", "plot_x", "cut_lines"])
     attrs(PalcVenue, ["segments", "audience_segments", "points_x"])
-    attrs(PALC_configuration, ["gamma_LSA", "weighting_factors", "psi_n",
-                               "gamma_n", "last_angle_hm", "gap_weights",
+    attrs(PalcConfig, ["discrete_tilt_angles", "weighting_factors", "aperture_angles",
+                               "tilt_angles", "hard_margin_last_angle", "gap_weights",
                                "weighting_weights"])
     attrs(SFP_configuration, ["dir_meas", "dir_meas_deg", "f",
                               "plot_dir_amp_meas", "plot_beta_meas",
-                              "gamma_LSA", "psi_n"])
-    attrs(Array_opt, ["gamma_tilt_deg"])
+                              "discrete_tilt_angles", "aperture_angles"])
+    attrs(ArrayGeometry, ["tilt_angles_deg"])
     attrs(Opt_weight, ["SPL_interp"])
     attrs(Plot_ranges, ["p_x", "p_y", "bar_range", "SPLoverX_y"])
-    assert PALC_configuration().psi_n == [0.0524]
+    assert PalcConfig().aperture_angles == [0.0524]
     assert Opt_weight().SPL_interp == [0, 0]
 
 
@@ -148,5 +148,5 @@ def test_default_aperture_is_not_special():
     for aperture in (3.0, 3.0000001):
         setup = dataclasses.replace(base, loudspeaker=dataclasses.replace(
             base.loudspeaker, aperture_angle_deg=aperture))
-        results.append(run(setup).geometry.gamma_tilt_deg)
+        results.append(run(setup).geometry.tilt_angles_deg)
     np.testing.assert_allclose(results[0], results[1], rtol=0, atol=1e-4)

@@ -44,7 +44,7 @@ from colorcet import rainbow
 
 from pypalc.core import pipeline
 from pypalc.core.errors import PalcError, SetupError
-from pypalc.core.palc import Array_opt, PALC_configuration
+from pypalc.core.palc import ArrayGeometry, PalcConfig
 from pypalc.core.pipeline import AudienceLines, RunResult, VenueResult
 from pypalc.core.settings import AudienceLine, Setup
 from pypalc.core.sound_field import SFP_configuration
@@ -92,7 +92,7 @@ class SessionState:
         start toggle is disabled until the venue is checked again.
     measured_directivity_csv : str or None
         Text of the last readable upload of measured directivity data.
-    config : PALC_configuration
+    config : PalcConfig
         PALC configuration (legacy ``PALC_config``), holding the values of
         the configuration widgets. Calculations do not change it.
     sound_field_config : SFP_configuration
@@ -123,13 +123,13 @@ class SessionState:
     audience_lines: List[AudienceLine] = field(default_factory=list)
     venue: Optional[VenueResult] = None
     measured_directivity_csv: Optional[str] = None
-    config: PALC_configuration = field(default_factory=PALC_configuration)
+    config: PalcConfig = field(default_factory=PalcConfig)
     sound_field_config: SFP_configuration = field(
         default_factory=SFP_configuration)
     ranges: Plot_ranges = field(default_factory=Plot_ranges)
-    optimized_array: Array_opt = field(default_factory=Array_opt)
-    reference_array: Array_opt = field(
-        default_factory=lambda: Array_opt(gamma_tilt_deg=np.zeros(4)))
+    optimized_array: ArrayGeometry = field(default_factory=ArrayGeometry)
+    reference_array: ArrayGeometry = field(
+        default_factory=lambda: ArrayGeometry(tilt_angles_deg=np.zeros(4)))
     target: Opt_weight = field(default_factory=Opt_weight)
     result: Optional[RunResult] = None
     target_of_result: Optional[tuple] = None
@@ -193,9 +193,9 @@ class PalcApp:
             x_start_stop=[], y_start_stop=[], x_fin_unitn_start_stop=[],
             y_fin_unitn_start_stop=[], x_start_unitn_start=[],
             y_start_unitn_start=[], x_stop_unitn_stop=[],
-            y_stop_unitn_stop=[], x_c_n_unitn=[], y_c_n_unitn=[],
-            x_c_n_unitn_psi1=[], y_c_n_unitn_psi1=[], x_c_n_unitn_psi2=[],
-            y_c_n_unitn_psi2=[]))
+            y_stop_unitn_stop=[], center_rays_x=[], center_rays_y=[],
+            start_rays_x=[], start_rays_y=[], stop_rays_x=[],
+            stop_rays_y=[]))
         """Rays from the cabinets to the venue."""
         self.venue_figure = figure(
             title="", x_axis_label="x in m", y_axis_label="y in m",
@@ -219,9 +219,9 @@ class PalcApp:
         self.venue_axes_select.on_change(
             'active', lambda attr, old, new: self.scale_venue_axes())
         # values the legacy GUI stores at start-up
-        self.state.config.store_config('psi_n',
+        self.state.config.store_config('aperture_angles',
                                        self.pages[2].aperture_input.value)
-        self.state.config.store_config('N',
+        self.state.config.store_config('cabinet_count',
                                        self.pages[3].cabinet_count_input.value)
 
     def _build_shared_widgets(self) -> None:
@@ -385,9 +385,9 @@ class PalcApp:
         st = self.state
         results = self.pages[5]
         x_range = st.ranges.update_range('p_x', [-2, 2], st.drawn.line_start_x,
-                                         st.drawn.line_stop_x, st.config.x_H)
+                                         st.drawn.line_stop_x, st.config.top_x)
         y_range = st.ranges.update_range('p_y', [-2, 2], st.drawn.line_start_y,
-                                         st.drawn.line_stop_y, st.config.y_H)
+                                         st.drawn.line_stop_y, st.config.top_y)
         self.scale_venue_axes(call=False)
         set_figure_ranges(st.ranges, [results.beam_figure,
                                       results.reference_beam_figure,
@@ -425,20 +425,20 @@ class PalcApp:
         """Configuration key -> widget whose value is stored under it."""
         loudspeaker, array, algorithm = (self.pages[2], self.pages[3],
                                          self.pages[4])
-        return {'constraint': algorithm.palc_variant_select,
-                'use_gamma_LSA': array.use_discrete_angles_select,
+        return {'palc_variant': algorithm.palc_variant_select,
+                'use_discrete_angles': array.use_discrete_angles_select,
                 'gap_handling': algorithm.gap_handling_select,
-                'strength_sm': algorithm.soft_margin_slider,
-                'Lambda_y': loudspeaker.cabinet_height_input,
-                'Lambda_gap': array.cabinet_gap_input,
+                'soft_margin_strength': algorithm.soft_margin_slider,
+                'cabinet_height': loudspeaker.cabinet_height_input,
+                'cabinet_gap': array.cabinet_gap_input,
                 'directivity': loudspeaker.directivity_select,
                 'fixed_angle': algorithm.fixed_angle_input,
-                'x_H': array.top_x_input,
-                'y_H': array.top_y_input,
-                'N': array.cabinet_count_input,
-                'psi_n': loudspeaker.aperture_input,
+                'top_x': array.top_x_input,
+                'top_y': array.top_y_input,
+                'cabinet_count': array.cabinet_count_input,
+                'aperture_angles': loudspeaker.aperture_input,
                 'tolerance': algorithm.tolerance_slider,
-                'freq_range': algorithm.frequency_range_slider}
+                'frequency_range_hz': algorithm.frequency_range_slider}
 
     def _store_config_value(self, key: str, val, attr: str = 'value'
                             ) -> None:
@@ -451,21 +451,21 @@ class PalcApp:
         st = self.state
         loudspeaker, array, algorithm = (self.pages[2], self.pages[3],
                                          self.pages[4])
-        defaults = {'Lambda_y': (loudspeaker.cabinet_height_input, '0.2'),
-                    'N': (array.cabinet_count_input, '4'),
-                    'Lambda_gap': (array.cabinet_gap_input, '0'),
+        defaults = {'cabinet_height': (loudspeaker.cabinet_height_input, '0.2'),
+                    'cabinet_count': (array.cabinet_count_input, '4'),
+                    'cabinet_gap': (array.cabinet_gap_input, '0'),
                     'tolerance': (algorithm.tolerance_slider, '0.1'),
                     'fixed_angle': (algorithm.fixed_angle_input, ''),
-                    'x_H': (array.top_x_input, '0'),
-                    'y_H': (array.top_y_input, '2'),
-                    'psi_n': (loudspeaker.aperture_input, '3.0')}
+                    'top_x': (array.top_x_input, '0'),
+                    'top_y': (array.top_y_input, '2'),
+                    'aperture_angles': (loudspeaker.aperture_input, '3.0')}
         error_info, failed_key = st.config.store_config(key, val)
         # if wrong user input --> insert default value
         if failed_key in defaults:
             widget, default = defaults[failed_key]
             setattr(widget, attr, default)
         if failed_key in ['too low']:
-            setattr(array.top_y_input, attr, str(st.config.y_H))
+            setattr(array.top_y_input, attr, str(st.config.top_y))
         # Set attribute in SFP_config if possible
         if hasattr(st.sound_field_config, key) and \
                 failed_key in [None, 'too low']:
@@ -524,7 +524,7 @@ class PalcApp:
         for key, val in values.items():
             if new == val:
                 self._store_config_value(key, val, attr)
-                if key in ['N', 'use_gamma_LSA']:
+                if key in ['cabinet_count', 'use_discrete_angles']:
                     self.pages[3].update_reference_angles(chg_n=True)
         self._config_values_stored()
 
@@ -543,8 +543,8 @@ class PalcApp:
         """
         widgets = self._config_widgets()
         keys = [key for key in widgets
-                if key not in ('use_gamma_LSA', 'fixed_angle', 'y_H')]
-        for key in keys + ['y_H']:
+                if key not in ('use_discrete_angles', 'fixed_angle', 'top_y')]
+        for key in keys + ['top_y']:
             self._store_config_value(key, widgets[key].value)
         self._config_values_stored()
 
@@ -633,7 +633,7 @@ class PalcApp:
         """
         st = self.state
         algorithm, results = self.pages[4], self.pages[5]
-        N = result.setup.array.cabinet_count
+        cabinet_count = result.setup.array.cabinet_count
         optimized, reference = result.optimized, result.reference
         Tech_res, Tech_res_ref = optimized.evaluation, reference.evaluation
         SPLoverX, SPLoverX_ref = optimized.spl_over_distance, \
@@ -646,7 +646,7 @@ class PalcApp:
                         result.ray_plot, result.geometry)
         # tilt angles
         algorithm.results_source.data = dict(
-            a_num_LS=np.linspace(1, N, num=N),
+            a_num_LS=np.linspace(1, cabinet_count, num=cabinet_count),
             b_gamma_tilt_deg=optimized.tilt_angles_deg,
             c_gamma_tilt_deg_diff=optimized.inter_cabinet_angles_deg)
         # Sound Field Prediction

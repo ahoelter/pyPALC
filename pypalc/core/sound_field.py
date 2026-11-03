@@ -18,20 +18,20 @@ import scipy.special as sp
 from scipy.stats.mstats import mquantiles
 
 from .geometry import repmat, source_positions
-from .palc import PALC_configuration
+from .palc import PalcConfig
 
 logger = logging.getLogger(__name__)
 
 
-class SFP_configuration(PALC_configuration):
-    """ Child class of PALC_configuration, contains data that are additionally
+class SFP_configuration(PalcConfig):
+    """ Child class of PalcConfig, contains data that are additionally
         needed for the sound field prediction. """
-    def __init__(self, directivity='Circular Piston', N=1, Lambda_gap=0, \
-                 Lambda_y=0.2, x_H=0, y_H=2, dir_meas=None, \
+    def __init__(self, directivity='Circular Piston', cabinet_count=1, cabinet_gap=0, \
+                 cabinet_height=0.2, top_x=0, top_y=2, dir_meas=None, \
                  dir_meas_deg=None, \
-                 dir_meas_amp=None, gamma_n=None, f=None, plot_dir_amp=None, \
+                 dir_meas_amp=None, tilt_angles=None, f=None, plot_dir_amp=None, \
                  plot_dir_amp_meas=None, plot_beta_meas=None, \
-                 freq_range=(200,8000)):
+                 frequency_range_hz=(200,8000)):
         # None stands for a new object with the default value (no shared mutable defaults)
         dir_meas = np.zeros([2,120]) if dir_meas is None else dir_meas
         dir_meas_deg = np.zeros([2,120]) if dir_meas_deg is None else dir_meas_deg
@@ -43,7 +43,7 @@ class SFP_configuration(PALC_configuration):
         self.dir_meas_deg, self.dir_meas_amp      = dir_meas_deg, dir_meas_amp
         self.plot_dir_amp, self.plot_dir_amp_meas = plot_dir_amp, plot_dir_amp_meas
         self.plot_beta_meas                       = plot_beta_meas
-        self.freq_range                           = freq_range
+        self.frequency_range_hz                           = frequency_range_hz
         super(SFP_configuration, self).__init__()
         
     def get_plot_dir_amp(self, H_post, f2plot, meas=False):
@@ -117,7 +117,7 @@ class Technical_meas_results():
                 self.plot_f.append(list(self.f))
 
 
-def get_freq_vec(N_freq, step_freq, freq_range):
+def get_freq_vec(N_freq, step_freq, frequency_range_hz):
     """
     Compute a linear frequency vector. Called by :any:`calcSFP` and
     :any:`init_dir_plot`.
@@ -128,7 +128,7 @@ def get_freq_vec(N_freq, step_freq, freq_range):
         Number of frequency bins.
     step_freq : int
         Step size of frequency vector.
-    freq_range: tuple or list
+    frequency_range_hz: tuple or list
         Contains start and stop frequency of frequncy vector
 
     Returns
@@ -138,8 +138,8 @@ def get_freq_vec(N_freq, step_freq, freq_range):
 
     """
     f = 20 * (2 * np.ones(N_freq+1))**(step_freq * np.arange(N_freq+1))
-    f = f[f <= freq_range[1]]
-    f = f[f >= freq_range[0]]
+    f = f[f <= frequency_range_hz[1]]
+    f = f[f >= frequency_range_hz[0]]
     f = np.unique(f)
     return f
 
@@ -304,7 +304,7 @@ def LinkwitzRileyCrossOver(f_c_m, fs, f):
     return D_xo_low, D_xo_high
 
 
-def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_meas_deg, n):
+def calc_directivity(dire, alpha, cabinet_height, beta, omega, c, f, dir_meas, dir_meas_deg, n):
     """
     Compute the LSA cabinets directivity. Possible directivities are Circular
     Piston, Line Piston, Combined Circular / Line Piston, Measured
@@ -318,7 +318,7 @@ def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_mea
         'Combined Circular/Line', 'Measured Loudspeaker Data' or 'const'.
     alpha : float
         Active radiation factor. Normally 0.82 (Schultz et al.)
-    Lambda_y : float
+    cabinet_height : float
         Height of LSA cabinets.
     beta : 1D-array
         Considered radiation angles.
@@ -342,13 +342,13 @@ def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_mea
 
     """
     if dire == 'Circular Piston':
-        R_circ = alpha * Lambda_y / 2
+        R_circ = alpha * cabinet_height / 2
         with np.errstate(invalid='ignore', divide='ignore'):
             H_post = 2 * (sp.jv(1, omega / c * R_circ * np.sin(beta)) / \
                           (omega / c * R_circ * np.sin(beta)))
         H_post[np.isnan(H_post)] = 1
     elif dire == 'Line Piston':
-        Lambda_y_line = alpha * Lambda_y
+        Lambda_y_line = alpha * cabinet_height
         with np.errstate(invalid='ignore', divide='ignore'):
             H_post = np.sin(omega / (2*c) * Lambda_y_line * np.sin(beta)) / \
                      (omega / (2*c) * Lambda_y_line * np.sin(beta))
@@ -361,14 +361,14 @@ def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_mea
         # Calculate filter coefficients
         D_xo_low, D_xo_high = LinkwitzRileyCrossOver(f_c_m, fs, f)
         # calculate H_post for circular piston
-        R_circ = alpha * Lambda_y / 2
+        R_circ = alpha * cabinet_height / 2
         with np.errstate(invalid='ignore', divide='ignore'):
             H_post_circ = 2 * (sp.jv(1, omega / c * R_circ * np.sin(beta)) / \
                                (omega / c * R_circ * np.sin(beta)))
         H_post_circ[np.isnan(H_post_circ)] = 1
         H_post_circ = H_post_circ * D_xo_low[n]
         # calculate H_post for line piston
-        Lambda_y_line = alpha * Lambda_y
+        Lambda_y_line = alpha * cabinet_height
         with np.errstate(invalid='ignore', divide='ignore'):
             H_post_line = np.sin(omega / (2*c) * Lambda_y_line * np.sin(beta)) / \
                           (omega / (2*c) * Lambda_y_line * np.sin(beta))
@@ -387,7 +387,7 @@ def calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_mea
     return H_post
 
 
-def CalcGreenFunctions(x, y, z, x_src_l, y_src_l, alpha, dire, Lambda_y, \
+def CalcGreenFunctions(x, y, z, x_src_l, y_src_l, alpha, dire, cabinet_height, \
                        gamma_l, c, omega, G_sen, dir_meas, dir_meas_deg, airloss_alpha, f, n):
     """
     Computes the Green's function multiplied with the loudspeaker directivity.
@@ -410,7 +410,7 @@ def CalcGreenFunctions(x, y, z, x_src_l, y_src_l, alpha, dire, Lambda_y, \
     dire : str
         Directivity can be either 'Circular Piston', 'Line Piston',
         'Combined Circular/Line', 'Measured Loudspeaker Data' or 'const'.
-    Lambda_y : float
+    cabinet_height : float
         Height of LSA cabinets.
     gamma_l : 1D-array
         Set of LSA tilt angles in radian.
@@ -457,14 +457,14 @@ def CalcGreenFunctions(x, y, z, x_src_l, y_src_l, alpha, dire, Lambda_y, \
     air_att = 10**(-air_att / 20)
     G = G * air_att
  
-    H_post = calc_directivity(dire, alpha, Lambda_y, beta, omega, c, f, dir_meas, dir_meas_deg, n)
+    H_post = calc_directivity(dire, alpha, cabinet_height, beta, omega, c, f, dir_meas, dir_meas_deg, n)
 
     G = G * H_post
     
     return G
 
 
-def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
+def calcSFP(tilt_angles_deg, created_pal, SFP_config, Tech_res):
     """
     Main function to compute 2D sound field prediction with a 3D transfer
     function. Calls :any:`AirAbsorptionCoefficient` and :any:`CalcGreenFunctions`.
@@ -472,7 +472,7 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
 
     Parameters
     ----------
-    gamma_tilt_deg : list
+    tilt_angles_deg : list
         Set of LSA tilt angles in degree.
     created_pal : obj [in]
         Contains the venue slice that shall simulated by the CDPS-model.
@@ -490,20 +490,20 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
 
     """
     # general
-    gamma_n = gamma_tilt_deg / 180 * np.pi
-    N = SFP_config.N
+    tilt_angles = tilt_angles_deg / 180 * np.pi
+    cabinet_count = SFP_config.cabinet_count
     
     ########################## SIMULATION SETUP ###############################
     # reference pressure
     p0 = 2 * 10**(-5)
     # frequencies
-    f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])
+    f = get_freq_vec(N_freq=120, step_freq=1/12, frequency_range_hz=[20,20000])
     f_xy = np.array([100, 200, 400, 800, 1000, 2000, 5000, 10000, 16000])
 
     # initialize variables
     omega = 2 * np.pi * f
     omega_xy = 2 * np.pi * f_xy
-    D_opt_LSA = np.ones([N, np.shape(f)[0]])
+    D_opt_LSA = np.ones([cabinet_count, np.shape(f)[0]])
     P_LSA = np.zeros([np.shape(created_pal.points_x)[0],np.shape(f)[0]], dtype=complex)
 
     # air attenuation
@@ -515,12 +515,12 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     #     dire_meas_deg = np.ones([np.shape(f)[0],np.shape(f)[0]])
         
     ######################### SPL CALCULATION #################################
-    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_positions(gamma_n, SFP_config)
+    x_start, y_start, x_stop, y_stop, cabinet_centers_x, cabinet_centers_y, x_S, y_S = source_positions(tilt_angles, SFP_config)
 
     for n in range(np.shape(f)[0]):
         G_LSA_vert = CalcGreenFunctions(created_pal.points_x, created_pal.points_y, np.array([0]), \
-                                        x_c_n, y_c_n, 0.82, SFP_config.directivity, \
-                                        SFP_config.Lambda_y, gamma_n, c, omega[n], 1, \
+                                        cabinet_centers_x, cabinet_centers_y, 0.82, SFP_config.directivity, \
+                                        SFP_config.cabinet_height, tilt_angles, c, omega[n], 1, \
                                         np.array(SFP_config.dir_meas[:,n]), \
                                         np.array(SFP_config.dir_meas_deg[:,1]), \
                                         alpha[n], f, n )
@@ -531,7 +531,7 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     return x_S, y_S
 
 
-def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_deg):
+def calcBeamplot(PALC_config, tilt_angles, plt_ranges, f, dire_meas_LSA, dire_meas_deg):
     """
     Calcuates the SPL values to map them on a mesh. This is called beamplot.
     Calls :any:`AirAbsorptionCoefficient` and :any:`CalcGreenFunctions`. Called
@@ -542,7 +542,7 @@ def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_d
     ----------
     PALC_config : obj [in]
         Configuration of the PALC algorithm.
-    gamma_n : either list or 1D-array
+    tilt_angles : either list or 1D-array
         Set of LSA tilt angles in radian.
     plt_ranges : obj [out]
         Handles the ranges of bokeh figures.
@@ -564,7 +564,7 @@ def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_d
 
     """
     # general
-    N = PALC_config.N
+    cabinet_count = PALC_config.cabinet_count
    
 ########################## SIMULATION SETUP ###############################
     # maximum of discrete mapping points:
@@ -589,7 +589,7 @@ def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_d
     # considered frequency
     omega = 2 * np.pi * f
     # initialize driving fct. and output array
-    D_opt_LSA = np.ones([N, 1])
+    D_opt_LSA = np.ones([cabinet_count, 1])
     P_LSA = np.zeros([np.shape(x_vert)[0],1], dtype=complex)    
 
     # air attenuation
@@ -604,11 +604,11 @@ def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_d
         dire_meas_deg = np.ones([1,1])
     
     ######################### SPL CALCULATION #################################
-    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_positions(gamma_n, PALC_config)
+    x_start, y_start, x_stop, y_stop, cabinet_centers_x, cabinet_centers_y, x_S, y_S = source_positions(tilt_angles, PALC_config)
 
-    G_LSA_vert = CalcGreenFunctions(x_vert, y_vert, z_vert, x_c_n, y_c_n, 0.82,\
-                                    PALC_config.directivity, PALC_config.Lambda_y, \
-                                    gamma_n, c, omega, 1, dire_meas_LSA, \
+    G_LSA_vert = CalcGreenFunctions(x_vert, y_vert, z_vert, cabinet_centers_x, cabinet_centers_y, 0.82,\
+                                    PALC_config.directivity, PALC_config.cabinet_height, \
+                                    tilt_angles, c, omega, 1, dire_meas_LSA, \
                                     dire_meas_deg, alpha, f, 0 )
 
     P_LSA[:,0] = G_LSA_vert @ D_opt_LSA[:,0]
@@ -705,7 +705,7 @@ def calcHistogram(Tech_res):
     return
 
 
-def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX, freq_range):
+def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX, frequency_range_hz):
     """
     Computes the SPL over distance. The distance is measured from the center
     of the LSA to the receiver positions. Called by :any:`start_calc` and
@@ -721,7 +721,7 @@ def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX, freq_range):
         Sound pressure level at each receiver position.
     SPLoverX : obj [out]
         Contains the SPL over distance output.
-    freq_range: tuple or list [in]
+    frequency_range_hz: tuple or list [in]
         Frequency range to be considered, contains (start,stop) in Hz.
 
     Returns
@@ -734,8 +734,8 @@ def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX, freq_range):
     """
     p0 = 2*10**(-5) # atmospheric pressure
     f  = get_freq_vec(120, 1/12, (20,20000))
-    f_ind_min = np.argmin(np.abs(f-freq_range[0]))
-    f_ind_max = np.argmin(np.abs(f-freq_range[1]))
+    f_ind_min = np.argmin(np.abs(f-frequency_range_hz[0]))
+    f_ind_max = np.argmin(np.abs(f-frequency_range_hz[1]))
     # distance source --> receiver
     total_dist = np.sqrt(((PALC_plots.x_start[0]+PALC_plots.x_stop[-1])/2 - created_pal.points_x)**2 + \
                          ((PALC_plots.y_start[0]+PALC_plots.y_stop[-1])/2 - created_pal.points_y)**2)
@@ -859,7 +859,7 @@ def init_dir_plot():
     beta_deg = np.linspace(-180,180,181)
     beta = beta_deg * np.pi / 180
     # frequencies
-    f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])
+    f = get_freq_vec(N_freq=120, step_freq=1/12, frequency_range_hz=[20,20000])
     omega = 2 * np.pi * f
     dir_meas = np.ones([np.shape(f)[0],np.shape(f)[0]])
     dir_meas_deg = np.ones([np.shape(f)[0],np.shape(f)[0]])
@@ -902,7 +902,7 @@ def parse_measured_directivity(csv_text, SFP_config):
     # get an array of corresponding degree and frequency and delete these "header" and "index" from the directivity array
     # and write it once for whole data in dictionary and second just for the frequencies to be plotted in another dictionary
     # initialize the considered frequency bins
-    SFP_config.f = get_freq_vec(N_freq=120, step_freq=1/12, freq_range=[20,20000])          
+    SFP_config.f = get_freq_vec(N_freq=120, step_freq=1/12, frequency_range_hz=[20,20000])          
     # cut the degree and frequency vector out of the directivity array
     degree = np.real(directivity[1:,0]).astype(float)
     SFP_config.plot_beta_meas = list(degree)      

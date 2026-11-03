@@ -85,8 +85,8 @@ class ArrayPage:
         self.rule_left = Paragraph(text=RULE_LONG)
         self.rule_right = Paragraph(text=RULE)
         self.reference_angles_source = ColumnDataSource(data=dict(
-            gamma_ref=np.array([np.zeros(config.N)]),
-            LS=np.array([np.linspace(1, 4, num=config.N)])))
+            gamma_ref=np.array([np.zeros(config.cabinet_count)]),
+            LS=np.array([np.linspace(1, 4, num=config.cabinet_count)])))
         """Tilt angles of the reference array."""
         self.reference_table = DataTable(
             source=self.reference_angles_source,
@@ -159,12 +159,12 @@ class ArrayPage:
         if self.use_discrete_angles_select.value == 'Yes':
             self.discrete_angles_input.value = '0,0.5,1,2,3.5,5,7,10'
             self.discrete_angles_input.disabled = False
-            config.store_config('use_gamma_LSA', True)
+            config.store_config('use_discrete_angles', True)
             self.reference_discrete_angles_select.disabled = False
         elif self.use_discrete_angles_select.value == 'No':
             self.discrete_angles_input.value = ''
             self.discrete_angles_input.disabled = True
-            config.store_config('use_gamma_LSA', False)
+            config.store_config('use_discrete_angles', False)
             self.reference_discrete_angles_select.disabled = True
             self.reference_discrete_angles_select.value = "No"
         self.read_discrete_angles(attr, old, new)
@@ -192,12 +192,12 @@ class ArrayPage:
         config = self.app.state.config
         error_info = self.app.config_error_info
         # discrete angles were disabled
-        if config.use_gamma_LSA == False:  # noqa: E712 (legacy value check)
+        if config.use_discrete_angles == False:  # noqa: E712 (legacy value check)
             error_info.text = ''
-            config.gamma_LSA = []
+            config.discrete_tilt_angles = []
             return
         try:
-            config.gamma_LSA = np.array(
+            config.discrete_tilt_angles = np.array(
                 [float(s) for s in self.discrete_angles_input.value.split(',')]
             ) * (np.pi/180)
             error_info.text = ''
@@ -280,9 +280,9 @@ class ArrayPage:
             start = float(self.reference_start_input.value)
             step_stop = float(self.reference_step_stop_input.value) \
                 if ref_type != 'straight' else 0
-        self.app.state.reference_array.gamma_tilt_deg = \
+        self.app.state.reference_array.tilt_angles_deg = \
             reference_tilt_angles_deg(
-                ref_type, config.N, config.gamma_LSA, start, step_stop,
+                ref_type, config.cabinet_count, config.discrete_tilt_angles, start, step_stop,
                 str(self.reference_discrete_angles_select.value) == "Yes",
                 user_angles)
 
@@ -305,10 +305,10 @@ class ArrayPage:
             self._compute_reference_angles()
             # in degree for the table
             self.reference_angles_source.data = dict(
-                gamma_ref=np.round(reference.gamma_tilt_deg, decimals=2),
-                LS=np.linspace(1, config.N, config.N))
+                gamma_ref=np.round(reference.tilt_angles_deg, decimals=2),
+                LS=np.linspace(1, config.cabinet_count, config.cabinet_count))
             # in radian
-            reference.gamma_n = reference.gamma_tilt_deg * (np.pi / 180)
+            reference.tilt_angles = reference.tilt_angles_deg * (np.pi / 180)
             if chg_n == False:  # noqa: E712
                 self.app.config_error_info.text = ''
         except CALLBACK_ERRORS:

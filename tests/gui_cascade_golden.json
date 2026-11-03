@@ -642,16 +642,16 @@ null
 "app.page_select.disabled": false,
 "app.page_select.visible": true,
 "app.rays_source.data": {
-"x_c_n_unitn": [],
-"x_c_n_unitn_psi1": [],
-"x_c_n_unitn_psi2": [],
+"center_rays_x": [],
+"center_rays_y": [],
+"start_rays_x": [],
+"start_rays_y": [],
+"stop_rays_x": [],
+"stop_rays_y": [],
 "x_fin_unitn_start_stop": [],
 "x_start_stop": [],
 "x_start_unitn_start": [],
 "x_stop_unitn_stop": [],
-"y_c_n_unitn": [],
-"y_c_n_unitn_psi1": [],
-"y_c_n_unitn_psi2": [],
 "y_fin_unitn_start_stop": [],
 "y_start_stop": [],
 "y_start_unitn_start": [],
@@ -676,32 +676,32 @@ null
 null,
 null
 ],
-"config.Lambda_gap": 0,
-"config.Lambda_y": 0.2,
-"config.N": 4,
-"config.constraint": "PALC 2",
-"config.directivity": "Circular Piston",
-"config.fixed_angle": 0,
-"config.freq_range": [
-200,
-8000
-],
-"config.gamma_LSA": [],
-"config.gap_handling": "Without",
-"config.psi_n": [
+"config.aperture_angles": [
 0.052359878,
 0.052359878,
 0.052359878,
 0.052359878
 ],
-"config.strength_sm": 1,
+"config.cabinet_count": 4,
+"config.cabinet_gap": 0,
+"config.cabinet_height": 0.2,
+"config.directivity": "Circular Piston",
+"config.discrete_tilt_angles": [],
+"config.fixed_angle": 0,
+"config.frequency_range_hz": [
+200,
+8000
+],
+"config.gap_handling": "Without",
+"config.palc_variant": "PALC 2",
+"config.soft_margin_strength": 1,
 "config.tolerance": 1.0,
+"config.top_x": 0,
+"config.top_y": 2,
+"config.use_discrete_angles": false,
 "config.use_fixed_angle": false,
-"config.use_gamma_LSA": false,
 "config.use_weighting": "Without",
 "config.weighting_nu": 1,
-"config.x_H": 0,
-"config.y_H": 2,
 "document.model_count": 183,
 "error": null
 }
@@ -1227,7 +1227,7 @@ null
 ]
 },
 "app.config_error_info.text": "",
-"config.psi_n": [
+"config.aperture_angles": [
 0.06981317,
 0.06981317,
 0.06981317,
@@ -1326,8 +1326,7 @@ null
 0.0
 ]
 },
-"config.N": 8,
-"config.psi_n": [
+"config.aperture_angles": [
 0.06981317,
 0.06981317,
 0.06981317,
@@ -1336,7 +1335,8 @@ null
 0.06981317,
 0.06981317,
 0.06981317
-]
+],
+"config.cabinet_count": 8
 }
 ],
 [
@@ -1358,13 +1358,13 @@ null
 ]
 },
 "app.config_error_info.text": "Error: only numbers are allowed. Set to default",
-"config.N": 4,
-"config.psi_n": [
+"config.aperture_angles": [
 0.06981317,
 0.06981317,
 0.06981317,
 0.06981317
-]
+],
+"config.cabinet_count": 4
 }
 ],
 [
@@ -1398,8 +1398,7 @@ null
 ]
 },
 "app.config_error_info.text": "",
-"config.N": 10,
-"config.psi_n": [
+"config.aperture_angles": [
 0.06981317,
 0.06981317,
 0.06981317,
@@ -1410,7 +1409,8 @@ null
 0.06981317,
 0.06981317,
 0.06981317
-]
+],
+"config.cabinet_count": 10
 }
 ],
 [
@@ -1425,7 +1425,7 @@ null
 {
 "3.top_y_input.value": "6",
 "app.config_error_info.text": "",
-"config.y_H": 6.0
+"config.top_y": 6.0
 }
 ],
 [
@@ -1435,7 +1435,7 @@ null
 "3.discrete_angles_input.value": "0,0.5,1,2,3.5,5,7,10",
 "3.reference_discrete_angles_select.disabled": false,
 "3.use_discrete_angles_select.value": "Yes",
-"config.gamma_LSA": [
+"config.discrete_tilt_angles": [
 0.0,
 0.008726646,
 0.017453293,
@@ -1445,14 +1445,14 @@ null
 0.122173048,
 0.174532925
 ],
-"config.use_gamma_LSA": true
+"config.use_discrete_angles": true
 }
 ],
 [
 "dang_vals",
 {
 "3.discrete_angles_input.value": "0,1,2,3,4,5,6,7,8,9,10",
-"config.gamma_LSA": [
+"config.discrete_tilt_angles": [
 0.0,
 0.017453293,
 0.034906585,
@@ -1477,7 +1477,7 @@ null
 "dang_vals2",
 {
 "3.discrete_angles_input.value": "0,1,2,4,6,8,10",
-"config.gamma_LSA": [
+"config.discrete_tilt_angles": [
 0.0,
 0.017453293,
 0.034906585,
@@ -1691,8 +1691,8 @@ null
 "3.reference_discrete_angles_select.disabled": true,
 "3.reference_discrete_angles_select.value": "No",
 "3.use_discrete_angles_select.value": "No",
-"config.gamma_LSA": [],
-"config.use_gamma_LSA": false
+"config.discrete_tilt_angles": [],
+"config.use_discrete_angles": false
 }
 ],
 [
@@ -1732,7 +1732,7 @@ null
 "sm",
 {
 "4.soft_margin_slider.value": 1.5,
-"config.strength_sm": 1.5
+"config.soft_margin_strength": 1.5
 }
 ],
 [
@@ -1860,7 +1860,7 @@ null
 "4.soft_margin_slider.disabled": true,
 "4.soft_margin_slider.value": 1.0,
 "config.gap_handling": "Without",
-"config.strength_sm": 1.0
+"config.soft_margin_strength": 1.0
 }
 ],
 [
@@ -2091,8 +2091,8 @@ null
 ]
 },
 "app.rays_source.data": {
-"sha1": "efd5cd0c8a3bb603f38bdb7f7322778c2ae7e30b",
-"size": 1809
+"sha1": "8f338eacc181751ddc74f61fdfe2db6b5885a7a4",
+"size": 1795
 }
 }
 ],
@@ -2313,16 +2313,16 @@ null
 "seg_pos_y": []
 },
 "app.rays_source.data": {
-"x_c_n_unitn": [],
-"x_c_n_unitn_psi1": [],
-"x_c_n_unitn_psi2": [],
+"center_rays_x": [],
+"center_rays_y": [],
+"start_rays_x": [],
+"start_rays_y": [],
+"stop_rays_x": [],
+"stop_rays_y": [],
 "x_fin_unitn_start_stop": [],
 "x_start_stop": [],
 "x_start_unitn_start": [],
 "x_stop_unitn_stop": [],
-"y_c_n_unitn": [],
-"y_c_n_unitn_psi1": [],
-"y_c_n_unitn_psi2": [],
 "y_fin_unitn_start_stop": [],
 "y_start_stop": [],
 "y_start_unitn_start": [],

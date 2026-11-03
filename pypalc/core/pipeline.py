@@ -19,8 +19,8 @@ that is not visible in a setup:
   aperture angles to it.
 * A mounting height that is too low for the array is raised as the GUI does
   (see :func:`top_position_y`).
-* After the PALC run the GUI resets ``x_H``, ``y_H``, the aperture angles
-  (and with them the start tilt angles) and ``last_angle_hm``, which the
+* After the PALC run the GUI resets ``top_x``, ``top_y``, the aperture angles
+  (and with them the start tilt angles) and ``hard_margin_last_angle``, which the
   hard margin approach changes, before the results are visualized.
 * Target slope weighting is two runs: an initial run without weighting
   (selecting "Target Slope" in the GUI), whose SPL over distance grid the
@@ -40,7 +40,7 @@ import numpy as np
 from .errors import CalculationError, ConvergenceError, SetupError, VenueError
 from .geometry import (cabinet_outlines, inter_cabinet_angles,
                        reference_tilt_angles_deg)
-from .palc import (Array_opt, PALC_configuration, PALC_plotting, calcPALC,
+from .palc import (ArrayGeometry, PalcConfig, RayPlotData, run_palc,
                    clamp_fixed_angle, fixed_angle_borders)
 from .settings import (ArraySettings, AudienceLine, Setup, TargetPoint,
                        TargetSlopeSettings, VenueSettings)
@@ -59,8 +59,6 @@ logger = logging.getLogger(__name__)
 # Final names of the legacy classes (renamed in a later step).
 ArrayEvaluation = Technical_meas_results
 TargetSlopeState = Opt_weight
-ArrayGeometry = Array_opt
-RayPlotData = PALC_plotting
 
 #: Maximum number of discrete venue points.
 MAX_VENUE_POINTS = 2000
@@ -152,7 +150,7 @@ class RunResult:
     reference : ArrayResult
         Results of the reference array.
     geometry : ArrayGeometry
-        Geometry of the optimized array (rays, hit points, ``num_iter``).
+        Geometry of the optimized array (rays, hit points, ``iteration_count``).
     ray_plot : RayPlotData
         Plot data of the optimized array.
     target : TargetSlopeState or None
@@ -286,48 +284,48 @@ def top_position_y(setup: Setup) -> float:
     Returns
     -------
     float
-        Mounting height (``y_H``) in m.
+        Mounting height (``top_y``) in m.
     """
     ar = setup.array
     length = ar.cabinet_count * (setup.loudspeaker.cabinet_height
                                  + ar.cabinet_gap)
-    y_H = float(ar.top_position[1])
-    if length > y_H:
-        y_H = np.round(length, decimals=2)
-    return y_H
+    top_y = float(ar.top_position[1])
+    if length > top_y:
+        top_y = np.round(length, decimals=2)
+    return top_y
 
 
 def _palc_config(setup: Setup, use_weighting: Optional[str] = None
-                 ) -> PALC_configuration:
+                 ) -> PalcConfig:
     """PALC configuration as the GUI holds it before the first run."""
     ls, ar, alg = setup.loudspeaker, setup.array, setup.algorithm
     if ar.discrete_tilt_angles_deg is not None:
-        gamma_LSA = np.array([float(a) for a in ar.discrete_tilt_angles_deg]) \
+        discrete_tilt_angles = np.array([float(a) for a in ar.discrete_tilt_angles_deg]) \
             * (np.pi / 180)
     else:
-        gamma_LSA = []
+        discrete_tilt_angles = []
     if use_weighting is None:
         use_weighting = _WEIGHTING[alg.weighting]
     weighting_nu = alg.weighting_nu \
         if alg.weighting in ("linear", "logarithmic") else 1
-    config = PALC_configuration(
-        Lambda_gap=float(ar.cabinet_gap), Lambda_y=float(ls.cabinet_height),
-        x_H=float(ar.top_position[0]), y_H=top_position_y(setup),
-        constraint=_VARIANTS[alg.variant],
-        use_gamma_LSA=ar.discrete_tilt_angles_deg is not None,
-        gamma_LSA=gamma_LSA, use_weighting=use_weighting,
+    config = PalcConfig(
+        cabinet_gap=float(ar.cabinet_gap), cabinet_height=float(ls.cabinet_height),
+        top_x=float(ar.top_position[0]), top_y=top_position_y(setup),
+        palc_variant=_VARIANTS[alg.variant],
+        use_discrete_angles=ar.discrete_tilt_angles_deg is not None,
+        discrete_tilt_angles=discrete_tilt_angles, use_weighting=use_weighting,
         weighting_nu=weighting_nu, weighting_factors=[],
-        N=GUI_INITIAL_CABINET_COUNT,
+        cabinet_count=GUI_INITIAL_CABINET_COUNT,
         gap_handling=_GAP_HANDLING[alg.gap_handling],
-        strength_sm=alg.soft_margin_strength
+        soft_margin_strength=alg.soft_margin_strength
         if alg.gap_handling == "soft_margin" else 1,
-        last_angle_hm=[], gap_weights=[], weighting_weights=[],
+        hard_margin_last_angle=[], gap_weights=[], weighting_weights=[],
         use_fixed_angle=False, fixed_angle=0,
         directivity=_DIRECTIVITY[ls.directivity], tolerance=float(alg.tolerance),
-        freq_range=tuple(alg.frequency_range_hz))
-    # sets the start values of aperture and tilt angles, then N, as the GUI
-    config.store_config('psi_n', float(ls.aperture_angle_deg))
-    config.store_config('N', ar.cabinet_count)
+        frequency_range_hz=tuple(alg.frequency_range_hz))
+    # sets the start values of aperture and tilt angles, then cabinet_count, as the GUI
+    config.store_config('aperture_angles', float(ls.aperture_angle_deg))
+    config.store_config('cabinet_count', ar.cabinet_count)
     return config
 
 
@@ -350,19 +348,19 @@ def _sound_field_config(setup: Setup) -> SFP_configuration:
     ls, ar, alg = setup.loudspeaker, setup.array, setup.algorithm
     config = SFP_configuration(
         dir_meas=np.zeros([2, 120]), dir_meas_deg=np.zeros([2, 120]),
-        dir_meas_amp=[], gamma_n=[0], f=[], plot_dir_amp=[],
+        dir_meas_amp=[], tilt_angles=[0], f=[], plot_dir_amp=[],
         plot_dir_amp_meas=[[0], [0], [0]], plot_beta_meas=[0])
-    # SFP_configuration.__init__ calls PALC_configuration.__init__() with
-    # its defaults, which also resets freq_range (set below).
-    config.N = ar.cabinet_count
-    config.Lambda_y = float(ls.cabinet_height)
-    config.Lambda_gap = float(ar.cabinet_gap)
-    config.x_H = float(ar.top_position[0])
-    config.y_H = top_position_y(setup)
+    # SFP_configuration.__init__ calls PalcConfig.__init__() with
+    # its defaults, which also resets frequency_range_hz (set below).
+    config.cabinet_count = ar.cabinet_count
+    config.cabinet_height = float(ls.cabinet_height)
+    config.cabinet_gap = float(ar.cabinet_gap)
+    config.top_x = float(ar.top_position[0])
+    config.top_y = top_position_y(setup)
     config.directivity = _DIRECTIVITY[ls.directivity]
-    config.freq_range = tuple(alg.frequency_range_hz)
+    config.frequency_range_hz = tuple(alg.frequency_range_hz)
     config.f = get_freq_vec(N_freq=120, step_freq=1/12,
-                            freq_range=[20, 20000])
+                            frequency_range_hz=[20, 20000])
     if ls.directivity == "measured":
         try:
             parse_measured_directivity(_measured_csv_text(setup), config)
@@ -373,19 +371,19 @@ def _sound_field_config(setup: Setup) -> SFP_configuration:
     return config
 
 
-def _reference_array(setup: Setup, config: PALC_configuration) -> Array_opt:
+def _reference_array(setup: Setup, config: PalcConfig) -> ArrayGeometry:
     """Reference array as the GUI computes it on page 3."""
     ref = setup.reference_array
     try:
-        gamma_tilt_deg = reference_tilt_angles_deg(
-            ref.type, config.N, config.gamma_LSA, ref.top_angle_deg,
+        tilt_angles_deg = reference_tilt_angles_deg(
+            ref.type, config.cabinet_count, config.discrete_tilt_angles, ref.top_angle_deg,
             ref.angle_param_deg,
-            ref.use_discrete_angles and bool(config.use_gamma_LSA),
+            ref.use_discrete_angles and bool(config.use_discrete_angles),
             ref.tilt_angles_deg)
     except ValueError as exc:
         raise SetupError("reference_array", str(exc)) from exc
-    reference = Array_opt(gamma_tilt_deg=gamma_tilt_deg)
-    reference.gamma_n = reference.gamma_tilt_deg * (np.pi / 180)
+    reference = ArrayGeometry(tilt_angles_deg=tilt_angles_deg)
+    reference.tilt_angles = reference.tilt_angles_deg * (np.pi / 180)
     return reference
 
 
@@ -429,9 +427,9 @@ class _Calculation:
         self.setup, self.venue = setup, venue
         self.config = _palc_config(setup, use_weighting)
         self.sf_config = _sound_field_config(setup)
-        self.optimized = Array_opt(gamma_tilt_deg=[])
+        self.optimized = ArrayGeometry(tilt_angles_deg=[])
         self.reference = _reference_array(setup, self.config)
-        self.plots, self.plots_ref = PALC_plotting(), PALC_plotting()
+        self.plots, self.plots_ref = RayPlotData(), RayPlotData()
         self.evaluation = Technical_meas_results()
         self.evaluation_ref = Technical_meas_results()
         self.target = Opt_weight(SPL_interp=[0, 0])
@@ -477,10 +475,10 @@ class _Calculation:
     def _reset_config(self) -> None:
         """Values the GUI resets after the PALC run (``start_calc``)."""
         ls, ar = self.setup.loudspeaker, self.setup.array
-        for key, val in (("last_angle_hm", []),
-                         ("x_H", float(ar.top_position[0])),
-                         ("y_H", top_position_y(self.setup)),
-                         ("psi_n", float(ls.aperture_angle_deg))):
+        for key, val in (("hard_margin_last_angle", []),
+                         ("top_x", float(ar.top_position[0])),
+                         ("top_y", top_position_y(self.setup)),
+                         ("aperture_angles", float(ls.aperture_angle_deg))):
             self.config.store_config(key, val)
 
     def calculate(self) -> None:
@@ -507,39 +505,39 @@ class _Calculation:
                                         self.evaluation, self.spl,
                                         self.target, TARGET_SLOPE_MAX_LOOPS)
             else:
-                calcPALC(self.plots, palc_venue, P, self.optimized)
+                run_palc(self.plots, palc_venue, P, self.optimized)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: PALC calculation failed') from exc
         self._reset_config()
-        if self.optimized.num_iter == 500 or \
-                np.shape(self.optimized.gamma_tilt_deg)[0] == 0:
+        if self.optimized.iteration_count == 500 or \
+                np.shape(self.optimized.tilt_angles_deg)[0] == 0:
             raise ConvergenceError('Error: No convergence reached')
         self.patches = cabinet_outlines(self.plots, P,
-                                         self.optimized.gamma_n)
+                                         self.optimized.tilt_angles)
         self.plots.get_plot_array(self.optimized)
-        gamma_tilt_deg_diff, self.tilt_angles_deg = \
-            inter_cabinet_angles(self.optimized.gamma_tilt_deg)
-        self.optimized.gamma_tilt_deg_diff = gamma_tilt_deg_diff
+        inter_cabinet_angles_deg, self.tilt_angles_deg = \
+            inter_cabinet_angles(self.optimized.tilt_angles_deg)
+        self.optimized.inter_cabinet_angles_deg = inter_cabinet_angles_deg
         try:
-            x_S, y_S = calcSFP(self.optimized.gamma_tilt_deg, drawn, S,
+            x_S, y_S = calcSFP(self.optimized.tilt_angles_deg, drawn, S,
                                self.evaluation)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation failed') from exc
         calcSPLoverX(self.plots, drawn, self.evaluation.p_SPL, self.spl,
-                     S.freq_range)
+                     S.frequency_range_hz)
         calcHomogeneity(self.evaluation, x_S, y_S, drawn.points_x,
                         drawn.points_y)
         calcHistogram(self.evaluation)
         try:
-            x_S, y_S = calcSFP(self.reference.gamma_tilt_deg, drawn, S,
+            x_S, y_S = calcSFP(self.reference.tilt_angles_deg, drawn, S,
                                self.evaluation_ref)
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation of reference '
                                    'array failed') from exc
         self.patches_ref = cabinet_outlines(self.plots_ref, P,
-                                             self.reference.gamma_n)
+                                             self.reference.tilt_angles)
         calcSPLoverX(self.plots_ref, drawn, self.evaluation_ref.p_SPL,
-                     self.spl_ref, S.freq_range)
+                     self.spl_ref, S.frequency_range_hz)
         calcHomogeneity(self.evaluation_ref, x_S, y_S, drawn.points_x,
                         drawn.points_y)
         calcHistogram(self.evaluation_ref)
@@ -574,14 +572,14 @@ class _Calculation:
 
     def result(self) -> RunResult:
         """Collect the results of the last :meth:`calculate`."""
-        diff_ref, _ = inter_cabinet_angles(self.reference.gamma_tilt_deg)
+        diff_ref, _ = inter_cabinet_angles(self.reference.tilt_angles_deg)
         optimized = ArrayResult(
             tilt_angles_deg=self.tilt_angles_deg,
-            inter_cabinet_angles_deg=self.optimized.gamma_tilt_deg_diff,
+            inter_cabinet_angles_deg=self.optimized.inter_cabinet_angles_deg,
             evaluation=self.evaluation, spl_over_distance=self.spl,
             patches_x=self.patches[0], patches_y=self.patches[1])
         reference = ArrayResult(
-            tilt_angles_deg=self.reference.gamma_tilt_deg,
+            tilt_angles_deg=self.reference.tilt_angles_deg,
             inter_cabinet_angles_deg=diff_ref,
             evaluation=self.evaluation_ref, spl_over_distance=self.spl_ref,
             patches_x=self.patches_ref[0], patches_y=self.patches_ref[1])

@@ -223,14 +223,14 @@ class ResultsPage:
     # Callbacks
     # ------------------------------------------------------------------
 
-    def _beam_spl(self, mapper, gamma_n, f, ind_f):
+    def _beam_spl(self, mapper, tilt_angles, f, ind_f):
         """Beam plot of one array at one frequency, clipped to 50..100 dB.
 
         Parameters
         ----------
         mapper : LinearColorMapper [out]
             Color mapper of the beam plot; set to the SPL range.
-        gamma_n : array
+        tilt_angles : array
             Tilt angles of the array in radian.
         f : float
             Frequency in Hz.
@@ -244,7 +244,7 @@ class ResultsPage:
         """
         st = self.app.state
         S = st.sound_field_config
-        p_SPL, X, Y = calcBeamplot(st.config, gamma_n, st.ranges, f,
+        p_SPL, X, Y = calcBeamplot(st.config, tilt_angles, st.ranges, f,
                                    np.array(S.dir_meas[:, ind_f]),
                                    np.array(S.dir_meas_deg[:, 1]))
         high_ind = np.argwhere(p_SPL > 100)
@@ -294,7 +294,7 @@ class ResultsPage:
             for n in self.beam_checkbox.active:
                 if n == 0 and 0 not in old and (0 in new or f_int in new):
                     p_SPL = self._beam_spl(self.beam_mapper,
-                                           st.result.geometry.gamma_n, f,
+                                           st.result.geometry.tilt_angles, f,
                                            ind_f)
                     self.beam_source.data.update(dict(
                         SPL=[p_SPL], x=[rng.p_x[0]], y=[rng.p_y[0]],
@@ -302,7 +302,7 @@ class ResultsPage:
                         dh=[rng.p_y[1]-rng.p_y[0]]))
                 elif n == 1 and 1 not in old and (1 in new or f_int in new):
                     p_SPL_ref = self._beam_spl(self.reference_beam_mapper,
-                                               st.reference_array.gamma_n, f,
+                                               st.reference_array.tilt_angles, f,
                                                ind_f)
                     self.beam_source.data.update(dict(
                         SPL_ref=[p_SPL_ref], x=[rng.p_x[0]], y=[rng.p_y[0]],
