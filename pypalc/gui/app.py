@@ -45,7 +45,7 @@ from colorcet import rainbow
 from pypalc.core import pipeline
 from pypalc.core.errors import PalcError, SetupError
 from pypalc.core.palc import ArrayGeometry, PalcConfig
-from pypalc.core.pipeline import AudienceLines, RunResult, VenueResult
+from pypalc.core.pipeline import RunResult, VenueResult
 from pypalc.core.settings import AudienceLine, Setup
 from pypalc.core.sound_field import SoundFieldConfig
 from pypalc.core.target_slope import TargetSlopeState
@@ -112,9 +112,9 @@ class SessionState:
     target_of_result : tuple or None
         The target slope as shown right after the last successful
         calculation: ``(distances, levels, reference distance)`` of the
-        target sources. Save
-        compares it with the shown target to find out whether the target
-        was moved since (:func:`~.setup_io.setup_to_save`).
+        target sources. Save compares it with the shown target to find out
+        whether the target was moved since
+        (:func:`~.setup_io.setup_to_save`).
     applying_setup : bool
         True while :func:`~.setup_io.apply_setup` sets the widgets; the
         widget callbacks then do nothing

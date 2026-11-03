@@ -183,7 +183,9 @@ def hinge_indices(hinge_count, spl_over_distance):
     """
     Init function to return indices of the hinges / links in the SPL over distance figure.
     Necessary for the movable target slope line. Works also if user has moved
-    the hinge / link. Called by :any:`chg_weight_links`.
+    the hinge / link. Called by
+    :meth:`pypalc.gui.page_algorithm.AlgorithmPage.place_hinges` and
+    :meth:`pypalc.core.pipeline._Calculation.initial_target`.
 
     Parameters
     ----------

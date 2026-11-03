@@ -193,8 +193,7 @@ def snapshot(app, error):
 
 def _steps(app):
     """The interactions: list of (name, function)."""
-    venue, loudspeaker, array, algorithm, results = (
-        app.pages[1], app.pages[2], app.pages[3], app.pages[4], app.pages[5])
+    venue, algorithm, results = app.pages[1], app.pages[4], app.pages[5]
     csv = base64.b64encode((ROOT / 'tests' / 'cases' / 'measured.csv')
                            .read_bytes()).decode()
 

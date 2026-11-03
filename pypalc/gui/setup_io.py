@@ -442,8 +442,8 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
     """
     from .app import SessionState
     _check_applicable(setup)
-    venue, loudspeaker, array, algorithm, results = (
-        app.pages[1], app.pages[2], app.pages[3], app.pages[4], app.pages[5])
+    venue, loudspeaker, array, results = (
+        app.pages[1], app.pages[2], app.pages[3], app.pages[5])
     state = SessionState(applying_setup=True)
     app.state = state
     try:

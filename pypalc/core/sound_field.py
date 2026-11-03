@@ -500,11 +500,9 @@ def predict_sound_field(tilt_angles_deg, drawn_lines, sound_field_config, evalua
     p0 = 2 * 10**(-5)
     # frequencies
     frequencies = frequency_vector(frequency_count=120, octave_step=1/12, frequency_range_hz=[20,20000])
-    f_xy = np.array([100, 200, 400, 800, 1000, 2000, 5000, 10000, 16000])
 
     # initialize variables
     omega = 2 * np.pi * frequencies
-    omega_xy = 2 * np.pi * f_xy
     driving_functions = np.ones([cabinet_count, np.shape(frequencies)[0]])
     pressure = np.zeros([np.shape(drawn_lines.points_x)[0],np.shape(frequencies)[0]], dtype=complex)
 

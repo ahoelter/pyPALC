@@ -9,7 +9,7 @@ import dataclasses
 import math
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union, get_type_hints
+from typing import Any, Optional, Tuple, Union, get_type_hints
 
 import yaml
 

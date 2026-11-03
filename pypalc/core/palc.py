@@ -133,7 +133,7 @@ class RayPlotData():
     def __init__(self):
         self.cabinet_centers_x, self.cabinet_centers_y, self.x_start, self.x_stop             = [], [], [], []
         self.y_start, self.y_stop, self.center_ray_ends_x, self.center_ray_ends_y = [], [], [], []
-        self.x_start_b, x_stop_b, y_start_b, y_stop_b                 = [], [], [], []
+        self.x_start_b = []
         
         self.y_stop_unitn_stop, self.center_rays_x, self.center_rays_y    = [], [], []
         self.start_rays_x, self.start_rays_y                  = [], []
@@ -287,8 +287,6 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
     covered_cabinet_count = 0
     coverage_error = 0
     iteration_count = 0
-    fig_vs = 0
-    psi_N = np.ones([cabinet_count],float) * np.pi
     all_cabinets_covered = 0
     d_array = np.zeros(cabinet_count,float)
     audience_overlap = 0 # for discrete tilt angles: overlap on audience lines: to correct the error 'coverage_error'
@@ -586,7 +584,6 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
 
         if covered_cabinet_count == 0:
             covered_cabinet_count = cabinet_count
-            psi_N = aperture_angles
         
         ######### PLOT ################################################################
             

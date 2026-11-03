@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from pypalc import cli
 from pypalc.cli import main

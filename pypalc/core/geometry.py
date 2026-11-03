@@ -76,7 +76,7 @@ def inter_cabinet_angles(tilt_angles_deg):
 def progressive_tilt_angles_deg(cabinet_count, discrete_tilt_angles=[], top_angle_deg = 0, final_angle_deg = 38, use_discrete_angles = "No"):
     """
     Calculates the absolute tilt angles of a progressive LSA curving. Called by
-    :any:`ref_array_angles`.
+    :func:`reference_tilt_angles_deg`.
 
     Parameters
     ----------
@@ -116,7 +116,7 @@ def progressive_tilt_angles_deg(cabinet_count, discrete_tilt_angles=[], top_angl
 def arc_tilt_angles_deg(cabinet_count, discrete_tilt_angles=[], top_angle_deg = 0, inter_cabinet_angle_deg = 1, use_discrete_angles = "No"):
     """
     Calculates the absolute tilt angles of an arc LSA curving. Called by
-    :any:`ref_array_angles`.
+    :func:`reference_tilt_angles_deg`.
 
     Parameters
     ----------
