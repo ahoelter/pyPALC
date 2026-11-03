@@ -9,6 +9,18 @@ import numpy as np
 
 from .pipeline import RunResult, result_arrays
 
+#: Headers of the CSV files. The GUI downloads use the same column names in
+#: the same order (the SPL over distance of the optimized and of the
+#: reference array are separate downloads there).
+TILT_ANGLES_HEADER = ["cabinet", "tilt_angle_deg", "inter_cabinet_angle_deg"]
+REFERENCE_TILT_ANGLES_HEADER = ["cabinet", "tilt_angle_deg"]
+SPL_OVER_DISTANCE_HEADER = ["distance_m", "spl_db", "reference_spl_db", "x_m",
+                            "y_m"]
+TARGET_SLOPE_HEADER = ["distance_m", "level_db", "x_m", "y_m"]
+TARGET_REFERENCE_HEADER = ["distance_m", "level_db", "x_m", "y_m"]
+HOMOGENEITY_HEADER = ["frequency_hz", "homogeneity_db", "homogeneity_low_db",
+                      "homogeneity_high_db", "reference_homogeneity_db"]
+
 
 def _fmt(value) -> str:
     """Format a number so that it round-trips exactly."""
@@ -63,25 +75,21 @@ def write_results(result: RunResult, out_dir: Path) -> List[Path]:
 
     n = len(a["tilt_angles_deg"])
     files.append(_write(
-        out_dir / "tilt_angles.csv",
-        ["cabinet", "tilt_angle_deg", "inter_cabinet_angle_deg"],
+        out_dir / "tilt_angles.csv", TILT_ANGLES_HEADER,
         zip(cabinets(n), a["tilt_angles_deg"], a["inter_cabinet_angles_deg"])))
     n_ref = len(a["reference_tilt_angles_deg"])
     files.append(_write(
-        out_dir / "reference_tilt_angles.csv",
-        ["cabinet", "tilt_angle_deg"],
+        out_dir / "reference_tilt_angles.csv", REFERENCE_TILT_ANGLES_HEADER,
         zip(cabinets(n_ref), a["reference_tilt_angles_deg"])))
     files.append(_write(
-        out_dir / "spl_over_distance.csv",
-        ["distance_m", "spl_db", "reference_spl_db", "x_m", "y_m"],
+        out_dir / "spl_over_distance.csv", SPL_OVER_DISTANCE_HEADER,
         zip(a["spl_over_distance_x"], a["spl_over_distance_db"],
             a["reference_spl_over_distance_db"], a["venue_x"],
             a["venue_y"])))
     if result.target is not None:
         t = result.target
         files.append(_write(
-            out_dir / "target_slope.csv",
-            ["distance_m", "level_db", "x_m", "y_m"],
+            out_dir / "target_slope.csv", TARGET_SLOPE_HEADER,
             zip(t.distances, t.levels_db, t.points_x, t.points_y)))
         ref_distance = float(np.ravel(t.reference_distance)[0])
         ref_level = float(np.asarray(t.region_levels_db, dtype=float)
@@ -89,13 +97,10 @@ def write_results(result: RunResult, out_dir: Path) -> List[Path]:
         grid = np.asarray(a["spl_over_distance_x"], dtype=float)
         i = int(np.argmin(np.abs(grid - ref_distance)))
         files.append(_write(
-            out_dir / "target_reference.csv",
-            ["distance_m", "level_db", "x_m", "y_m"],
+            out_dir / "target_reference.csv", TARGET_REFERENCE_HEADER,
             [[ref_distance, ref_level, a["venue_x"][i], a["venue_y"][i]]]))
     files.append(_write(
-        out_dir / "homogeneity.csv",
-        ["frequency_hz", "homogeneity_db", "homogeneity_low_db",
-         "homogeneity_high_db", "reference_homogeneity_db"],
+        out_dir / "homogeneity.csv", HOMOGENEITY_HEADER,
         zip(a["frequencies_hz"], a["homogeneity_db"],
             a["homogeneity_low_db"], a["homogeneity_high_db"],
             a["reference_homogeneity_db"])))
