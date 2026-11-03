@@ -112,7 +112,7 @@
 "3.discrete_angles_input.value": "",
 "3.discrete_angles_input.visible": true,
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 [
 1.0,
 2.0,
@@ -120,7 +120,7 @@
 4.0
 ]
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 [
 0.0,
 0.0,
@@ -1213,13 +1213,13 @@ null
 {
 "2.aperture_input.value": "4",
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
 4.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 0.0,
 0.0,
@@ -1305,7 +1305,7 @@ null
 {
 "3.cabinet_count_input.value": "8",
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1315,7 +1315,7 @@ null
 7.0,
 8.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 0.0,
 0.0,
@@ -1344,13 +1344,13 @@ null
 {
 "3.cabinet_count_input.value": "4",
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
 4.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 0.0,
 0.0,
@@ -1372,7 +1372,7 @@ null
 {
 "3.cabinet_count_input.value": "10",
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1384,7 +1384,7 @@ null
 9.0,
 10.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 0.0,
 0.0,
@@ -1509,7 +1509,7 @@ null
 "ref_step",
 {
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1521,7 +1521,7 @@ null
 9.0,
 10.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 3.0,
 6.0,
@@ -1541,7 +1541,7 @@ null
 "ref_dang",
 {
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1553,7 +1553,7 @@ null
 9.0,
 10.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 2.0,
 4.0,
@@ -1585,7 +1585,7 @@ null
 "ref_userv",
 {
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1597,7 +1597,7 @@ null
 9.0,
 10.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 1.0,
 2.0,
 3.0,
@@ -1618,7 +1618,7 @@ null
 "ref_userv2",
 {
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1630,7 +1630,7 @@ null
 9.0,
 10.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 1.0,
 2.0,
 3.0,
@@ -1650,7 +1650,7 @@ null
 "ref_str",
 {
 "3.reference_angles_source.data": {
-"LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1662,7 +1662,7 @@ null
 9.0,
 10.0
 ],
-"gamma_ref": [
+"tilt_angle_deg": [
 0.0,
 0.0,
 0.0,

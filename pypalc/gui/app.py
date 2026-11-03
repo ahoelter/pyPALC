@@ -525,7 +525,8 @@ class PalcApp:
             if new == val:
                 self._store_config_value(key, val, attr)
                 if key in ['cabinet_count', 'use_discrete_angles']:
-                    self.pages[3].update_reference_angles(chg_n=True)
+                    self.pages[3].update_reference_angles(
+                        cabinet_count_changed=True)
         self._config_values_stored()
 
     def store_config_widgets(self) -> None:

@@ -85,14 +85,14 @@ class ArrayPage:
         self.rule_left = Paragraph(text=RULE_LONG)
         self.rule_right = Paragraph(text=RULE)
         self.reference_angles_source = ColumnDataSource(data=dict(
-            gamma_ref=np.array([np.zeros(config.cabinet_count)]),
-            LS=np.array([np.linspace(1, 4, num=config.cabinet_count)])))
+            tilt_angle_deg=np.array([np.zeros(config.cabinet_count)]),
+            cabinet=np.array([np.linspace(1, 4, num=config.cabinet_count)])))
         """Tilt angles of the reference array."""
         self.reference_table = DataTable(
             source=self.reference_angles_source,
-            columns=[TableColumn(field="LS", title="LS", width=20),
-                     TableColumn(field="gamma_ref", title="Tilt Angle in deg",
-                                 width=140)],
+            columns=[TableColumn(field="cabinet", title="LS", width=20),
+                     TableColumn(field="tilt_angle_deg",
+                                 title="Tilt Angle in deg", width=140)],
             index_position=None, width=170, fit_columns=False)
         # callbacks
         self.top_x_input.on_change("value", app.store_value)
@@ -192,7 +192,8 @@ class ArrayPage:
         config = self.app.state.config
         error_info = self.app.config_error_info
         # discrete angles were disabled
-        if config.use_discrete_angles == False:  # noqa: E712 (legacy value check)
+        # the legacy value check
+        if config.use_discrete_angles == False:  # noqa: E712
             error_info.text = ''
             config.discrete_tilt_angles = []
             return
@@ -282,16 +283,18 @@ class ArrayPage:
                 if ref_type != 'straight' else 0
         self.app.state.reference_array.tilt_angles_deg = \
             reference_tilt_angles_deg(
-                ref_type, config.cabinet_count, config.discrete_tilt_angles, start, step_stop,
+                ref_type, config.cabinet_count, config.discrete_tilt_angles,
+                start, step_stop,
                 str(self.reference_discrete_angles_select.value) == "Yes",
                 user_angles)
 
-    def update_reference_angles(self, chg_n: bool = False) -> None:
+    def update_reference_angles(self, cabinet_count_changed: bool = False
+                                ) -> None:
         """Compute the reference array tilt angles and show them.
 
         Parameters
         ----------
-        chg_n : bool, optional
+        cabinet_count_changed : bool, optional
             True if the number of cabinets has changed; then the error
             text is kept. The default is False.
 
@@ -305,11 +308,13 @@ class ArrayPage:
             self._compute_reference_angles()
             # in degree for the table
             self.reference_angles_source.data = dict(
-                gamma_ref=np.round(reference.tilt_angles_deg, decimals=2),
-                LS=np.linspace(1, config.cabinet_count, config.cabinet_count))
+                tilt_angle_deg=np.round(reference.tilt_angles_deg,
+                                        decimals=2),
+                cabinet=np.linspace(1, config.cabinet_count,
+                                    config.cabinet_count))
             # in radian
             reference.tilt_angles = reference.tilt_angles_deg * (np.pi / 180)
-            if chg_n == False:  # noqa: E712
+            if cabinet_count_changed == False:  # noqa: E712
                 self.app.config_error_info.text = ''
         except CALLBACK_ERRORS:
             logger.debug('Could not compute the reference array',
