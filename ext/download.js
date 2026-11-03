@@ -1,3 +1,5 @@
+// Downloads the columns of `source` as a CSV file named `filename`
+// (args: source, filename).
 function table_to_csv(source) {
     const columns = Object.keys(source.data)
     const nrows = source.get_length()
@@ -15,7 +17,6 @@ function table_to_csv(source) {
 }
 
 
-const filename = 'PALC_result.csv'
 var filetext = table_to_csv(source)
 const blob = new Blob([filetext], { type: 'text/csv;charset=utf-8;' })
 

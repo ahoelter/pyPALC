@@ -36,6 +36,16 @@ logger = logging.getLogger(__name__)
 #: Weightings available without target slope.
 WEIGHTINGS_WITHOUT_TARGET_SLOPE = ['Without', 'Linear Spacing',
                                    'Logarithmic Spacing']
+#: Names of the CSV files "Download PALC Angles" (results) and "Download
+#: SPL" (the others) download, by source.
+DOWNLOAD_FILE_NAMES = {
+    'results': 'tilt_angles.csv',
+    'spl_over_distance': 'spl_over_distance.csv',
+    'target': 'target_slope.csv',
+    'target_reference': 'target_reference.csv',
+    'reference_spl_over_distance': 'reference_spl_over_distance.csv',
+    'homogeneity': 'homogeneity.csv',
+}
 #: Name of the file "Save Setup" downloads.
 SETUP_FILE_NAME = 'pypalc_setup.yaml'
 #: Key of the error of a setup file that gives the measured directivity as
@@ -252,14 +262,20 @@ class AlgorithmPage:
         self.target_reference_source.on_change('data', self.snap_target)
         download_js = DOWNLOAD_JS.read_text()
         self.download_angles_button.js_on_click(CustomJS(
-            args=dict(source=self.results_source), code=download_js))
+            args=dict(source=self.results_source,
+                      filename=DOWNLOAD_FILE_NAMES['results']),
+            code=download_js))
         self.frequency_range_slider.on_change("value", app.store_value)
-        for source in (self.spl_over_distance_source, self.target_source,
-                       self.target_reference_source,
-                       self.reference_spl_over_distance_source,
-                       app.pages[5].homogeneity_source):
+        for name, source in (
+                ('spl_over_distance', self.spl_over_distance_source),
+                ('target', self.target_source),
+                ('target_reference', self.target_reference_source),
+                ('reference_spl_over_distance',
+                 self.reference_spl_over_distance_source),
+                ('homogeneity', app.pages[5].homogeneity_source)):
             self.download_spl_button.js_on_click(CustomJS(
-                args=dict(source=source), code=download_js))
+                args=dict(source=source, filename=DOWNLOAD_FILE_NAMES[name]),
+                code=download_js))
         self.save_setup_button.on_click(self.save_setup)
         # the source must belong to the document so that its JavaScript
         # callback runs in the browser; the layout reaches it only through
