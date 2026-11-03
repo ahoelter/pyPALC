@@ -4,5 +4,12 @@ numpy=1.20.1
 scipy=1.6.2
 colorcet=2.0.6
 
+# dependencies of bokeh 2.2.1 that newer releases break
+jinja2=2.11.3
+markupsafe=1.1.1
+pillow=8.1.0
+# OpenBLAS instead of MKL: the tests compare with tests/baseline exactly
+nomkl
+
 pyyaml=6.0.1
 pytest
