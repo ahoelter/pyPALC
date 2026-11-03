@@ -44,3 +44,52 @@ Output files and their columns:
 | `sound_field.csv`, `reference_sound_field.csv` | `x_m`, `y_m`, then one column `spl_db_<f>hz` per frequency (f rounded to an integer) |
 | `target_slope.csv` (target slope only) | `distance_m`, `level_db`, `x_m`, `y_m` |
 | `target_reference.csv` (target slope only) | `distance_m`, `level_db`, `x_m`, `y_m` of the reference point |
+
+### CSV header changes
+
+The GUI downloads ("Download PALC Angles" and "Download SPL" on page 4) now
+use the file names and column names of the headless export. Before, every
+file was saved as `PALC_result.csv`.
+
+| file (was `PALC_result.csv`) | old columns | new columns |
+|---|---|---|
+| `tilt_angles.csv` | `a_num_LS`, `b_gamma_tilt_deg`, `c_gamma_tilt_deg_diff` | `cabinet`, `tilt_angle_deg`, `inter_cabinet_angle_deg` |
+| `spl_over_distance.csv` | `SPL`, `x`, `x_v`, `y_v` | `distance_m`, `spl_db`, `x_m`, `y_m` |
+| `reference_spl_over_distance.csv` | `SPL`, `x`, `x_v`, `y_v` | `distance_m`, `reference_spl_db`, `x_m`, `y_m` |
+| `target_slope.csv` | `SPL`, `x`, `x_v`, `y_v` | `distance_m`, `level_db`, `x_m`, `y_m` |
+| `target_reference.csv` | `x_ref`, `SPL`, `x_v`, `y_v` | `distance_m`, `level_db`, `x_m`, `y_m` |
+| `homogeneity.csv` | `H`, `f`, `H_dist_high`, `H_dist_low`, `H_str` | `frequency_hz`, `homogeneity_db`, `homogeneity_low_db`, `homogeneity_high_db`, `reference_homogeneity_db` |
+
+The GUI saves the SPL over distance of the optimized and of the reference
+array as two files; the headless `spl_over_distance.csv` has both
+(`spl_db` and `reference_spl_db`).
+
+### Names in the code
+
+The code uses descriptive names instead of the paper notation; the table
+with the paper symbols is in the docstring of `pypalc/core/__init__.py`.
+Former names:
+
+| former | now |
+|---|---|
+| `PAL`, `PALC_compatible_PAL` | `AudienceLines`, `PalcVenue` |
+| `PALC_configuration`, `SFP_configuration` | `PalcConfig`, `SoundFieldConfig` |
+| `Array_opt`, `Technical_meas_results` | `ArrayGeometry`, `ArrayEvaluation` |
+| `Opt_weight`, `PALC_plotting`, `Plot_ranges` | `TargetSlopeState`, `RayPlotData`, `PlotRanges` |
+| `N`, `Lambda_y`, `Lambda_gap` | `cabinet_count`, `cabinet_height`, `cabinet_gap` |
+| `x_H`, `y_H` | `top_x`, `top_y` |
+| `psi_n`, `gamma_n` | `aperture_angles`, `tilt_angles` (rad) |
+| `gamma_tilt_deg`, `gamma_tilt_deg_diff` | `tilt_angles_deg`, `inter_cabinet_angles_deg` |
+| `gamma_LSA`, `use_gamma_LSA` | `discrete_tilt_angles` (rad), `use_discrete_angles` |
+| `constraint`, `strength_sm`, `last_angle_hm`, `freq_range` | `palc_variant`, `soft_margin_strength`, `hard_margin_last_angle`, `frequency_range_hz` |
+| `pal`, `pal_no_nal`, `nal` | `segments`, `audience_segments`, `non_audience_lines` |
+| `xline`, `yline`, `pal_index` | `points_x`, `points_y`, `line_end_indices` |
+| `xline_start`, `xline_stop`, `yline_start`, `yline_stop`, `b` | `line_start_x`, `line_stop_x`, `line_start_y`, `line_stop_y`, `intercept` |
+| `x_c_n`, `y_c_n` | `cabinet_centers_x`, `cabinet_centers_y` |
+| `seg_pos`, `seg_pos_start`, `seg_pos_stop` | `hit_points`, `hit_points_start`, `hit_points_stop` |
+| `p_SPL`, `f`, `H`, `H_dist` | `spl_db`, `frequencies`, `homogeneity_db`, `homogeneity_low_db` / `homogeneity_high_db` |
+| `SPLoverX`, `Tech_res(_ref)` | `spl_over_distance`, `evaluation(_reference)` |
+| `Opt_arr`, `Ref_arr` | `optimized_array`, `reference_array` |
+| `created_pal`, `PALC_pal` | `drawn_lines`, `palc_venue` |
+| target slope `x`, `SPL`, `x_v`, `y_v`, `x_ref`, `x_interp`, `SPL_interp` | `distances`, `levels_db`, `points_x`, `points_y`, `reference_distance`, `region_distances`, `region_levels_db` |
+| `calcPALC`, `calc_angles`, `calcSFP`, `calcSPLoverX`, `optimize_PALC` | `run_palc`, `compute_tilt_angles`, `predict_sound_field`, `compute_spl_over_distance`, `optimize_target_slope` |

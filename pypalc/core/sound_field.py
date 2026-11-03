@@ -314,7 +314,7 @@ def cabinet_directivity(directivity, alpha, cabinet_height, beta, omega, c, freq
 
     Parameters
     ----------
-    dire : str
+    directivity : str
         Directivity can be either 'Circular Piston', 'Line Piston',
         'Combined Circular/Line', 'Measured Loudspeaker Data' or 'const'.
     alpha : float
@@ -349,10 +349,10 @@ def cabinet_directivity(directivity, alpha, cabinet_height, beta, omega, c, freq
                           (omega / c * R_circ * np.sin(beta)))
         H_post[np.isnan(H_post)] = 1
     elif directivity == 'Line Piston':
-        Lambda_y_line = alpha * cabinet_height
+        line_piston_length = alpha * cabinet_height
         with np.errstate(invalid='ignore', divide='ignore'):
-            H_post = np.sin(omega / (2*c) * Lambda_y_line * np.sin(beta)) / \
-                     (omega / (2*c) * Lambda_y_line * np.sin(beta))
+            H_post = np.sin(omega / (2*c) * line_piston_length * np.sin(beta)) / \
+                     (omega / (2*c) * line_piston_length * np.sin(beta))
         H_post[np.isnan(H_post)] = 1
     elif directivity == 'Combined Circular/Line':
         # sampling frequency for filtering
@@ -369,10 +369,10 @@ def cabinet_directivity(directivity, alpha, cabinet_height, beta, omega, c, freq
         H_post_circ[np.isnan(H_post_circ)] = 1
         H_post_circ = H_post_circ * D_xo_low[n]
         # calculate H_post for line piston
-        Lambda_y_line = alpha * cabinet_height
+        line_piston_length = alpha * cabinet_height
         with np.errstate(invalid='ignore', divide='ignore'):
-            H_post_line = np.sin(omega / (2*c) * Lambda_y_line * np.sin(beta)) / \
-                          (omega / (2*c) * Lambda_y_line * np.sin(beta))
+            H_post_line = np.sin(omega / (2*c) * line_piston_length * np.sin(beta)) / \
+                          (omega / (2*c) * line_piston_length * np.sin(beta))
         H_post_line[np.isnan(H_post_line)] = 1
         H_post_line = H_post_line * D_xo_high[n]
         # Combine H_post of circular and line piston
@@ -408,7 +408,7 @@ def green_functions(x, y, z, x_src_l, y_src_l, alpha, directivity, cabinet_heigh
         Source positions on y-axis.
     alpha : float
         Active radiation factor. Normally 0.82 (Schultz et al.)
-    dire : str
+    directivity : str
         Directivity can be either 'Circular Piston', 'Line Piston',
         'Combined Circular/Line', 'Measured Loudspeaker Data' or 'const'.
     cabinet_height : float

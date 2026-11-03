@@ -171,7 +171,7 @@ def set_figure_ranges(ranges, figures, sizes, x_range, y_range):
     ----------
     ranges : PlotRanges [in]
         Contains the ranging data; ``venue_x`` and ``venue_y`` give the aspect ratio.
-    figs : list of figure [out]
+    figures : list of figure [out]
         Figures to set the ranges of.
     sizes : list of bool
         For each figure: if True, the frame height is set so that the axes

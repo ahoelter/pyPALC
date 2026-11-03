@@ -168,7 +168,7 @@ class TargetSlopeState():
 
 def hinge_indices(hinge_count, spl_over_distance):
     """
-    Init function to return indices of the hinges / links in :any:`pSPLoverX`.
+    Init function to return indices of the hinges / links in the SPL over distance figure.
     Necessary for the movable target slope line. Works also if user has moved
     the hinge / link. Called by :any:`chg_weight_links`.
 
@@ -183,7 +183,7 @@ def hinge_indices(hinge_count, spl_over_distance):
     Returns
     -------
     ind : list
-        Indices (int) where the hinges / links are placed in :any:`pSPLoverX`.
+        Indices (int) where the hinges / links are placed in the SPL over distance figure.
 
     """
     point_count = len(spl_over_distance.distances)
@@ -197,7 +197,7 @@ def hinge_indices(hinge_count, spl_over_distance):
 def optimization_region(spl_over_distance, target):
     """
     Find the indices of the user defined optimization region in
-    :any:`pSPLoverX`. :any:`start_calc` and :any:`optimize_target_slope`.
+    the SPL over distance figure. :any:`start_calc` and :any:`optimize_target_slope`.
 
     Parameters
     ----------
@@ -319,8 +319,6 @@ def differences_per_cabinet(cabinet_count, region_indices, cabinet_point_indices
         Object with computed PALC results in optimization region.
     target : obj [in, out]
         Object with information of Target Slope in optimization.
-    drawn_lines : obj [in]
-        Venue information that was drawn by the user.
     **kwargs : dict, optional
         Optional input to set single value difference
 
@@ -433,7 +431,7 @@ def insert_neighbours(comp, opt, diff_comp_opt_LS, neighbours, frontend, to_ins=
         Target Slope of optimization.
     diff_comp_opt_LS : list
         Contains the computed and target values of actual LSA cabinet.
-    nebs : list
+    neighbours : list
         Maximum of points that can be added in front and end of diff_comp_opt_LS.
     frontend : list
         Index of front and behind position to insert neighbouring points.

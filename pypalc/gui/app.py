@@ -468,7 +468,7 @@ class PalcApp:
             setattr(widget, attr, default)
         if failed_key in ['too low']:
             setattr(array.top_y_input, attr, str(st.config.top_y))
-        # Set attribute in SFP_config if possible
+        # store the value in the sound field configuration too if it has it
         if hasattr(st.sound_field_config, key) and \
                 failed_key in [None, 'too low']:
             st.sound_field_config.store_config(key, val)
@@ -490,7 +490,7 @@ class PalcApp:
         algorithm.arrange_gap_handling_widgets()
         algorithm.exclude_hard_margin_target_slope()
         loudspeaker.update_directivity_plot()
-        # more than one venue point (the legacy test ``xline != []``)
+        # more than one venue point (as the legacy GUI tested it)
         if np.size(st.drawn_lines.points_x) > 1:
             self.update_venue_ranges()
 

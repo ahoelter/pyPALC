@@ -243,7 +243,7 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
     ----------
     ray_plot : obj [out]
         Contains plotting data of the PALC results.
-    pal : list
+    segments : list
         All audience lines to be considered in PALC (audience lines,
         non-audience lines). Each element contains a audience line as a ndarray.
     aperture_angles : float
@@ -794,7 +794,7 @@ def fixed_angle_mid_max(last_segment, config):
     Parameters
     ----------
     last_segment : list
-        Last PAL section, i.e., palc_venue.pal[-1].
+        Last segment of the venue, i.e., palc_venue.segments[-1].
     config : obj [in]
         Configuration of the PALC algorithm.
 
@@ -825,7 +825,7 @@ def fixed_angle_borders(last_segment, config):
     Parameters
     ----------
     last_segment : ndarray
-        Last PAL section, i.e., palc_venue.pal[-1].
+        Last segment of the venue, i.e., palc_venue.segments[-1].
     config : obj [in]
         Configuration of the PALC algorithm.
 

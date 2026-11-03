@@ -46,6 +46,16 @@ Accepted differences to the legacy GUI
   fixed angle when the array position changes (Task 7) changes no
   recorded value.
 
+Renamed keys (Task 8)
+---------------------
+The descriptive names of Task 8 renamed some model attributes, the
+configuration attributes (``config.<attr>``) and the columns of several
+sources. The golden file got a mechanical key rename only: a script mapped
+the old keys and column names to the new ones and left every value as it
+was (hashed values were re-hashed from the recorded full values, which
+hash to the old golden entries). The golden file was not recorded again
+from the renamed app.
+
 The values are rounded to 9 decimals. Besides the widgets, the values of
 the PALC configuration that the configuration widgets store
 (:data:`CONFIG_KEYS`) are compared. Values whose JSON text is longer

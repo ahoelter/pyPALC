@@ -604,7 +604,7 @@ def suggest_venue(drawn_lines, non_audience_lines, sound_field_only_lines):
 
 def fill_palc_venue(palc_venue, drawn_lines, non_audience_lines, sound_field_only_lines):
     """
-    Creates a PALC compatible PAL object that can be passed to the PALC
+    Fills a PalcVenue object that can be passed to the PALC
     computation. Needs the data that were generated in :any:`suggest_venue`.
 
     Parameters

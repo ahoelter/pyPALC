@@ -112,6 +112,30 @@ These were not walked in a browser; they are noted from the legacy
   not load it again (browsers send no change for the same file) — needs
   browser
 
+## Re-check after the rename (Task 8)
+
+Task 8 renamed the code and the columns of the ColumnDataSources that the
+JavaScript and the glyphs use. The tests drive the GUI on the server; the
+browser side of these columns is only seen in a browser.
+
+- [ ] Walk the whole checklist above again after the rename — needs browser
+- [ ] Every plot still draws: venue lines, non-audience and SFP-only lines,
+  cabinets, rays and hit points (pages 1 to 4), directivity (page 2), SPL
+  over distance with target slope and reference point (page 4), frequency
+  responses, venue points, homogeneity, bar charts and beam plots
+  (page 5) — needs browser
+- [ ] Hover tooltips show values (SPL over distance "(x,y) of Venue Slice",
+  venue points "(x,y)", beam plots "SPL in dB") — needs browser
+- [ ] Dragging the target points and the reference point still snaps them
+  to the SPL over distance — needs browser
+- [ ] "Download PALC Angles" saves `tilt_angles.csv` with the header
+  `cabinet,tilt_angle_deg,inter_cabinet_angle_deg` — needs browser
+- [ ] "Download SPL" saves five files: `spl_over_distance.csv`,
+  `target_slope.csv`, `target_reference.csv`,
+  `reference_spl_over_distance.csv` and `homogeneity.csv`, each with the
+  headers listed in `README.md` ("CSV header changes"); the browser may
+  ask once to allow several downloads — needs browser
+
 ## Programmatic evidence (Task 5)
 
 Besides the tests, the split was compared with the legacy `main.py`
@@ -130,3 +154,4 @@ document. The only differences were the two error texts listed above.
 |---|---|---|
 | 2026-11-02 | Task 5 implementer | no browser available; headless server smoke check only (page served to two sessions, no errors in the server log) |
 | 2026-11-03 | Task 7 implementer | no browser available; server smoke check (session pulled with bokeh.client, 183 models, no errors in the log); save/load checks above need a browser |
+| 2026-11-03 | Task 8 implementer | no browser available; server smoke check only (see the Task 8 report); the re-check after the rename needs a browser |
