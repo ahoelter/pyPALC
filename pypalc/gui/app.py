@@ -652,25 +652,27 @@ class PalcApp:
             c_gamma_tilt_deg_diff=optimized.inter_cabinet_angles_deg)
         # Sound Field Prediction
         results.venue_points_source.data = dict(
-            x_vert=created_pal.points_x, y_vert=created_pal.points_y,
-            foo=list(np.arange(np.shape(created_pal.points_x)[0])))
+            x_m=created_pal.points_x, y_m=created_pal.points_y,
+            point_index=list(np.arange(np.shape(created_pal.points_x)[0])))
         results.venue_points_figure.x(
-            'x_vert', 'y_vert', source=results.venue_points_source,
-            color=linear_cmap('foo', rainbow[::-1], 0,
+            'x_m', 'y_m', source=results.venue_points_source,
+            color=linear_cmap('point_index', rainbow[::-1], 0,
                               np.shape(Tech_res.spl_db)[0]-1))
         results.sound_field_source.data = dict(
-            p_SPL=Tech_res.plot_spl_db, f=Tech_res.plot_frequencies,
-            foo=list(np.arange(np.shape(Tech_res.plot_spl_db)[0])),
-            p_SPL_ref=Tech_res_ref.plot_spl_db)
+            spl_db=Tech_res.plot_spl_db,
+            frequencies_hz=Tech_res.plot_frequencies,
+            line_index=list(np.arange(np.shape(Tech_res.plot_spl_db)[0])),
+            reference_spl_db=Tech_res_ref.plot_spl_db)
         results.sound_field_figure.multi_line(
-            'f', 'p_SPL', source=results.sound_field_source,
-            color=linear_cmap(field_name='foo', palette=rainbow[::-1], low=0,
-                              high=np.shape(Tech_res.spl_db)[0]-1),
+            'frequencies_hz', 'spl_db', source=results.sound_field_source,
+            color=linear_cmap(field_name='line_index', palette=rainbow[::-1],
+                              low=0, high=np.shape(Tech_res.spl_db)[0]-1),
             line_alpha=0.9)
         results.reference_sound_field_figure.multi_line(
-            'f', 'p_SPL_ref', source=results.sound_field_source,
-            color=linear_cmap(field_name='foo', palette=rainbow[::-1], low=0,
-                              high=np.shape(Tech_res_ref.spl_db)[0]-1),
+            'frequencies_hz', 'reference_spl_db',
+            source=results.sound_field_source,
+            color=linear_cmap(field_name='line_index', palette=rainbow[::-1],
+                              low=0, high=np.shape(Tech_res_ref.spl_db)[0]-1),
             line_alpha=0.9)
         # SPL over distance and target slope; writing the target sources
         # snaps the shown target to the new distance grid (snap_target)
@@ -712,13 +714,17 @@ class PalcApp:
                                             y_v=created_pal.points_y))
         # Homogeneity
         results.homogeneity_source.data = dict(
-            H=Tech_res.homogeneity_db, f=Tech_res.frequencies, H_dist_high=Tech_res.homogeneity_high_db,
-            H_dist_low=Tech_res.homogeneity_low_db, H_str=Tech_res_ref.homogeneity_db)
+            frequency_hz=Tech_res.frequencies,
+            homogeneity_db=Tech_res.homogeneity_db,
+            homogeneity_low_db=Tech_res.homogeneity_low_db,
+            homogeneity_high_db=Tech_res.homogeneity_high_db,
+            reference_homogeneity_db=Tech_res_ref.homogeneity_db)
         # Histogram
-        results.histogram_source.data = dict(top=Tech_res.histogram_tops,
-                                             x=Tech_res.histogram_steps)
+        results.histogram_source.data = dict(count=Tech_res.histogram_tops,
+                                             spl_db=Tech_res.histogram_steps)
         results.reference_histogram_source.data = dict(
-            top_ref=Tech_res_ref.histogram_tops, x_ref=Tech_res_ref.histogram_steps)
+            count=Tech_res_ref.histogram_tops,
+            spl_db=Tech_res_ref.histogram_steps)
         # Ranges of bar charts, homogeneity, sound field and SPL over distance
         rng = st.ranges
         histogram_x = rng.update_range('histogram_x', [-1, 1], Tech_res.histogram_steps,

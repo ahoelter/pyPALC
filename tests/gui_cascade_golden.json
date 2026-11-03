@@ -468,12 +468,12 @@ null
 "5.beam_frequency_select.value": "63",
 "5.beam_frequency_select.visible": true,
 "5.beam_source.data": {
-"sha1": "8a376744e81199807207aaff97ca8f42bc6222d5",
-"size": 100470
+"sha1": "0b83b25301206ace6ed26bf6424117eeeb87f537",
+"size": 100482
 },
 "5.beam_source.selected": [],
 "5.histogram_source.data": {
-"top": [
+"count": [
 [
 0
 ],
@@ -481,7 +481,7 @@ null
 0
 ]
 ],
-"x": [
+"spl_db": [
 [
 0
 ],
@@ -492,7 +492,7 @@ null
 },
 "5.histogram_source.selected": [],
 "5.homogeneity_source.data": {
-"H": [
+"frequency_hz": [
 [
 0
 ],
@@ -500,7 +500,7 @@ null
 0
 ]
 ],
-"H_dist_high": [
+"homogeneity_db": [
 [
 0
 ],
@@ -508,7 +508,7 @@ null
 0
 ]
 ],
-"H_dist_low": [
+"homogeneity_high_db": [
 [
 0
 ],
@@ -516,7 +516,7 @@ null
 0
 ]
 ],
-"H_str": [
+"homogeneity_low_db": [
 [
 0
 ],
@@ -524,7 +524,7 @@ null
 0
 ]
 ],
-"f": [
+"reference_homogeneity_db": [
 [
 0
 ],
@@ -550,7 +550,7 @@ null,
 null
 ],
 "5.sound_field_source.data": {
-"f": [
+"frequencies_hz": [
 [
 0
 ],
@@ -558,11 +558,11 @@ null
 0
 ]
 ],
-"foo": [
+"line_index": [
 0,
 1
 ],
-"p_SPL": [
+"reference_spl_db": [
 [
 0
 ],
@@ -570,7 +570,7 @@ null
 0
 ]
 ],
-"p_SPL_ref": [
+"spl_db": [
 [
 0
 ],
@@ -596,11 +596,11 @@ null,
 null
 ],
 "5.venue_points_source.data": {
-"foo": [
+"point_index": [
 0,
 1
 ],
-"x_vert": [
+"x_m": [
 [
 0
 ],
@@ -608,7 +608,7 @@ null
 0
 ]
 ],
-"y_vert": [
+"y_m": [
 [
 0
 ],
@@ -1965,7 +1965,7 @@ null
 },
 "5.beam_checkbox.disabled": false,
 "5.histogram_source.data": {
-"top": [
+"count": [
 2,
 14,
 12,
@@ -1982,7 +1982,7 @@ null
 3,
 1
 ],
-"x": [
+"spl_db": [
 79.5,
 80.5,
 81.5,
@@ -2001,16 +2001,16 @@ null
 ]
 },
 "5.homogeneity_source.data": {
-"sha1": "7d20b0335c28cbd92cba131921255303e965df75",
-"size": 8237
+"sha1": "490c2728298f9ec9f42467a78eb10c1ad3da2ac4",
+"size": 8296
 },
 "5.sound_field_source.data": {
-"sha1": "27ba0b1493f56f562f081f7bb4536031e4f0f7b1",
-"size": 304345
+"sha1": "a125bbe6aacd8b903dcffce93e2525eba9c2e805",
+"size": 304373
 },
 "5.venue_points_source.data": {
-"sha1": "adf9bcb2b6603b4bb6afa23d45bbe359199b70ae",
-"size": 1792
+"sha1": "13fdda1f864afce2623e629f57422de4ff383fd8",
+"size": 1794
 },
 "app.cabinet_patches_source.data": {
 "sha1": "ca1f9ef7c40ab6c806a5352efdb8f4c18d2aef8a",
@@ -2111,8 +2111,8 @@ null
 ],
 "5.beam_figure.visible": true,
 "5.beam_source.data": {
-"sha1": "c8cd716c98ca96245669c74c9017b901b5005d46",
-"size": 3271640
+"sha1": "3583ae504d771e25bc9972876aca8e7015a8fd1f",
+"size": 3271652
 }
 }
 ],
@@ -2124,8 +2124,8 @@ null
 1
 ],
 "5.beam_source.data": {
-"sha1": "52ce7eade6f0dffc3e9c94d629932d1dbd57880c",
-"size": 6440433
+"sha1": "a04df873e76a4ef21db6f091dfbc4d77fa8a8ab7",
+"size": 6440445
 },
 "5.reference_beam_figure.visible": true
 }
@@ -2135,8 +2135,8 @@ null
 {
 "5.beam_frequency_select.value": "2000",
 "5.beam_source.data": {
-"sha1": "21a91523a4581743a84e8a6203a0b886fb0d44ec",
-"size": 6790732
+"sha1": "e5e32935601084cfe5680dd44c2bdc53703ead22",
+"size": 6790744
 }
 }
 ],
@@ -2153,8 +2153,8 @@ null
 "sfptap",
 {
 "5.sound_field_source.data": {
-"sha1": "174bf41fd888f7eafca24ebcfe4601cd665aa8c4",
-"size": 10191
+"sha1": "da32c45265573eebd4516a5e5ffbb3c83ba214e3",
+"size": 10219
 },
 "5.venue_points_source.selected": [
 2,
@@ -2166,8 +2166,8 @@ null
 "sfpuntap",
 {
 "5.sound_field_source.data": {
-"sha1": "27ba0b1493f56f562f081f7bb4536031e4f0f7b1",
-"size": 304345
+"sha1": "a125bbe6aacd8b903dcffce93e2525eba9c2e805",
+"size": 304373
 },
 "5.venue_points_source.selected": []
 }

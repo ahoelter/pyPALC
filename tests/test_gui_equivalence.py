@@ -167,19 +167,21 @@ def drive(app, setup):
             a(algorithm.spl_over_distance_source.data['SPL']),
         'reference_spl_over_distance_db':
             a(algorithm.reference_spl_over_distance_source.data['SPL']),
-        'homogeneity_db': a(results.homogeneity_source.data['H']),
-        'homogeneity_low_db': a(results.homogeneity_source.data['H_dist_low']),
+        'homogeneity_db': a(results.homogeneity_source.data['homogeneity_db']),
+        'homogeneity_low_db':
+            a(results.homogeneity_source.data['homogeneity_low_db']),
         'homogeneity_high_db':
-            a(results.homogeneity_source.data['H_dist_high']),
-        'reference_homogeneity_db': a(results.homogeneity_source.data['H_str']),
-        'histogram_steps': a(results.histogram_source.data['x']),
-        'histogram_tops': a(results.histogram_source.data['top']),
+            a(results.homogeneity_source.data['homogeneity_high_db']),
+        'reference_homogeneity_db':
+            a(results.homogeneity_source.data['reference_homogeneity_db']),
+        'histogram_steps': a(results.histogram_source.data['spl_db']),
+        'histogram_tops': a(results.histogram_source.data['count']),
         'reference_histogram_steps':
-            a(results.reference_histogram_source.data['x_ref']),
+            a(results.reference_histogram_source.data['spl_db']),
         'reference_histogram_tops':
-            a(results.reference_histogram_source.data['top_ref']),
-        'venue_x': a(results.venue_points_source.data['x_vert']),
-        'venue_y': a(results.venue_points_source.data['y_vert']),
+            a(results.reference_histogram_source.data['count']),
+        'venue_x': a(results.venue_points_source.data['x_m']),
+        'venue_y': a(results.venue_points_source.data['y_m']),
     }
     if alg.weighting == 'target_slope':
         out['target_x'] = a(algorithm.target_source.data['x'])
