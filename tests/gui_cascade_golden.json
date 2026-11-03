@@ -629,12 +629,12 @@ null
 "app.config_error_info.text": "",
 "app.config_error_info.visible": true,
 "app.hit_points_source.data": {
-"seg_pos_start_x": [],
-"seg_pos_start_y": [],
-"seg_pos_stop_x": [],
-"seg_pos_stop_y": [],
-"seg_pos_x": [],
-"seg_pos_y": []
+"hit_points_start_x": [],
+"hit_points_start_y": [],
+"hit_points_stop_x": [],
+"hit_points_stop_y": [],
+"hit_points_x": [],
+"hit_points_y": []
 },
 "app.hit_points_source.selected": [],
 "app.page_select.active": 1,
@@ -2017,7 +2017,7 @@ null
 "size": 1625
 },
 "app.hit_points_source.data": {
-"seg_pos_start_x": [
+"hit_points_start_x": [
 30.0,
 24.806497875,
 20.400499358,
@@ -2029,7 +2029,7 @@ null
 5.976592072,
 4.096998187
 ],
-"seg_pos_start_y": [
+"hit_points_start_y": [
 8.0,
 6.441949363,
 5.120149807,
@@ -2041,7 +2041,7 @@ null
 0.497074009,
 0.262124773
 ],
-"seg_pos_stop_x": [
+"hit_points_stop_x": [
 24.806497875,
 20.400499358,
 17.404118016,
@@ -2053,7 +2053,7 @@ null
 4.096998187,
 2.494009296
 ],
-"seg_pos_stop_y": [
+"hit_points_stop_y": [
 6.441949363,
 5.120149807,
 3.961647206,
@@ -2065,7 +2065,7 @@ null
 0.262124773,
 0.061751162
 ],
-"seg_pos_x": [
+"hit_points_x": [
 27.154299704,
 22.389032769,
 18.745907865,
@@ -2077,7 +2077,7 @@ null
 4.942811003,
 3.229022375
 ],
-"seg_pos_y": [
+"hit_points_y": [
 7.146289911,
 5.716709831,
 4.498363146,
@@ -2305,12 +2305,12 @@ null
 "clear",
 {
 "app.hit_points_source.data": {
-"seg_pos_start_x": [],
-"seg_pos_start_y": [],
-"seg_pos_stop_x": [],
-"seg_pos_stop_y": [],
-"seg_pos_x": [],
-"seg_pos_y": []
+"hit_points_start_x": [],
+"hit_points_start_y": [],
+"hit_points_stop_x": [],
+"hit_points_stop_y": [],
+"hit_points_x": [],
+"hit_points_y": []
 },
 "app.rays_source.data": {
 "center_rays_x": [],

@@ -144,11 +144,11 @@ class VenuePage:
                      source=app.rays_source, color="red", line_dash="dashed")
         p.multi_line('stop_rays_x', 'stop_rays_y',
                      source=app.rays_source, color="green", line_dash="dashed")
-        p.x('seg_pos_x', 'seg_pos_y', source=app.hit_points_source,
+        p.x('hit_points_x', 'hit_points_y', source=app.hit_points_source,
             color="white")
-        p.x('seg_pos_start_x', 'seg_pos_start_y', source=app.hit_points_source,
+        p.x('hit_points_start_x', 'hit_points_start_y', source=app.hit_points_source,
             color="red")
-        p.x('seg_pos_stop_x', 'seg_pos_stop_y', source=app.hit_points_source,
+        p.x('hit_points_stop_x', 'hit_points_stop_y', source=app.hit_points_source,
             color="green")
         # tap on a line to insert a line before it or to delete it
         self.lines_source.selected.on_change('indices', self.line_tapped)

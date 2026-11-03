@@ -106,7 +106,7 @@ def test_legacy_classes_do_not_share_default_lists():
     from pypalc.core.sound_field import SoundFieldConfig
     from pypalc.core.target_slope import TargetSlopeState
     from pypalc.core.venue import PalcVenue
-    from pypalc.gui.ranges import Plot_ranges
+    from pypalc.gui.ranges import PlotRanges
 
     def attrs(cls, names):
         a, b = cls(), cls()
@@ -127,7 +127,7 @@ def test_legacy_classes_do_not_share_default_lists():
                              "discrete_tilt_angles", "aperture_angles"])
     attrs(ArrayGeometry, ["tilt_angles_deg"])
     attrs(TargetSlopeState, ["region_levels_db"])
-    attrs(Plot_ranges, ["p_x", "p_y", "bar_range", "SPLoverX_y"])
+    attrs(PlotRanges, ["venue_x", "venue_y", "histogram_x", "spl_over_distance_y"])
     assert PalcConfig().aperture_angles == [0.0524]
     assert TargetSlopeState().region_levels_db == [0, 0]
 

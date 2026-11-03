@@ -571,8 +571,8 @@ def beam_plot_spl(config, tilt_angles, ranges, frequency, measured_directivity_d
     # maximum of discrete mapping points:
     max_points = 10000
     # mesh
-    x_range = ranges.p_x
-    y_range = ranges.p_y
+    x_range = ranges.venue_x
+    y_range = ranges.venue_y
     pts_x = max_points / (y_range[1]-y_range[0])
     pts_y = max_points / (x_range[1]-x_range[0])
 

@@ -60,8 +60,8 @@ from pypalc.gui.page_loudspeaker import LoudspeakerPage
 from pypalc.gui.page_results import ResultsPage
 from pypalc.gui.page_venue import VenuePage
 from pypalc.gui.setup_io import setup_from_app
-from pypalc.gui.ranges import (Plot_ranges, get_p_axis_rng, set_figure_ranges,
-                               venue_slice2CDS)
+from pypalc.gui.ranges import (PlotRanges, scale_venue_figure, set_figure_ranges,
+                               show_rays)
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,7 @@ class SessionState:
     sound_field_config : SoundFieldConfig
         Sound field prediction configuration (legacy ``SFP_config``), used
         for the directivity and beam plots.
-    ranges : Plot_ranges
+    ranges : PlotRanges
         Ranges of the figures.
     optimized_array : ArrayGeometry
         Holds the allowed range of the fixed angle of the uppermost cabinet
@@ -126,7 +126,7 @@ class SessionState:
     config: PalcConfig = field(default_factory=PalcConfig)
     sound_field_config: SoundFieldConfig = field(
         default_factory=SoundFieldConfig)
-    ranges: Plot_ranges = field(default_factory=Plot_ranges)
+    ranges: PlotRanges = field(default_factory=PlotRanges)
     optimized_array: ArrayGeometry = field(default_factory=ArrayGeometry)
     reference_array: ArrayGeometry = field(
         default_factory=lambda: ArrayGeometry(tilt_angles_deg=np.zeros(4)))
@@ -186,8 +186,8 @@ class PalcApp:
             x_list=[], y_list=[], x_list_ref=[], y_list_ref=[]))
         """Outlines of the cabinets of the optimized and reference array."""
         self.hit_points_source = ColumnDataSource(data=dict(
-            seg_pos_x=[], seg_pos_y=[], seg_pos_start_x=[],
-            seg_pos_start_y=[], seg_pos_stop_x=[], seg_pos_stop_y=[]))
+            hit_points_x=[], hit_points_y=[], hit_points_start_x=[],
+            hit_points_start_y=[], hit_points_stop_x=[], hit_points_stop_y=[]))
         """Points where the rays of the cabinets hit the venue."""
         self.rays_source = ColumnDataSource(data=dict(
             x_start_stop=[], y_start_stop=[], x_fin_unitn_start_stop=[],
@@ -384,9 +384,9 @@ class PalcApp:
         """
         st = self.state
         results = self.pages[5]
-        x_range = st.ranges.update_range('p_x', [-2, 2], st.drawn_lines.line_start_x,
+        x_range = st.ranges.update_range('venue_x', [-2, 2], st.drawn_lines.line_start_x,
                                          st.drawn_lines.line_stop_x, st.config.top_x)
-        y_range = st.ranges.update_range('p_y', [-2, 2], st.drawn_lines.line_start_y,
+        y_range = st.ranges.update_range('venue_y', [-2, 2], st.drawn_lines.line_start_y,
                                          st.drawn_lines.line_stop_y, st.config.top_y)
         self.scale_venue_axes(call=False)
         set_figure_ranges(st.ranges, [results.beam_figure,
@@ -407,7 +407,7 @@ class PalcApp:
         -------
         None.
         """
-        get_p_axis_rng(self.venue_figure, self.state.ranges,
+        scale_venue_figure(self.venue_figure, self.state.ranges,
                        self.venue_axes_select)
         if call:
             self.show()
@@ -415,7 +415,7 @@ class PalcApp:
     def clear_result_figure(self) -> None:
         """Remove the array and its rays from the venue figure (legacy
         ``clear_result_fig``)."""
-        venue_slice2CDS(self.rays_source, self.hit_points_source, [], [])
+        show_rays(self.rays_source, self.hit_points_source, [], [])
 
     # ------------------------------------------------------------------
     # Values of the configuration widgets
@@ -642,7 +642,7 @@ class PalcApp:
         Opt_w = st.target
         self.config_error_info.text = ''
         # array and rays in the venue figure
-        venue_slice2CDS(self.rays_source, self.hit_points_source,
+        show_rays(self.rays_source, self.hit_points_source,
                         result.ray_plot, result.geometry)
         # tilt angles
         algorithm.results_source.data = dict(
@@ -720,22 +720,22 @@ class PalcApp:
             top_ref=Tech_res_ref.histogram_tops, x_ref=Tech_res_ref.histogram_steps)
         # Ranges of bar charts, homogeneity, sound field and SPL over distance
         rng = st.ranges
-        bar_range = rng.update_range('bar_range', [-1, 1], Tech_res.histogram_steps,
+        histogram_x = rng.update_range('histogram_x', [-1, 1], Tech_res.histogram_steps,
                                      Tech_res_ref.histogram_steps)
-        bar_top_range = rng.update_range('bartop', [-1, 2], Tech_res.histogram_tops,
+        bar_top_range = rng.update_range('histogram_top', [-1, 2], Tech_res.histogram_tops,
                                          Tech_res_ref.histogram_tops)
-        results.histogram_figure.x_range = bar_range
+        results.histogram_figure.x_range = histogram_x
         results.histogram_figure.y_range = bar_top_range
-        results.reference_histogram_figure.x_range = bar_range
+        results.reference_histogram_figure.x_range = histogram_x
         results.reference_histogram_figure.y_range = bar_top_range
         results.homogeneity_figure.y_range = rng.update_range(
-            'h_y', [-2, 2], Tech_res.homogeneity_db, Tech_res_ref.homogeneity_db)
-        psfp_y_range = rng.update_range('sfp_y', [-5, 5], Tech_res.spl_db,
+            'homogeneity_y', [-2, 2], Tech_res.homogeneity_db, Tech_res_ref.homogeneity_db)
+        psfp_y_range = rng.update_range('sound_field_y', [-5, 5], Tech_res.spl_db,
                                         Tech_res_ref.spl_db)
         results.sound_field_figure.y_range = psfp_y_range
         results.reference_sound_field_figure.y_range = psfp_y_range
         algorithm.spl_over_distance_figure.y_range = rng.update_range(
-            'SPLoverX_y', [-1, 1], Opt_w.region_levels_db, SPLoverX.region_levels_db,
+            'spl_over_distance_y', [-1, 1], Opt_w.region_levels_db, SPLoverX.region_levels_db,
             SPLoverX.levels_db, SPLoverX_ref.levels_db)
         results.beam_checkbox.active, results.beam_checkbox.disabled = [], False
         # Array visualization

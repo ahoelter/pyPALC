@@ -297,17 +297,17 @@ class ResultsPage:
                                            st.result.geometry.tilt_angles, f,
                                            ind_f)
                     self.beam_source.data.update(dict(
-                        SPL=[p_SPL], x=[rng.p_x[0]], y=[rng.p_y[0]],
-                        dw=[rng.p_x[1]-rng.p_x[0]],
-                        dh=[rng.p_y[1]-rng.p_y[0]]))
+                        SPL=[p_SPL], x=[rng.venue_x[0]], y=[rng.venue_y[0]],
+                        dw=[rng.venue_x[1]-rng.venue_x[0]],
+                        dh=[rng.venue_y[1]-rng.venue_y[0]]))
                 elif n == 1 and 1 not in old and (1 in new or f_int in new):
                     p_SPL_ref = self._beam_spl(self.reference_beam_mapper,
                                                st.reference_array.tilt_angles, f,
                                                ind_f)
                     self.beam_source.data.update(dict(
-                        SPL_ref=[p_SPL_ref], x=[rng.p_x[0]], y=[rng.p_y[0]],
-                        dw=[rng.p_x[1]-rng.p_x[0]],
-                        dh=[rng.p_y[1]-rng.p_y[0]]))
+                        SPL_ref=[p_SPL_ref], x=[rng.venue_x[0]], y=[rng.venue_y[0]],
+                        dw=[rng.venue_x[1]-rng.venue_x[0]],
+                        dh=[rng.venue_y[1]-rng.venue_y[0]]))
         except CALLBACK_ERRORS:
             logger.exception('Could not compute the beam plot')
 
