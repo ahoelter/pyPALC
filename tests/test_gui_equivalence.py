@@ -7,7 +7,11 @@ baselines (see :mod:`tests.baseline_cases`). For target slope the target
 points and the reference point are dragged by writing the target sources,
 as Bokeh does when a point is dragged in the browser. Afterwards the
 sources the GUI shows (and the session's last result, ``state.result``) must
-equal ``tests/baseline/<case>.npz`` exactly.
+equal ``tests/baseline/<case>.npz`` within the baseline tolerance of
+:mod:`tests.baseline_cases` (BLAS builds differ in the last digits). That
+the GUI computes exactly what the pipeline computes in the same process is
+pinned by ``tests/test_apply_setup.py`` (hand path equals loaded session,
+loaded session equals headless run).
 """
 import base64
 import contextlib
@@ -20,7 +24,8 @@ from bokeh.document import Document
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-from tests.baseline_cases import CASES, baseline_path, case_path
+from tests.baseline_cases import (CASES, assert_matches_baseline,
+                                   baseline_path, case_path)
 
 _VARIANTS = {"palc1": "PALC 1", "palc2": "PALC 2", "palc3": "PALC 3"}
 _GAP_HANDLING = {"without": "Without", "hard_margin": "Hard Margin",
@@ -197,5 +202,4 @@ def test_gui_matches_baseline(case):
     with np.load(baseline_path(case)) as baseline:
         assert sorted(gui) == sorted(baseline.files)
         for key in baseline.files:
-            np.testing.assert_array_equal(gui[key], baseline[key],
-                                          err_msg=key)
+            assert_matches_baseline(gui[key], baseline[key], err_msg=key)

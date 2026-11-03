@@ -15,6 +15,7 @@ from pypalc.core import pipeline
 from pypalc.core.pipeline import result_arrays, run
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
+from tests.baseline_cases import assert_matches_baseline, baseline_path
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -62,13 +63,13 @@ def test_run_calculation_matches_pipeline():
         a.run_calculation()
     assert a.config_error_info.text == ''
     data = a.pages[4].results_source.data
-    with np.load(ROOT / 'tests' / 'baseline' / 'simple.npz') as baseline:
-        np.testing.assert_array_equal(np.array(data['tilt_angle_deg'],
-                                               dtype=float),
-                                      baseline['tilt_angles_deg'])
-        np.testing.assert_array_equal(np.array(data['inter_cabinet_angle_deg'],
-                                               dtype=float),
-                                      baseline['inter_cabinet_angles_deg'])
+    # baseline tolerance: BLAS builds differ in the last digits
+    with np.load(baseline_path('simple')) as baseline:
+        assert_matches_baseline(np.array(data['tilt_angle_deg'], dtype=float),
+                                baseline['tilt_angles_deg'])
+        assert_matches_baseline(np.array(data['inter_cabinet_angle_deg'],
+                                         dtype=float),
+                                baseline['inter_cabinet_angles_deg'])
 
 
 def _app_with_venue(case='simple'):

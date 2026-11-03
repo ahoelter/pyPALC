@@ -1,4 +1,9 @@
-"""Tests of the headless runner."""
+"""Tests of the headless runner.
+
+Numbers written by the runner are compared with ``tests/baseline`` within
+the baseline tolerance of :mod:`tests.baseline_cases` (BLAS builds differ in
+the last digits); headers and row counts are compared exactly.
+"""
 import csv
 import subprocess
 import sys
@@ -8,6 +13,7 @@ import numpy as np
 import pytest
 
 from pypalc.cli import main
+from tests.baseline_cases import assert_matches_baseline
 
 ROOT = Path(__file__).resolve().parent.parent
 CASES = ROOT / "tests" / "cases"
@@ -51,14 +57,14 @@ def test_cli_writes_csvs(tmp_path):
                               for f in base["frequencies_hz"]]
         assert len(rows) == len(base["venue_x"])
     assert not (out / "target_slope.csv").exists()
-    assert list(_column(out / "tilt_angles.csv", "tilt_angle_deg")) \
-        == list(base["tilt_angles_deg"])
+    assert_matches_baseline(_column(out / "tilt_angles.csv", "tilt_angle_deg"),
+                            base["tilt_angles_deg"])
     assert _read(out / "tilt_angles.csv")[1][0][0] == "1"
-    assert list(_column(out / "spl_over_distance.csv", "spl_db")) \
-        == list(base["spl_over_distance_db"])
+    assert_matches_baseline(_column(out / "spl_over_distance.csv", "spl_db"),
+                            base["spl_over_distance_db"])
     sf = _read(out / "sound_field.csv")[1]
-    assert np.array([[float(v) for v in r[2:]] for r in sf]).tolist() \
-        == base["spl_db"].tolist()
+    assert_matches_baseline(np.array([[float(v) for v in r[2:]] for r in sf]),
+                            base["spl_db"])
 
 
 def test_cli_invalid_setup_exit_code(tmp_path, capsys):
@@ -87,10 +93,9 @@ def test_cli_target_slope_writes_target_files(tmp_path):
     header, rows = _read(tmp_path / "target_slope.csv")
     assert header == ["distance_m", "level_db", "x_m", "y_m"]
     assert len(rows) == len(base["target_x"])
-    assert list(_column(tmp_path / "target_slope.csv", "distance_m")) \
-        == list(base["target_x"])
-    assert list(_column(tmp_path / "target_slope.csv", "level_db")) \
-        == list(base["target_db"])
+    target = tmp_path / "target_slope.csv"
+    assert_matches_baseline(_column(target, "distance_m"), base["target_x"])
+    assert_matches_baseline(_column(target, "level_db"), base["target_db"])
     header, rows = _read(tmp_path / "target_reference.csv")
     assert header == ["distance_m", "level_db", "x_m", "y_m"]
     assert len(rows) == 1
