@@ -23,7 +23,7 @@ from pypalc.core.errors import SetupError
 from pypalc.core.palc import clamp_fixed_angle, fixed_angle_borders
 from pypalc.core.settings import (TargetPoint, dump_setup, load_setup_text,
                                   validate)
-from pypalc.core.target_slope import get_weight_links, snap_to_distance_grid
+from pypalc.core.target_slope import hinge_indices, snap_to_distance_grid
 from pypalc.gui import (CALLBACK_ERRORS, DOWNLOAD_JS, DOWNLOAD_TEXT_JS,
                         skipped_while_applying_setup)
 from pypalc.gui.page_venue import RULE
@@ -427,7 +427,7 @@ class AlgorithmPage:
         self._arrange_weighting_widgets()
         if self.weighting_select.value in ['Target Slope']:
             done = self.app.run_calculation()
-            self.app.state.target.init = True
+            self.app.state.target.initialized = True
             self.tabs.active = 1
             self.hinges_select.visible = True
             self.weighting_select.width = 135
@@ -517,7 +517,7 @@ class AlgorithmPage:
     def target_selected(self, attr, old, new) -> None:
         """A target point was selected for dragging; allow updates of the
         target sources again (see :meth:`snap_target`)."""
-        self.app.state.target.is2update = 0
+        self.app.state.target.update_count = 0
 
     @skipped_while_applying_setup
     def choose_hinges(self, attr, old, new) -> None:
@@ -559,9 +559,9 @@ class AlgorithmPage:
             return
         SPLoverX = state.result.optimized.spl_over_distance
         drawn = state.drawn
-        ind = get_weight_links(hinges, SPLoverX)
+        ind = hinge_indices(hinges, SPLoverX)
         self.target_source.data.update(dict(
-            SPL=np.array(SPLoverX.SPL)[ind], x=SPLoverX.x[ind],
+            SPL=np.array(SPLoverX.levels_db)[ind], x=SPLoverX.distances[ind],
             x_v=drawn.points_x[ind], y_v=drawn.points_y[ind]))
 
     def snap_target(self, attr, old, new) -> None:
@@ -588,18 +588,18 @@ class AlgorithmPage:
         x, x_v, y_v = grid['x'], grid['x_v'], grid['y_v']
         snap_to_distance_grid(Opt_w, x, x_v, y_v, self.target_source.data,
                               self.target_reference_source.data['x_ref'])
-        xv_ind = np.argmin(np.abs(np.array(x)-Opt_w.x_ref))
-        if Opt_w.is2update < 4:
-            Opt_w.is2update += 1
-            self.target_source.data.update(dict(x=Opt_w.x, SPL=Opt_w.SPL,
-                                                x_v=Opt_w.x_v, y_v=Opt_w.y_v))
+        xv_ind = np.argmin(np.abs(np.array(x)-Opt_w.reference_distance))
+        if Opt_w.update_count < 4:
+            Opt_w.update_count += 1
+            self.target_source.data.update(dict(x=Opt_w.distances, SPL=Opt_w.levels_db,
+                                                x_v=Opt_w.points_x, y_v=Opt_w.points_y))
             self.target_reference_source.data.update(dict(
-                x_ref=[Opt_w.x_ref], SPL=[Opt_w.SPL_interp[Opt_w.ref_ind]],
+                x_ref=[Opt_w.reference_distance], SPL=[Opt_w.region_levels_db[Opt_w.reference_index]],
                 x_v=[x_v[xv_ind]], y_v=[y_v[xv_ind]]))
         self.target_region_source.data.update(dict(
-            x=[Opt_w.x[0], Opt_w.x[0], Opt_w.x[-1], Opt_w.x[-1]],
-            y=[Opt_w.SPL[0]+100, Opt_w.SPL[-1]-100, Opt_w.SPL[-1]-100,
-               Opt_w.SPL[0]+100]))
+            x=[Opt_w.distances[0], Opt_w.distances[0], Opt_w.distances[-1], Opt_w.distances[-1]],
+            y=[Opt_w.levels_db[0]+100, Opt_w.levels_db[-1]-100, Opt_w.levels_db[-1]-100,
+               Opt_w.levels_db[0]+100]))
 
     def shown_target(self) -> tuple:
         """The shown target slope: ``(x, SPL, x_ref)`` as lists of float."""

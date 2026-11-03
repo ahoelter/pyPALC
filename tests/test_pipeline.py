@@ -104,7 +104,7 @@ def test_initial_target_slope_lies_on_the_distance_grid():
 def test_legacy_classes_do_not_share_default_lists():
     from pypalc.core.palc import ArrayGeometry, PalcConfig
     from pypalc.core.sound_field import SoundFieldConfig
-    from pypalc.core.target_slope import Opt_weight
+    from pypalc.core.target_slope import TargetSlopeState
     from pypalc.core.venue import PalcVenue
     from pypalc.gui.ranges import Plot_ranges
 
@@ -122,10 +122,10 @@ def test_legacy_classes_do_not_share_default_lists():
                               "plot_measured_directivity_db", "plot_measured_angles_deg",
                               "discrete_tilt_angles", "aperture_angles"])
     attrs(ArrayGeometry, ["tilt_angles_deg"])
-    attrs(Opt_weight, ["SPL_interp"])
+    attrs(TargetSlopeState, ["region_levels_db"])
     attrs(Plot_ranges, ["p_x", "p_y", "bar_range", "SPLoverX_y"])
     assert PalcConfig().aperture_angles == [0.0524]
-    assert Opt_weight().SPL_interp == [0, 0]
+    assert TargetSlopeState().region_levels_db == [0, 0]
 
 
 def test_hard_margin_with_discrete_angles():

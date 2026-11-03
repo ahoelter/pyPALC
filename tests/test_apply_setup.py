@@ -120,7 +120,7 @@ def state_of(app):
     state['state.fixed_angle_range'] = _norm(st.optimized_array.fixed_angle)
     state['state.reference_tilt_angles'] = _norm(
         st.reference_array.tilt_angles_deg)
-    for name in ('init', 'x', 'SPL', 'x_ref', 'x_interp', 'SPL_interp'):
+    for name in ('initialized', 'distances', 'levels_db', 'reference_distance', 'region_distances', 'region_levels_db'):
         state['state.target.' + name] = compact(_norm(getattr(st.target,
                                                               name)))
     for key in NOT_COMPARED:

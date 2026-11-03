@@ -136,7 +136,7 @@ def _target_slope(app: PalcApp) -> Optional[TargetSlopeSettings]:
     """The target slope as shown, once the initial run has shown one."""
     page = app.pages[4]
     if page.weighting_select.value != 'Target Slope' or \
-            not app.state.target.init:
+            not app.state.target.initialized:
         return None
     target = page.target_source.data
     try:

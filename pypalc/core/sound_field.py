@@ -469,7 +469,7 @@ def predict_sound_field(tilt_angles_deg, drawn_lines, sound_field_config, evalua
     """
     Main function to compute 2D sound field prediction with a 3D transfer
     function. Calls :any:`air_absorption_coefficient` and :any:`green_functions`.
-    Called by :any:`start_calc` and :any:`optimize_PALC`.
+    Called by :any:`start_calc` and :any:`optimize_target_slope`.
 
     Parameters
     ----------
@@ -714,7 +714,7 @@ def compute_spl_over_distance(ray_plot, drawn_lines, spl_db, spl_over_distance, 
     """
     Computes the SPL over distance. The distance is measured from the center
     of the LSA to the receiver positions. Called by :any:`start_calc` and
-    :any:`optimize_PALC`.
+    :any:`optimize_target_slope`.
 
     Parameters
     ----------
@@ -748,8 +748,8 @@ def compute_spl_over_distance(ray_plot, drawn_lines, spl_db, spl_over_distance, 
     p_sum = np.sum(p0 * 10**(spl_db[:,f_ind_min:f_ind_max+1]/20), axis=1)
     levels_db = 20 * np.log10(np.abs(p_sum) / p0)
     levels_db = levels_db - max(levels_db)
-    spl_over_distance.x   = distances
-    spl_over_distance.SPL = levels_db
+    spl_over_distance.distances   = distances
+    spl_over_distance.levels_db = levels_db
     return levels_db, distances
 
 

@@ -48,7 +48,7 @@ from pypalc.core.palc import ArrayGeometry, PalcConfig
 from pypalc.core.pipeline import AudienceLines, RunResult, VenueResult
 from pypalc.core.settings import AudienceLine, Setup
 from pypalc.core.sound_field import SoundFieldConfig
-from pypalc.core.target_slope import Opt_weight
+from pypalc.core.target_slope import TargetSlopeState
 from pypalc.core.venue import (AudienceLines, PalcVenue,
                                fill_palc_venue, suggest_venue)
 from pypalc.gui import (APP_NAME, CALLBACK_ERRORS,
@@ -130,7 +130,7 @@ class SessionState:
     optimized_array: ArrayGeometry = field(default_factory=ArrayGeometry)
     reference_array: ArrayGeometry = field(
         default_factory=lambda: ArrayGeometry(tilt_angles_deg=np.zeros(4)))
-    target: Opt_weight = field(default_factory=Opt_weight)
+    target: TargetSlopeState = field(default_factory=TargetSlopeState)
     result: Optional[RunResult] = None
     target_of_result: Optional[tuple] = None
     applying_setup: bool = False
@@ -327,7 +327,7 @@ class PalcApp:
             self.show()
             if algorithm.weighting_select.value in ['Target Slope']:
                 algorithm.weighting_select.value = 'Without'
-                st.target.init = False
+                st.target.initialized = False
                 algorithm.choose_weighting(0, 0, 0)
             weight_links = np.arange(np.shape(st.drawn.line_start_x)[0]+1)
             algorithm.hinges_select.options = [str(n) for n in
@@ -561,7 +561,7 @@ class PalcApp:
         """
         setup = setup_from_app(self)
         if setup.algorithm.weighting == 'target_slope' and \
-                not self.state.target.init:
+                not self.state.target.initialized:
             setup = replace(setup, target_slope=None, algorithm=replace(
                 setup.algorithm, weighting='without'))
         return setup
@@ -676,37 +676,37 @@ class PalcApp:
         spl_source = algorithm.spl_over_distance_source
         spl_ref_source = algorithm.reference_spl_over_distance_source
         if result.target is not None:
-            spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
+            spl_source.data.update(dict(SPL=SPLoverX.levels_db, x=SPLoverX.distances,
                                         x_v=created_pal.points_x,
                                         y_v=created_pal.points_y))
-            algorithm.target_source.data.update(dict(SPL=result.target.SPL))
+            algorithm.target_source.data.update(dict(SPL=result.target.levels_db))
             algorithm.target_reference_source.data.update(dict(
-                SPL=[Opt_w.SPL_interp[Opt_w.ref_ind]]))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL))
-        elif not Opt_w.init:
-            spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
+                SPL=[Opt_w.region_levels_db[Opt_w.reference_index]]))
+            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.levels_db))
+        elif not Opt_w.initialized:
+            spl_source.data.update(dict(SPL=SPLoverX.levels_db, x=SPLoverX.distances,
                                         x_v=created_pal.points_x,
                                         y_v=created_pal.points_y))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL,
-                                            x=SPLoverX_ref.x,
+            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.levels_db,
+                                            x=SPLoverX_ref.distances,
                                             x_v=created_pal.points_x,
                                             y_v=created_pal.points_y))
             algorithm.target_source.data.update(dict(
-                SPL=[SPLoverX.SPL[0], SPLoverX.SPL[-1]],
-                x=[SPLoverX.x[0], SPLoverX.x[-1]],
+                SPL=[SPLoverX.levels_db[0], SPLoverX.levels_db[-1]],
+                x=[SPLoverX.distances[0], SPLoverX.distances[-1]],
                 x_v=[created_pal.points_x[0], created_pal.points_x[-1]],
                 y_v=[created_pal.points_y[0], created_pal.points_y[-1]]))
             algorithm.target_reference_source.data.update(dict(
-                x_ref=[Opt_w.x_interp[int(len(Opt_w.x_interp)/2)]],
-                SPL=[Opt_w.SPL_interp[int(len(Opt_w.SPL_interp)/2)]],
+                x_ref=[Opt_w.region_distances[int(len(Opt_w.region_distances)/2)]],
+                SPL=[Opt_w.region_levels_db[int(len(Opt_w.region_levels_db)/2)]],
                 x_v=[created_pal.points_x[int(len(created_pal.points_x)/2)]],
                 y_v=[created_pal.points_y[int(len(created_pal.points_y)/2)]]))
         else:
-            spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
+            spl_source.data.update(dict(SPL=SPLoverX.levels_db, x=SPLoverX.distances,
                                         x_v=created_pal.points_x,
                                         y_v=created_pal.points_y))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL,
-                                            x=SPLoverX_ref.x,
+            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.levels_db,
+                                            x=SPLoverX_ref.distances,
                                             x_v=created_pal.points_x,
                                             y_v=created_pal.points_y))
         # Homogeneity
@@ -735,8 +735,8 @@ class PalcApp:
         results.sound_field_figure.y_range = psfp_y_range
         results.reference_sound_field_figure.y_range = psfp_y_range
         algorithm.spl_over_distance_figure.y_range = rng.update_range(
-            'SPLoverX_y', [-1, 1], Opt_w.SPL_interp, SPLoverX.SPL_interp,
-            SPLoverX.SPL, SPLoverX_ref.SPL)
+            'SPLoverX_y', [-1, 1], Opt_w.region_levels_db, SPLoverX.region_levels_db,
+            SPLoverX.levels_db, SPLoverX_ref.levels_db)
         results.beam_checkbox.active, results.beam_checkbox.disabled = [], False
         # Array visualization
         self.cabinet_patches_source.data.update(dict(

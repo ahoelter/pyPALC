@@ -48,16 +48,13 @@ from .sound_field import (SoundFieldConfig, ArrayEvaluation,
                           compute_histogram, compute_homogeneity, predict_sound_field,
                           compute_spl_over_distance, frequency_vector,
                           parse_measured_directivity)
-from .target_slope import (Opt_weight, get_opt_region, get_weight_links,
-                           optimize_PALC, shift2ref, shift_ref_on_zero,
+from .target_slope import (TargetSlopeState, optimization_region, hinge_indices,
+                           optimize_target_slope, shift_to_reference, shift_to_zero,
                            snap_to_distance_grid)
 from .venue import (AudienceLines, PalcVenue, check_draw_conditions,
                     fill_palc_venue, suggest_venue)
 
 logger = logging.getLogger(__name__)
-
-# Final names of the legacy classes (renamed in a later step).
-TargetSlopeState = Opt_weight
 
 #: Maximum number of discrete venue points.
 MAX_VENUE_POINTS = 2000
@@ -431,9 +428,9 @@ class _Calculation:
         self.plots, self.plots_ref = RayPlotData(), RayPlotData()
         self.evaluation = ArrayEvaluation()
         self.evaluation_ref = ArrayEvaluation()
-        self.target = Opt_weight(SPL_interp=[0, 0])
-        self.spl = Opt_weight(SPL_interp=[0])
-        self.spl_ref = Opt_weight(SPL_interp=[0])
+        self.target = TargetSlopeState(region_levels_db=[0, 0])
+        self.spl = TargetSlopeState(region_levels_db=[0])
+        self.spl_ref = TargetSlopeState(region_levels_db=[0])
         # SPL over distance grid as shown (distance, venue x, venue y), and
         # the target points and reference point as shown in the GUI
         self.grid: Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]] = None
@@ -468,8 +465,8 @@ class _Calculation:
         snap_to_distance_grid(self.target, x, x_v, y_v, self.shown_target,
                               self.shown_reference)
         t = self.target
-        self.shown_target = dict(x=t.x, SPL=t.SPL, x_v=t.x_v, y_v=t.y_v)
-        self.shown_reference = [t.x_ref]
+        self.shown_target = dict(x=t.distances, SPL=t.levels_db, x_v=t.points_x, y_v=t.points_y)
+        self.shown_reference = [t.reference_distance]
 
     def _reset_config(self) -> None:
         """Values the GUI resets after the PALC run (``start_calc``)."""
@@ -493,13 +490,13 @@ class _Calculation:
         P, S = self.config, self.sf_config
         drawn, palc_venue = self.venue.drawn, self.venue.palc_venue
         P.get_initial_weights()
-        target_run = P.use_weighting == 'Target Slope' and self.target.init
-        opt_ind = None
+        target_run = P.use_weighting == 'Target Slope' and self.target.initialized
+        region_indices = None
         try:
             if target_run:
-                self.target.calc_init()
+                self.target.reset_optimization()
                 self.snap_target()
-                opt_ind = optimize_PALC(P, S, palc_venue, self.plots,
+                region_indices = optimize_target_slope(P, S, palc_venue, self.plots,
                                         self.optimized, drawn,
                                         self.evaluation, self.spl,
                                         self.target, TARGET_SLOPE_MAX_LOOPS)
@@ -540,13 +537,13 @@ class _Calculation:
         compute_homogeneity(self.evaluation_ref, x_S, y_S, drawn.points_x,
                         drawn.points_y)
         compute_histogram(self.evaluation_ref)
-        self.grid = (self.spl.x, drawn.points_x, drawn.points_y)
-        if not self.target.init:
-            shift_ref_on_zero(self.target, self.spl, self.spl_ref)
+        self.grid = (self.spl.distances, drawn.points_x, drawn.points_y)
+        if not self.target.initialized:
+            shift_to_zero(self.target, self.spl, self.spl_ref)
         elif target_run:
-            shift2ref(self.target, self.spl, opt_ind, self.spl_ref)
-            get_opt_region(self.spl, self.target)
-            self.shown_target['SPL'] = self.target.SPL
+            shift_to_reference(self.target, self.spl, region_indices, self.spl_ref)
+            optimization_region(self.spl, self.target)
+            self.shown_target['SPL'] = self.target.levels_db
             self.snap_target()
 
     def initial_target(self, hinges: int) -> None:
@@ -558,15 +555,15 @@ class _Calculation:
         (``chg_weight_links``).
         """
         x, x_v, y_v = self.grid
-        SPL = self.spl.SPL
+        SPL = self.spl.levels_db
         self.show_target([x[0], x[-1]], [SPL[0], SPL[-1]],
                          [x_v[0], x_v[-1]], [y_v[0], y_v[-1]])
-        x_interp = self.target.x_interp
-        self.show_reference(x_interp[int(len(x_interp) / 2)])
+        region_distances = self.target.region_distances
+        self.show_reference(region_distances[int(len(region_distances) / 2)])
         if hinges != 0:
-            ind = get_weight_links(int(hinges), self.spl)
-            self.show_target(list(self.spl.x[ind]),
-                             list(np.array(self.spl.SPL)[ind]),
+            ind = hinge_indices(int(hinges), self.spl)
+            self.show_target(list(self.spl.distances[ind]),
+                             list(np.array(self.spl.levels_db)[ind]),
                              list(x_v[ind]), list(y_v[ind]))
 
     def result(self) -> RunResult:
@@ -583,7 +580,7 @@ class _Calculation:
             evaluation=self.evaluation_ref, spl_over_distance=self.spl_ref,
             patches_x=self.patches_ref[0], patches_y=self.patches_ref[1])
         target_slope = self.config.use_weighting == 'Target Slope' \
-            and self.target.init
+            and self.target.initialized
         return RunResult(
             setup=self.setup, venue=self.venue, optimized=optimized,
             reference=reference, geometry=self.optimized,
@@ -633,8 +630,8 @@ def initial_target_slope(setup: Setup, venue: VenueResult, hinges: int
     target = calculation.target
     return TargetSlopeSettings(
         points=tuple(TargetPoint(float(x), float(spl))
-                     for x, spl in zip(target.x, target.SPL)),
-        reference_distance=float(target.x_ref))
+                     for x, spl in zip(target.distances, target.levels_db)),
+        reference_distance=float(target.reference_distance))
 
 
 def run(setup: Setup, venue: Optional[VenueResult] = None) -> RunResult:
@@ -675,7 +672,7 @@ def run(setup: Setup, venue: Optional[VenueResult] = None) -> RunResult:
     calculation = _initial_run(setup, venue)
     calculation.config.store_config('use_weighting',
                                     _WEIGHTING["target_slope"])
-    calculation.target.init = True
+    calculation.target.initialized = True
     ts = setup.target_slope
     n = len(ts.points)
     calculation.show_target([float(p.distance) for p in ts.points],
@@ -712,9 +709,9 @@ def result_arrays(result: RunResult) -> Dict[str, np.ndarray]:
         "frequencies_hz": _arr(ev.frequencies),
         "spl_db": _arr(ev.spl_db),
         "reference_spl_db": _arr(ev_ref.spl_db),
-        "spl_over_distance_x": _arr(opt.spl_over_distance.x),
-        "spl_over_distance_db": _arr(opt.spl_over_distance.SPL),
-        "reference_spl_over_distance_db": _arr(ref.spl_over_distance.SPL),
+        "spl_over_distance_x": _arr(opt.spl_over_distance.distances),
+        "spl_over_distance_db": _arr(opt.spl_over_distance.levels_db),
+        "reference_spl_over_distance_db": _arr(ref.spl_over_distance.levels_db),
         "homogeneity_db": _arr(ev.homogeneity_db),
         "homogeneity_low_db": _arr(ev.homogeneity_low_db),
         "homogeneity_high_db": _arr(ev.homogeneity_high_db),
@@ -727,7 +724,7 @@ def result_arrays(result: RunResult) -> Dict[str, np.ndarray]:
         "venue_y": _arr(result.venue.drawn.points_y),
     }
     if result.target is not None:
-        out["target_x"] = _arr(result.target.x)
-        out["target_db"] = _arr(result.target.SPL)
+        out["target_x"] = _arr(result.target.distances)
+        out["target_db"] = _arr(result.target.levels_db)
         out["weighting_weights"] = _arr(result.weighting_weights)
     return out

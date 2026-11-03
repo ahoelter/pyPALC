@@ -1,9 +1,9 @@
 """Target slope optimization of the PALC weighting.
 
-The state of the target slope (:class:`Opt_weight`), the helpers of the
-optimization and its loop :func:`optimize_PALC` (formerly
-``fun/PALC_opt.py``, ``Opt_weight`` from ``fun/PALC_classes.py`` and
-``optimize_PALC`` from ``fun/gui_algorithm_sfp.py``).
+The state of the target slope (:class:`TargetSlopeState`), the helpers of the
+optimization and its loop :func:`optimize_target_slope` (formerly
+``fun/PALC_opt.py``, ``TargetSlopeState`` from ``fun/PALC_classes.py`` and
+``optimize_target_slope`` from ``fun/gui_algorithm_sfp.py``).
 
 author: Arne Hoelter
 """
@@ -23,25 +23,25 @@ from .sound_field import predict_sound_field, compute_spl_over_distance
 logger = logging.getLogger(__name__)
 
 
-class Opt_weight():
+class TargetSlopeState():
     """ Class to optimize PALC by the target slope optimization. """
-    def __init__(self, SPL_interp=None):
-        self.x, self.SPL   = [], []
-        self.x_interp      = [0,0]
-        self.SPL_interp    = [0,0] if SPL_interp is None else SPL_interp
-        self.init          = False
-        self.x_v, self.y_v = [0,0], [0,0]
-        self.diffLS        = []
-        self.diffps        = {'n-1':100, 'lowest':[],'same':0}
-        self.w_ps          = {'n-1':[], 'lowest':[]}
-        self.is2update     = 0
-        self.SPL_grad      = []
-        self.opt_ind       = 0
-        self.diffgradLS    = []
-        self.x_ref         = []
-        self.ref_ind       = []
+    def __init__(self, region_levels_db=None):
+        self.distances, self.levels_db   = [], []
+        self.region_distances      = [0,0]
+        self.region_levels_db    = [0,0] if region_levels_db is None else region_levels_db
+        self.initialized          = False
+        self.points_x, self.points_y = [0,0], [0,0]
+        self.cabinet_differences        = []
+        self.previous_differences        = {'n-1':100, 'lowest':[],'same':0}
+        self.previous_weights          = {'n-1':[], 'lowest':[]}
+        self.update_count     = 0
+        self.region_gradients      = []
+        self.region_indices       = 0
+        self.cabinet_gradient_differences    = []
+        self.reference_distance         = []
+        self.reference_index       = []
         
-    def calc_init(self):
+    def reset_optimization(self):
         """
         Initializes the target slope optimization before starting the
         optimization.
@@ -51,11 +51,11 @@ class Opt_weight():
         None.
 
         """
-        self.diffLS        = []
-        self.diffps      = {'n-1':100, 'lowest':[]}
-        self.w_ps          = {'n-1':[], 'lowest':[]}
+        self.cabinet_differences        = []
+        self.previous_differences      = {'n-1':100, 'lowest':[]}
+        self.previous_weights          = {'n-1':[], 'lowest':[]}
         
-    def CDS2obj(self, CDS, keys):
+    def read_source(self, CDS, keys):
         """
         Stores data from a ColumnDataSource in the object when the keys are
         identic.
@@ -76,7 +76,7 @@ class Opt_weight():
             setattr(self, key, CDS.data[key])
         
         
-    def maxonref(self, ref=0):
+    def normalize_to(self, ref=0):
         """
         Normalizes all data on a given reference value.
 
@@ -90,12 +90,12 @@ class Opt_weight():
         None.
 
         """
-        shift           = np.amax(self.SPL_interp)-ref
-        self.SPL        = self.SPL - shift
-        self.SPL_interp = self.SPL_interp - shift 
+        shift           = np.amax(self.region_levels_db)-ref
+        self.levels_db        = self.levels_db - shift
+        self.region_levels_db = self.region_levels_db - shift 
 
 
-    def shift2psval(self, PALC_config, diff_opt, iteration_count):
+    def store_previous(self, config, diff_opt, iteration_count):
         """
         Shifts the actual value to a list that stores the past value. These are
         used to check if the actual loop improved that the difference between
@@ -103,7 +103,7 @@ class Opt_weight():
 
         Parameters
         ----------
-        PALC_config : obj [in, out]
+        config : obj [in, out]
             Contains the configuration of the PALC algorithm.
         diff_opt : float
             Single value of the optimized PALC computation.
@@ -115,23 +115,23 @@ class Opt_weight():
             of while optimization loop. Otherwise False.
 
         """
-        if np.round(diff_opt, decimals=8) == np.round(self.diffps['n-1'], decimals=8):
-            self.diffps['same'] += 1
+        if np.round(diff_opt, decimals=8) == np.round(self.previous_differences['n-1'], decimals=8):
+            self.previous_differences['same'] += 1
         else:
-            self.diffps['same'] = 0
-        if diff_opt > self.diffps['n-1']:
-            self.diffps['lowest'].append(self.diffps['n-1'])
-            self.w_ps['lowest'].append(self.w_ps['n-1'])
-        self.diffps['n-1'] = diff_opt
-        self.w_ps['n-1'] = np.array(PALC_config.weighting_weights[:])
-        if len(self.w_ps['lowest']) == 10 or self.diffps['same'] == 5 or iteration_count==500:
-            low_ind = np.argmin(self.diffps['lowest'])
-            PALC_config.weighting_weights = self.w_ps['lowest'][low_ind][:]
+            self.previous_differences['same'] = 0
+        if diff_opt > self.previous_differences['n-1']:
+            self.previous_differences['lowest'].append(self.previous_differences['n-1'])
+            self.previous_weights['lowest'].append(self.previous_weights['n-1'])
+        self.previous_differences['n-1'] = diff_opt
+        self.previous_weights['n-1'] = np.array(config.weighting_weights[:])
+        if len(self.previous_weights['lowest']) == 10 or self.previous_differences['same'] == 5 or iteration_count==500:
+            low_ind = np.argmin(self.previous_differences['lowest'])
+            config.weighting_weights = self.previous_weights['lowest'][low_ind][:]
             return True
         return False
             
 
-    def resort_opt_region(self):
+    def sort_points(self):
         """
         Resorts the target slope hinge points, so that the x-axis / SPL pairs
         begin with lowest x-axis values.
@@ -141,11 +141,11 @@ class Opt_weight():
         None.
 
         """
-        sort_key = np.argsort(self.x)
-        for key in ['x', 'SPL', 'x_v', 'y_v']:
+        sort_key = np.argsort(self.distances)
+        for key in ['distances', 'levels_db', 'points_x', 'points_y']:
             setattr(self, key, list(np.array(getattr(self,key))[sort_key]))
             
-    def interpolate_SPL(self):
+    def interpolate_levels(self):
         """
         Interpolates the drawn target slope line on the discrete distance
         points, that are used von SPL over distance calculation of the
@@ -156,17 +156,17 @@ class Opt_weight():
         None.
 
         """
-        self.SPL_interp, ap, ind = [], [], [0]
-        for n in range(1,len(self.x)):
-            ind.append(np.argwhere(self.x[n] == self.x_interp)[0,0])
-            ap.append(list((self.SPL[n]-self.SPL[n-1])/(self.x[n]-self.x[n-1])* \
-                                   (np.array(self.x_interp[ind[n-1]:ind[n]])- \
-                                    self.x[n-1])+self.SPL[n-1]))
-        ap.append([self.SPL[-1]])
-        list(map(self.SPL_interp.extend, ap))
+        self.region_levels_db, ap, ind = [], [], [0]
+        for n in range(1,len(self.distances)):
+            ind.append(np.argwhere(self.distances[n] == self.region_distances)[0,0])
+            ap.append(list((self.levels_db[n]-self.levels_db[n-1])/(self.distances[n]-self.distances[n-1])* \
+                                   (np.array(self.region_distances[ind[n-1]:ind[n]])- \
+                                    self.distances[n-1])+self.levels_db[n-1]))
+        ap.append([self.levels_db[-1]])
+        list(map(self.region_levels_db.extend, ap))
 
 
-def get_weight_links(n_links, SPLoverX):
+def hinge_indices(hinge_count, spl_over_distance):
     """
     Init function to return indices of the hinges / links in :any:`pSPLoverX`.
     Necessary for the movable target slope line. Works also if user has moved
@@ -174,9 +174,9 @@ def get_weight_links(n_links, SPLoverX):
 
     Parameters
     ----------
-    n_links : int
+    hinge_count : int
         Number of hinges / links in the target slope line.
-    SPLoverX : obj [in]
+    spl_over_distance : obj [in]
         Contains computed SPL over distance data including distance between
         center of LSA and receiver positions.
 
@@ -186,26 +186,26 @@ def get_weight_links(n_links, SPLoverX):
         Indices (int) where the hinges / links are placed in :any:`pSPLoverX`.
 
     """
-    tot_ind = len(SPLoverX.x)
-    ind = [0] * (n_links+2)
-    for n in range(n_links+2):
-        ind[n] = n * int(tot_ind/(n_links+1))
+    point_count = len(spl_over_distance.distances)
+    ind = [0] * (hinge_count+2)
+    for n in range(hinge_count+2):
+        ind[n] = n * int(point_count/(hinge_count+1))
         if n > 0: ind[n] -= 1
     return ind
 
 
-def get_opt_region(SPLoverX, Opt_w):
+def optimization_region(spl_over_distance, target):
     """
     Find the indices of the user defined optimization region in
-    :any:`pSPLoverX`. :any:`start_calc` and :any:`optimize_PALC`.
+    :any:`pSPLoverX`. :any:`start_calc` and :any:`optimize_target_slope`.
 
     Parameters
     ----------
-    SPLoverX : obj [in, out]
+    spl_over_distance : obj [in, out]
         Contains SPL over distance data of the PALC computed results. Attribute
-        SPL_interp is normalized to the maximum in the optimization
+        region_levels_db is normalized to the maximum in the optimization
         region.
-    Opt_w : obj [in]
+    target : obj [in]
         Contains SPL over distance data of the optimized results and the target
         slope.
 
@@ -213,23 +213,23 @@ def get_opt_region(SPLoverX, Opt_w):
     -------
     ind : list
         Indices (int) of the optimization region in center of LSA to receiver
-        position distance of the attribute x of :any:`SPLoverX`.
+        position distance of the attribute x of :any:`spl_over_distance`.
 
     """
     ind = []
-    for val in list(Opt_w.x_interp):
-        ind.append(np.argmin(np.abs(np.round(list(SPLoverX.x),2) - np.round(val,2))))#[0,0])
-    #SPLoverX.SPL_interp = SPLoverX.SPL - np.amax(SPLoverX.SPL[ind])
-    SPLoverX.SPL_interp = SPLoverX.SPL[ind]
-    Opt_w.x_interp      = SPLoverX.x[ind]
-    Opt_w.x             = [SPLoverX.x[ind[0]], SPLoverX.x[ind[-1]]]
-    Opt_w.SPL_grad      = np.gradient(np.array(Opt_w.SPL_interp))
-    SPLoverX.SPL_grad   = np.gradient(np.array(SPLoverX.SPL_interp))
-    SPLoverX.opt_ind    = ind
+    for val in list(target.region_distances):
+        ind.append(np.argmin(np.abs(np.round(list(spl_over_distance.distances),2) - np.round(val,2))))#[0,0])
+    #spl_over_distance.region_levels_db = spl_over_distance.SPL - np.amax(spl_over_distance.SPL[ind])
+    spl_over_distance.region_levels_db = spl_over_distance.levels_db[ind]
+    target.region_distances      = spl_over_distance.distances[ind]
+    target.distances             = [spl_over_distance.distances[ind[0]], spl_over_distance.distances[ind[-1]]]
+    target.region_gradients      = np.gradient(np.array(target.region_levels_db))
+    spl_over_distance.region_gradients   = np.gradient(np.array(spl_over_distance.region_levels_db))
+    spl_over_distance.region_indices    = ind
     return ind
 
 
-def get_diff_optreg(comp, opt):
+def region_difference(comp, opt):
     """
     Returns difference between two arrays of same size. Actually unused.
 
@@ -249,84 +249,84 @@ def get_diff_optreg(comp, opt):
     return comp - opt
 
 
-def ls2pal(cabinet_count, Opt_arr, created_pal, **kwargs):
+def cabinet_points(cabinet_count, optimized_array, drawn_lines, **kwargs):
     """
     Maps LSA cabinets to discrete venue points depending on the assumed splay
-    angle. Called by :any:`optimize_PALC`.
+    angle. Called by :any:`optimize_target_slope`.
 
     Parameters
     ----------
     cabinet_count : int
         Number of LSA cabinets.
-    Opt_arr : obj [in]
+    optimized_array : obj [in]
         Contains results of the PALC computation.
-    created_pal : obj [in]
+    drawn_lines : obj [in]
         Venue information that was drawn by the user.
     **kwargs : dict, optional
         'tol' : Tolerance of discrete points to find (default = 10⁻⁵ m).
-        'opt_ind' : Indices of optimization region in pal / venue slice.
+        'region_indices' : Indices of optimization region in pal / venue slice.
 
     Returns
     -------
-    ls2pal : list
+    cabinet_points : list
         Indices of audience line points sorted to the LSA cabinets.
-    ls2pal_opt : list
+    cabinet_region_point_indices : list
         Indices in optimization region sorted to the LSA cabinets.
 
     """
     # tolerance (optional input) default is ndiscretization / np.sqrt(2)
-    discr = np.sqrt((created_pal.points_x[1]-created_pal.points_x[0])**2 + \
-                    (created_pal.points_y[1]-created_pal.points_y[0])**2) / np.sqrt(2)
+    discr = np.sqrt((drawn_lines.points_x[1]-drawn_lines.points_x[0])**2 + \
+                    (drawn_lines.points_y[1]-drawn_lines.points_y[0])**2) / np.sqrt(2)
     if 'tol' not in kwargs.keys(): kwargs['tol'] = discr#0.00001
     tol = kwargs['tol']
     # list to store index of pal for each ls
-    ls2pal, ls2pal_opt = [], []
+    cabinet_points, cabinet_region_point_indices = [], []
     for n in range(cabinet_count):
         ind = [[],[]]
         # check x-values
-        for m,val in enumerate(created_pal.points_x):
-            if val >= Opt_arr.hit_points_stop[n][0]-tol and val <= Opt_arr.hit_points_start[n][0]+tol:
+        for m,val in enumerate(drawn_lines.points_x):
+            if val >= optimized_array.hit_points_stop[n][0]-tol and val <= optimized_array.hit_points_start[n][0]+tol:
                 ind[0].append(m)
         # check y-values
-        for m,val in enumerate(created_pal.points_y):
-            if val >= Opt_arr.hit_points_stop[n][1]-tol and val <= Opt_arr.hit_points_start[n][1]+tol:
+        for m,val in enumerate(drawn_lines.points_y):
+            if val >= optimized_array.hit_points_stop[n][1]-tol and val <= optimized_array.hit_points_start[n][1]+tol:
                 ind[1].append(m)
         # check for matching index
-        ls2pal.append(list(set(ind[0]) & set(ind[1])))
-    if 'opt_ind' in kwargs.keys():
+        cabinet_points.append(list(set(ind[0]) & set(ind[1])))
+    if 'region_indices' in kwargs.keys():
         for n in range(cabinet_count):
-            ls2pal_opt.append(list(set(ls2pal[n]) & set(kwargs['opt_ind'])))
-        return ls2pal, ls2pal_opt
-    return ls2pal
+            cabinet_region_point_indices.append(list(set(cabinet_points[n]) & set(kwargs['region_indices'])))
+        return cabinet_points, cabinet_region_point_indices
+    return cabinet_points
 
 
-def diff_on_ls(cabinet_count, opt_ind, ls_ind, ls_opt_ind, Opt_w, SPLoverX, **kwargs):
+def differences_per_cabinet(cabinet_count, region_indices, cabinet_point_indices, cabinet_region_indices, target, spl_over_distance, **kwargs):
     """
     Maps diference in optimization region to LSA cabinets. Called by
-    :any:`optimize_PALC`.
+    :any:`optimize_target_slope`.
 
     Parameters
     ----------
     cabinet_count : int
         Number of LSA cabinets.
-    opt_ind : list
+    region_indices : list
         Indices of optimization region.
-    ls_ind : list
+    cabinet_point_indices : list
         Indices of venue slice mapped on LSA cabinets.
-    ls_opt_ind : list
+    cabinet_region_indices : list
         Indices of optimization region mapped on LSA cabinets.
-    SPLoverX : obj [in, out]
+    spl_over_distance : obj [in, out]
         Object with computed PALC results in optimization region.
-    Opt_w : obj [in, out]
+    target : obj [in, out]
         Object with information of Target Slope in optimization.
-    created_pal : obj [in]
+    drawn_lines : obj [in]
         Venue information that was drawn by the user.
     **kwargs : dict, optional
         Optional input to set single value difference
 
     Returns
     -------
-    diffLS : list
+    cabinet_differences : list
         Mean average of difference between target slope and PALC computed
         results regarding each LSA cabinet. If a LSA cabinet does not hit any
         point in the optimization region, the value is set to 100.
@@ -335,52 +335,52 @@ def diff_on_ls(cabinet_count, opt_ind, ls_ind, ls_opt_ind, Opt_w, SPLoverX, **kw
     if 'mtype' not in kwargs.keys(): kwargs['mtype'] = 'mean'
     if 'lsmap' not in kwargs.keys(): kwargs['lsmap'] = 'in_coverage'
     # write computed and optimized interpolated SPL values to variable
-    opt       = np.array(Opt_w.SPL_interp)
-    comp      = np.array(SPLoverX.SPL_interp)# removed opt_ind
-    grad_opt  = np.array(Opt_w.SPL_grad)
-    grad_comp = np.array(SPLoverX.SPL_grad)# removed opt_ind
+    opt       = np.array(target.region_levels_db)
+    comp      = np.array(spl_over_distance.region_levels_db)# removed region_indices
+    grad_opt  = np.array(target.region_gradients)
+    grad_comp = np.array(spl_over_distance.region_gradients)# removed region_indices
     # compute maximum neighbouring points of each loudspeaker impact point
-    nebs = get_nbs_neighbours(cabinet_count, ls_opt_ind, opt_ind)
+    neighbours = neighbour_counts(cabinet_count, cabinet_region_indices, region_indices)
     # first list in diff_comp_opt is computed results and secont optization target
-    diffLS, diffgradLS, diff_comp_opt_LS, diff_grad = [], [], [[],[]], [[],[]]
+    cabinet_differences, cabinet_gradient_differences, diff_comp_opt_LS, diff_grad = [], [], [[],[]], [[],[]]
     for n in range(cabinet_count):
-        diffLS.append([])
-        diffgradLS.append([])
-        for m,val in enumerate(opt_ind):
-            if val in ls_opt_ind[n]:
+        cabinet_differences.append([])
+        cabinet_gradient_differences.append([])
+        for m,val in enumerate(region_indices):
+            if val in cabinet_region_indices[n]:
                 diff_comp_opt_LS[0].append(comp[m])
                 diff_comp_opt_LS[1].append(opt[m])
                 diff_grad[0].append(grad_comp[m])
                 diff_grad[1].append(grad_opt[m])
-        if len(ls_opt_ind[n]) >= 1:
+        if len(cabinet_region_indices[n]) >= 1:
             frontend         = range_neighbours(comp, diff_comp_opt_LS)
             diff_comp_opt_LS = insert_neighbours(comp, opt, diff_comp_opt_LS, \
-                                                  nebs[n,:], frontend)
+                                                  neighbours[n,:], frontend)
             diff_grad        = insert_neighbours(grad_comp, grad_opt, diff_grad, \
-                                                  nebs[n,:], frontend)
-            diffLS[n], diffgradLS[n] = calc_SingleValueDiff(nar([nar(diff_comp_opt_LS[0]), \
+                                                  neighbours[n,:], frontend)
+            cabinet_differences[n], cabinet_gradient_differences[n] = single_value_difference(nar([nar(diff_comp_opt_LS[0]), \
                                                                  nar(diff_grad[0])]), \
                                                             nar([nar(diff_comp_opt_LS[1]), \
                                                                  nar(diff_grad[1])]), \
                                                             mtype=kwargs['mtype'], ef=True)
         else:
-            diffLS[n], diffgradLS[n] = 100, 100
+            cabinet_differences[n], cabinet_gradient_differences[n] = 100, 100
     
-    return diffLS, diffgradLS
+    return cabinet_differences, cabinet_gradient_differences
 
 
-def get_nbs_neighbours(cabinet_count, ls_opt_ind, opt_ind):
+def neighbour_counts(cabinet_count, cabinet_region_indices, region_indices):
     """
     Computes the number of neighbours on which it could be smoothed. Called
-    by :any:`diff_on_ls`.
+    by :any:`differences_per_cabinet`.
 
     Parameters
     ----------
     cabinet_count : int
         Number of LSA cabinets.
-    ls_opt_ind : list
+    cabinet_region_indices : list
         List of LSA cabinets mapped to audience positions.
-    opt_ind : list
+    region_indices : list
         Indices of optimization region.
 
     Returns
@@ -389,12 +389,12 @@ def get_nbs_neighbours(cabinet_count, ls_opt_ind, opt_ind):
         Number of possible neighbouring points for each cabinet.
 
     """
-    nebs = np.zeros((cabinet_count,2),dtype=int)
+    neighbours = np.zeros((cabinet_count,2),dtype=int)
     for n in range(cabinet_count):
-        if ls_opt_ind[n] != []:
-            nebs[n,0] = min(ls_opt_ind[n]) - min(opt_ind)
-            nebs[n,1] = max(opt_ind) - max(ls_opt_ind[n])
-    return nebs
+        if cabinet_region_indices[n] != []:
+            neighbours[n,0] = min(cabinet_region_indices[n]) - min(region_indices)
+            neighbours[n,1] = max(region_indices) - max(cabinet_region_indices[n])
+    return neighbours
 
 
 def range_neighbours(comp, diff_comp_opt_LS):
@@ -420,10 +420,10 @@ def range_neighbours(comp, diff_comp_opt_LS):
     return [front, end]
 
 
-def insert_neighbours(comp, opt, diff_comp_opt_LS, nebs, frontend, to_ins=5):
+def insert_neighbours(comp, opt, diff_comp_opt_LS, neighbours, frontend, to_ins=5):
     """
     Insert neighbouring points of the LSA cabinet to for difference of
-    computed and target values. Called by :any:`diff_on_ls`.
+    computed and target values. Called by :any:`differences_per_cabinet`.
 
     Parameters
     ----------
@@ -451,12 +451,12 @@ def insert_neighbours(comp, opt, diff_comp_opt_LS, nebs, frontend, to_ins=5):
     # Number of points (default is 5 percent)
     nbs = int((to_ins/100) * len(comp))
     # compute possible range
-    if nbs > nebs[0]:
-        fr_rng = nebs[0]
+    if nbs > neighbours[0]:
+        fr_rng = neighbours[0]
     else:
         fr_rng = nbs
-    if nbs > nebs[1]:
-        end_rng = nebs[1]
+    if nbs > neighbours[1]:
+        end_rng = neighbours[1]
     else:
         end_rng = nbs
     # insert in front and end (first find start index)
@@ -473,7 +473,7 @@ def insert_neighbours(comp, opt, diff_comp_opt_LS, nebs, frontend, to_ins=5):
     return diff_comp_opt_LS
 
 
-def smooth_1D_list(data, nbs_w=0.2, nums=1):
+def smooth_list(data, nbs_w=0.2, nums=1):
     """
     Smoothes a 1D array with the neighbouring entry.
 
@@ -516,20 +516,20 @@ def smooth_1D_list(data, nbs_w=0.2, nums=1):
     return list(s_data)
 
 
-def opt_weighting(PALC_config, Opt_w, loop):
+def update_weighting(config, target, loop):
     """
     Updates the weighting factors depending on differences at the LSA cabinets
     and weighting factors of the previous loop of target slope optimization.
     The break out condition depends equally on all positions in the
     optimization region and an additional (and optional) function to compute
-    a single difference value. . Called by :any:`optimize_PALC`.
+    a single difference value. . Called by :any:`optimize_target_slope`.
 
     Parameters
     ----------
-    PALC_config : obj [in, out]
+    config : obj [in, out]
         Configuration of PALC algorithm. The attribute weighting_weights will
         be updated for the next PALC computation.
-    Opt_w : obj [in]
+    target : obj [in]
         Contains information on the optimization target.
     loop : int
         Number of actual loop of target slope optimization.
@@ -540,16 +540,16 @@ def opt_weighting(PALC_config, Opt_w, loop):
 
     """
 
-    w    = PALC_config.weighting_weights
-    news = np.ones(PALC_config.cabinet_count)
-    PALC_config.weighting_weights[0] = 1.0
+    w    = config.weighting_weights
+    news = np.ones(config.cabinet_count)
+    config.weighting_weights[0] = 1.0
     
     grad_coeff = gaussian([-.4,.4,0.01], .15)
     grad_coeff[1,:] = mirror(0.8+grad_coeff[1,:]*.2,[-.4,.4,0.01])
     in_opt     = False
 
-    for n in range(1,PALC_config.cabinet_count):
-        if Opt_w.diffLS[n] == 100:
+    for n in range(1,config.cabinet_count):
+        if target.cabinet_differences[n] == 100:
             if not in_opt:
                 coeff = 1.2
             else:
@@ -557,17 +557,17 @@ def opt_weighting(PALC_config, Opt_w, loop):
             gcoeff = 1.0
         else:
             in_opt = True
-            coeff  = sv_gaussian(Opt_w.diffLS[n], 1.2, .65)
-            gcoeff = sv_gaussian(Opt_w.diffgradLS[n], .15, .8)
+            coeff  = sv_gaussian(target.cabinet_differences[n], 1.2, .65)
+            gcoeff = sv_gaussian(target.cabinet_gradient_differences[n], .15, .8)
         news[n] = news[n-1]*coeff*gcoeff
-        PALC_config.weighting_weights[n] = news[n] * w[n]
+        config.weighting_weights[n] = news[n] * w[n]
     return
 
 
-def calc_SingleValueDiff(comp, opt, mtype='mean', ef=True):
+def single_value_difference(comp, opt, mtype='mean', ef=True):
     """
     Computes a single value difference of the actual PALC results. Called by
-    :any:`optimize_PALC` and :any:`diff_on_ls`.
+    :any:`optimize_target_slope` and :any:`differences_per_cabinet`.
 
     Parameters
     ----------
@@ -734,20 +734,20 @@ def mirror(arr, x_l, mir=0):
     return arr
 
 
-def shift2ref(Opt_w, SPLoverX, opt_ind, SPLoverX_ref):
+def shift_to_reference(target, spl_over_distance, region_indices, reference_spl_over_distance):
     """
     Shifts SPL values on given reference.
 
     Parameters
     ----------
-    Opt_w : obj [in]
+    target : obj [in]
         Contains information on the optimization target.
-    SPLoverX : obj [in]
+    spl_over_distance : obj [in]
         Contains computed SPL over distance data including distance between
         center of LSA and receiver positions.
-    opt_ind : list [in]
+    region_indices : list [in]
         Indice of points in optimization region.
-    SPLoverX_ref : obj [in]
+    reference_spl_over_distance : obj [in]
         Contains computed SPL over distance data including distance between
         center of LSA and receiver positions of reference.
 
@@ -757,33 +757,33 @@ def shift2ref(Opt_w, SPLoverX, opt_ind, SPLoverX_ref):
 
     """
     # update reference index
-    Opt_w.ref_ind = np.argmin(np.abs(Opt_w.x_interp - Opt_w.x_ref))
-    # find index for SPLoverX
-    comp_ind = np.argmin(np.abs(SPLoverX.x - Opt_w.x_ref))
+    target.reference_index = np.argmin(np.abs(target.region_distances - target.reference_distance))
+    # find index for spl_over_distance
+    comp_ind = np.argmin(np.abs(spl_over_distance.distances - target.reference_distance))
     # compute shift
-    shift     = Opt_w.SPL_interp[Opt_w.ref_ind] - SPLoverX.SPL[comp_ind]
+    shift     = target.region_levels_db[target.reference_index] - spl_over_distance.levels_db[comp_ind]
     # apply shift
-    SPLoverX.SPL        += shift
-    SPLoverX.SPL_interp += shift
-    if type(SPLoverX_ref) is not list:
-        shift_ref = Opt_w.SPL_interp[Opt_w.ref_ind] - SPLoverX_ref.SPL[comp_ind]
-        SPLoverX_ref.SPL        += shift_ref
-        SPLoverX_ref.SPL_interp += shift_ref
+    spl_over_distance.levels_db        += shift
+    spl_over_distance.region_levels_db += shift
+    if type(reference_spl_over_distance) is not list:
+        shift_ref = target.region_levels_db[target.reference_index] - reference_spl_over_distance.levels_db[comp_ind]
+        reference_spl_over_distance.levels_db        += shift_ref
+        reference_spl_over_distance.region_levels_db += shift_ref
     return
 
 
-def shift_ref_on_zero(Opt_w, SPLoverX, SPLoverX_ref):
+def shift_to_zero(target, spl_over_distance, reference_spl_over_distance):
     """
     Shifts SPL on zero.
 
     Parameters
     ----------
-    Opt_w : obj [in]
+    target : obj [in]
         Contains information on the optimization target.
-    SPLoverX : obj [in]
+    spl_over_distance : obj [in]
         Contains computed SPL over distance data including distance between
         center of LSA and receiver positions.
-    SPLoverX_ref : obj [in]
+    reference_spl_over_distance : obj [in]
         Contains computed SPL over distance data including distance between
         center of LSA and receiver positions of reference.
 
@@ -792,40 +792,40 @@ def shift_ref_on_zero(Opt_w, SPLoverX, SPLoverX_ref):
     None.
 
     """
-    shift = SPLoverX.SPL[int(len(SPLoverX.SPL)/2)]
-    shift_ref = SPLoverX_ref.SPL[int(len(SPLoverX_ref.SPL)/2)]
-    SPLoverX.SPL     = [x - shift for x in SPLoverX.SPL]
-    SPLoverX_ref.SPL = [x - shift_ref for x in SPLoverX_ref.SPL]
+    shift = spl_over_distance.levels_db[int(len(spl_over_distance.levels_db)/2)]
+    shift_ref = reference_spl_over_distance.levels_db[int(len(reference_spl_over_distance.levels_db)/2)]
+    spl_over_distance.levels_db     = [x - shift for x in spl_over_distance.levels_db]
+    reference_spl_over_distance.levels_db = [x - shift_ref for x in reference_spl_over_distance.levels_db]
 
 
-def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
-                  Opt_arr, created_pal, Tech_res, SPLoverX, Opt_w, \
+def optimize_target_slope(config, sound_field_config, palc_venue, ray_plot, \
+                  optimized_array, drawn_lines, evaluation, spl_over_distance, target, \
                   max_loops=80):
     """
     Runs the while loop of target slope optimization. Will return the optimized
-    weighting factors in :any:`Opt_w`. Called by :any:`start_calc`. Calls mainly
-    methods of :py:class:`Opt_weight`, this module and
+    weighting factors in :any:`target`. Called by :any:`start_calc`. Calls mainly
+    methods of :py:class:`TargetSlopeState`, this module and
     :py:mod:`pypalc.core.sound_field`.
 
     Parameters
     ----------
-    PALC_config : obj [in]
+    config : obj [in]
         Configuration of the PALC algorithm.
-    SFP_config : obj [in]
+    sound_field_config : obj [in]
         Configuration of the sound field prediction.
-    PALC_pal : obj [in]
+    palc_venue : obj [in]
         Data of the venue slice.
-    PALC_plots : obj [in, out]
+    ray_plot : obj [in, out]
         Data to plot the venue slice information.
-    Opt_arr : obj [out]
+    optimized_array : obj [out]
         Data of the optimized LSA.
-    created_pal : obj [in]
+    drawn_lines : obj [in]
         Venue slice that was drawn by the user.
-    Tech_res : obj [out]
+    evaluation : obj [out]
         Technical Measure results depending on the sound field prediction.
-    SPLoverX : obj [out]
+    spl_over_distance : obj [out]
         Data of the Sound Pressure Level over Distance.
-    Opt_w : obj [out]
+    target : obj [out]
         Optimized weighting data to run the target slope optimization.
     max_loops : int, optional
         Maximum of loops to compute. The default is 40.
@@ -837,48 +837,49 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
     """
     loop = 0
     while int(loop) < int(max_loops):
-        run_palc(PALC_plots, PALC_pal, PALC_config, Opt_arr)
-        x_patches, y_patches = cabinet_outlines(PALC_plots, PALC_config, Opt_arr.tilt_angles)
-        PALC_plots.get_plot_array(Opt_arr)
-        x_S, y_S = predict_sound_field(Opt_arr.tilt_angles_deg, created_pal, SFP_config, \
-                            Tech_res)#, dir_meas_LSA, dir_meas_degree)
-        compute_spl_over_distance(PALC_plots, created_pal, Tech_res.spl_db, SPLoverX, SFP_config.frequency_range_hz)
+        run_palc(ray_plot, palc_venue, config, optimized_array)
+        patches_x, patches_y = cabinet_outlines(ray_plot, config, optimized_array.tilt_angles)
+        ray_plot.get_plot_array(optimized_array)
+        array_center_x, array_center_y = predict_sound_field(optimized_array.tilt_angles_deg, drawn_lines, sound_field_config, \
+                            evaluation)#, dir_meas_LSA, dir_meas_degree)
+        compute_spl_over_distance(ray_plot, drawn_lines, evaluation.spl_db, spl_over_distance, sound_field_config.frequency_range_hz)
         
         # get difference between reference and PALC at optimization points
         # indices of optimization region
-        opt_ind = get_opt_region(SPLoverX, Opt_w)
+        region_indices = optimization_region(spl_over_distance, target)
         
-        # shift Opt_w SPL at x_ref on SPLoverX
-        shift2ref(Opt_w, SPLoverX, opt_ind, [])
+        # shift target SPL at x_ref on spl_over_distance
+        shift_to_reference(target, spl_over_distance, region_indices, [])
         # indices that belong to the loudspeakers
-        ls_ind, ls_opt_ind = ls2pal(PALC_config.cabinet_count, Opt_arr, created_pal, opt_ind=opt_ind)
+        cabinet_point_indices, cabinet_region_indices = cabinet_points(config.cabinet_count, optimized_array, drawn_lines, region_indices=region_indices)
         # map values on LS
-        Opt_w.diffLS, Opt_w.diffgradLS = diff_on_ls(PALC_config.cabinet_count, opt_ind, \
-                                                        ls_ind, ls_opt_ind, \
-                                                        Opt_w, SPLoverX)
-        Opt_w.diffLS = smooth_1D_list(Opt_w.diffLS)
-        # opt_ind: pal points that belong to opt region
+        target.cabinet_differences, target.cabinet_gradient_differences = differences_per_cabinet(config.cabinet_count, region_indices, \
+                                                        cabinet_point_indices, cabinet_region_indices, \
+                                                        target, spl_over_distance)
+        target.cabinet_differences = smooth_list(target.cabinet_differences)
+        # region_indices: pal points that belong to opt region
         # diff_opt: difference in opt_region
-        # ls_opt_ind: opt region pal points sorted to loudspeaker
-        # ls_ind: pal points sorted to loudspeaker 
-        # removed opt_ind behind, change mean of SPL_interp
-        svdiff, svgrad = calc_SingleValueDiff(np.array([SPLoverX.SPL_interp, \
-                                                            SPLoverX.SPL_grad]), \
-                                                  np.array([Opt_w.SPL_interp, \
-                                                            Opt_w.SPL_grad]), \
+        # cabinet_region_indices: opt region pal points sorted to loudspeaker
+        # cabinet_point_indices: pal points sorted to loudspeaker 
+        # removed region_indices behind, change mean of region_levels_db
+        svdiff, svgrad = single_value_difference(np.array([spl_over_distance.region_levels_db, \
+                                                            spl_over_distance.region_gradients]), \
+                                                  np.array([target.region_levels_db, \
+                                                            target.region_gradients]), \
                                                   mtype='quantiles', ef=True)
         svtot = svdiff * svgrad
-        out = Opt_w.shift2psval(PALC_config, svtot, Opt_arr.iteration_count)
+        out = target.store_previous(config, svtot, optimized_array.iteration_count)
         if out:
-            run_palc(PALC_plots, PALC_pal, PALC_config, Opt_arr)
+            run_palc(ray_plot, palc_venue, config, optimized_array)
             break
         # update weighting
-        opt_weighting(PALC_config, Opt_w, loop)
+        update_weighting(config, target, loop)
         loop += 1
-    return opt_ind
+    return region_indices
 
 
-def snap_to_distance_grid(Opt_w, x, x_v, y_v, target, x_ref):
+def snap_to_distance_grid(target, distances, points_x, points_y, shown_target,
+                          reference_distance):
     """
     Moves the target slope points and the reference point to the nearest
     points of the SPL over distance grid and interpolates the target slope on
@@ -887,19 +888,20 @@ def snap_to_distance_grid(Opt_w, x, x_v, y_v, target, x_ref):
 
     Parameters
     ----------
-    Opt_w : obj [out]
-        Target slope state. The attributes x, SPL, x_v, y_v, x_interp,
-        SPL_interp, x_ref and ref_ind are written.
-    x : ndarray
+    target : TargetSlopeState [out]
+        Target slope state. The attributes distances, levels_db, points_x,
+        points_y, region_distances, region_levels_db, reference_distance and
+        reference_index are written.
+    distances : ndarray
         Distance grid: distances between the center of the LSA and the
         venue points.
-    x_v, y_v : ndarray
-        Venue points belonging to the distances in x.
-    target : dict
+    points_x, points_y : ndarray
+        Venue points belonging to the distances.
+    shown_target : dict
         Target slope points with the keys 'x', 'SPL', 'x_v' and 'y_v' (lists
         of equal length). Like the ColumnDataSource of the GUI, the lists
         'x', 'x_v' and 'y_v' are snapped in place.
-    x_ref : list of float
+    reference_distance : list of float
         One-element list with the distance of the reference point.
 
     Returns
@@ -907,17 +909,17 @@ def snap_to_distance_grid(Opt_w, x, x_v, y_v, target, x_ref):
     None.
 
     """
-    Opt_w.x, Opt_w.SPL = target['x'], target['SPL']
-    Opt_w.x_v, Opt_w.y_v = target['x_v'], target['y_v']
-    Opt_w.x_ref = x_ref
-    for ind, val in enumerate(Opt_w.x):
-        arg = np.argmin(np.abs(np.array(x)-val))
-        Opt_w.x[ind] = x[arg]
-        Opt_w.x_v[ind], Opt_w.y_v[ind] = x_v[arg], y_v[arg]
+    target.distances, target.levels_db = shown_target['x'], shown_target['SPL']
+    target.points_x, target.points_y = shown_target['x_v'], shown_target['y_v']
+    target.reference_distance = reference_distance
+    for ind, val in enumerate(target.distances):
+        arg = np.argmin(np.abs(np.array(distances)-val))
+        target.distances[ind] = distances[arg]
+        target.points_x[ind], target.points_y[ind] = points_x[arg], points_y[arg]
     # sort so that smaller x value is on indice 0
-    Opt_w.resort_opt_region()
-    Opt_w.x_interp = list(x[np.argmin(np.abs(x-Opt_w.x[0])):np.argmin(np.abs(x-Opt_w.x[-1]))+1])
-    Opt_w.interpolate_SPL()
+    target.sort_points()
+    target.region_distances = list(distances[np.argmin(np.abs(distances-target.distances[0])):np.argmin(np.abs(distances-target.distances[-1]))+1])
+    target.interpolate_levels()
     # find nearest index for x_ref
-    ref_ind = np.argmin(np.abs(Opt_w.x_ref[0] - np.array(Opt_w.x_interp)))
-    Opt_w.x_ref, Opt_w.ref_ind = Opt_w.x_interp[ref_ind], ref_ind
+    reference_index = np.argmin(np.abs(target.reference_distance[0] - np.array(target.region_distances)))
+    target.reference_distance, target.reference_index = target.region_distances[reference_index], reference_index

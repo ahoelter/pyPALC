@@ -82,10 +82,10 @@ def write_results(result: RunResult, out_dir: Path) -> List[Path]:
         files.append(_write(
             out_dir / "target_slope.csv",
             ["distance_m", "level_db", "x_m", "y_m"],
-            zip(t.x, t.SPL, t.x_v, t.y_v)))
-        ref_distance = float(np.ravel(t.x_ref)[0])
-        ref_level = float(np.asarray(t.SPL_interp, dtype=float)
-                          [int(np.ravel(t.ref_ind)[0])])
+            zip(t.distances, t.levels_db, t.points_x, t.points_y)))
+        ref_distance = float(np.ravel(t.reference_distance)[0])
+        ref_level = float(np.asarray(t.region_levels_db, dtype=float)
+                          [int(np.ravel(t.reference_index)[0])])
         grid = np.asarray(a["spl_over_distance_x"], dtype=float)
         i = int(np.argmin(np.abs(grid - ref_distance)))
         files.append(_write(
