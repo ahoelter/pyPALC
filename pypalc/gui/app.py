@@ -93,25 +93,26 @@ class SessionState:
     measured_directivity_csv : str or None
         Text of the last readable upload of measured directivity data.
     config : PalcConfig
-        PALC configuration (legacy ``PALC_config``), holding the values of
-        the configuration widgets. Calculations do not change it.
+        PALC configuration, holding the values of the configuration
+        widgets. Calculations do not change it.
     sound_field_config : SoundFieldConfig
-        Sound field prediction configuration (legacy ``SFP_config``), used
-        for the directivity and beam plots.
+        Sound field prediction configuration, used for the directivity
+        and beam plots.
     ranges : PlotRanges
         Ranges of the figures.
     optimized_array : ArrayGeometry
         Holds the allowed range of the fixed angle of the uppermost cabinet
-        (attribute ``fixed_angle``, legacy ``Opt_arr.fixed_angle``).
+        (attribute ``fixed_angle``).
     reference_array : ArrayGeometry
-        The reference array as computed on page 3 (legacy ``Ref_arr``).
+        The reference array as computed on page 3.
     target : TargetSlopeState
-        The target slope shown on page 4 (legacy ``Opt_w``).
+        The target slope shown on page 4.
     result : RunResult or None
         Results of the last successful calculation, None before.
     target_of_result : tuple or None
         The target slope as shown right after the last successful
-        calculation: ``(x, SPL, x_ref)`` of the target sources. Save
+        calculation: ``(distances, levels, reference distance)`` of the
+        target sources. Save
         compares it with the shown target to find out whether the target
         was moved since (:func:`~.setup_io.setup_to_save`).
     applying_setup : bool
@@ -183,7 +184,8 @@ class PalcApp:
         self._build_shared_widgets()
         # sources of the venue figure that are filled by the calculation
         self.cabinet_patches_source = ColumnDataSource(data=dict(
-            x_list=[], y_list=[], x_list_ref=[], y_list_ref=[]))
+            patches_x=[], patches_y=[], reference_patches_x=[],
+            reference_patches_y=[]))
         """Outlines of the cabinets of the optimized and reference array."""
         self.hit_points_source = ColumnDataSource(data=dict(
             hit_points_x=[], hit_points_y=[], hit_points_start_x=[],
@@ -337,13 +339,13 @@ class PalcApp:
             logger.exception('Could not create the PALC venue')
             self.config_error_info.text = 'Error: Could not create PAL proposal'
 
-    def set_venue_checked(self, has_pal: bool) -> None:
+    def set_venue_checked(self, checked: bool) -> None:
         """Enable the start toggle if the venue is PALC compatible
         (legacy ``change_start_pal_button``).
 
         Parameters
         ----------
-        has_pal : bool
+        checked : bool
             If True and a venue exists, PALC computation is enabled,
             otherwise disabled.
 
@@ -352,7 +354,7 @@ class PalcApp:
         None.
         """
         venue_page, algorithm = self.pages[1], self.pages[4]
-        if has_pal and self.has_venue():
+        if checked and self.has_venue():
             algorithm.start_toggle.disabled = False
             venue_page.check_venue_button.button_type = "success"
             venue_page.check_venue_button.label = "8. Venue is PALC compatible!"
@@ -636,15 +638,16 @@ class PalcApp:
         algorithm, results = self.pages[4], self.pages[5]
         cabinet_count = result.setup.array.cabinet_count
         optimized, reference = result.optimized, result.reference
-        Tech_res, Tech_res_ref = optimized.evaluation, reference.evaluation
-        SPLoverX, SPLoverX_ref = optimized.spl_over_distance, \
-            reference.spl_over_distance
-        created_pal = result.venue.drawn_lines
-        Opt_w = st.target
+        evaluation = optimized.evaluation
+        evaluation_reference = reference.evaluation
+        spl_over_distance = optimized.spl_over_distance
+        reference_spl_over_distance = reference.spl_over_distance
+        drawn_lines = result.venue.drawn_lines
+        target = st.target
         self.config_error_info.text = ''
         # array and rays in the venue figure
-        show_rays(self.rays_source, self.hit_points_source,
-                        result.ray_plot, result.geometry)
+        show_rays(self.rays_source, self.hit_points_source, result.ray_plot,
+                  result.geometry)
         # tilt angles
         algorithm.results_source.data = dict(
             cabinet=np.linspace(1, cabinet_count, num=cabinet_count),
@@ -652,109 +655,118 @@ class PalcApp:
             inter_cabinet_angle_deg=optimized.inter_cabinet_angles_deg)
         # Sound Field Prediction
         results.venue_points_source.data = dict(
-            x_m=created_pal.points_x, y_m=created_pal.points_y,
-            point_index=list(np.arange(np.shape(created_pal.points_x)[0])))
+            x_m=drawn_lines.points_x, y_m=drawn_lines.points_y,
+            point_index=list(np.arange(np.shape(drawn_lines.points_x)[0])))
         results.venue_points_figure.x(
             'x_m', 'y_m', source=results.venue_points_source,
             color=linear_cmap('point_index', rainbow[::-1], 0,
-                              np.shape(Tech_res.spl_db)[0]-1))
+                              np.shape(evaluation.spl_db)[0]-1))
         results.sound_field_source.data = dict(
-            spl_db=Tech_res.plot_spl_db,
-            frequencies_hz=Tech_res.plot_frequencies,
-            line_index=list(np.arange(np.shape(Tech_res.plot_spl_db)[0])),
-            reference_spl_db=Tech_res_ref.plot_spl_db)
+            spl_db=evaluation.plot_spl_db,
+            frequencies_hz=evaluation.plot_frequencies,
+            line_index=list(np.arange(np.shape(evaluation.plot_spl_db)[0])),
+            reference_spl_db=evaluation_reference.plot_spl_db)
         results.sound_field_figure.multi_line(
             'frequencies_hz', 'spl_db', source=results.sound_field_source,
             color=linear_cmap(field_name='line_index', palette=rainbow[::-1],
-                              low=0, high=np.shape(Tech_res.spl_db)[0]-1),
+                              low=0, high=np.shape(evaluation.spl_db)[0]-1),
             line_alpha=0.9)
         results.reference_sound_field_figure.multi_line(
             'frequencies_hz', 'reference_spl_db',
             source=results.sound_field_source,
-            color=linear_cmap(field_name='line_index', palette=rainbow[::-1],
-                              low=0, high=np.shape(Tech_res_ref.spl_db)[0]-1),
+            color=linear_cmap(
+                field_name='line_index', palette=rainbow[::-1], low=0,
+                high=np.shape(evaluation_reference.spl_db)[0]-1),
             line_alpha=0.9)
         # SPL over distance and target slope; writing the target sources
         # snaps the shown target to the new distance grid (snap_target)
         spl_source = algorithm.spl_over_distance_source
-        spl_ref_source = algorithm.reference_spl_over_distance_source
+        reference_spl_source = algorithm.reference_spl_over_distance_source
         if result.target is not None:
-            spl_source.data.update(dict(spl_db=SPLoverX.levels_db,
-                                        distance_m=SPLoverX.distances,
-                                        x_m=created_pal.points_x,
-                                        y_m=created_pal.points_y))
+            spl_source.data.update(dict(spl_db=spl_over_distance.levels_db,
+                                        distance_m=spl_over_distance.distances,
+                                        x_m=drawn_lines.points_x,
+                                        y_m=drawn_lines.points_y))
             algorithm.target_source.data.update(dict(
                 level_db=result.target.levels_db))
             algorithm.target_reference_source.data.update(dict(
-                level_db=[Opt_w.region_levels_db[Opt_w.reference_index]]))
-            spl_ref_source.data.update(dict(
-                reference_spl_db=SPLoverX_ref.levels_db))
-        elif not Opt_w.initialized:
-            spl_source.data.update(dict(spl_db=SPLoverX.levels_db,
-                                        distance_m=SPLoverX.distances,
-                                        x_m=created_pal.points_x,
-                                        y_m=created_pal.points_y))
-            spl_ref_source.data.update(dict(
-                reference_spl_db=SPLoverX_ref.levels_db,
-                distance_m=SPLoverX_ref.distances,
-                x_m=created_pal.points_x, y_m=created_pal.points_y))
+                level_db=[target.region_levels_db[target.reference_index]]))
+            reference_spl_source.data.update(dict(
+                reference_spl_db=reference_spl_over_distance.levels_db))
+        elif not target.initialized:
+            spl_source.data.update(dict(spl_db=spl_over_distance.levels_db,
+                                        distance_m=spl_over_distance.distances,
+                                        x_m=drawn_lines.points_x,
+                                        y_m=drawn_lines.points_y))
+            reference_spl_source.data.update(dict(
+                reference_spl_db=reference_spl_over_distance.levels_db,
+                distance_m=reference_spl_over_distance.distances,
+                x_m=drawn_lines.points_x, y_m=drawn_lines.points_y))
             algorithm.target_source.data.update(dict(
-                level_db=[SPLoverX.levels_db[0], SPLoverX.levels_db[-1]],
-                distance_m=[SPLoverX.distances[0], SPLoverX.distances[-1]],
-                x_m=[created_pal.points_x[0], created_pal.points_x[-1]],
-                y_m=[created_pal.points_y[0], created_pal.points_y[-1]]))
-            middle = int(len(Opt_w.region_distances)/2)
-            middle_point = int(len(created_pal.points_x)/2)
+                level_db=[spl_over_distance.levels_db[0],
+                          spl_over_distance.levels_db[-1]],
+                distance_m=[spl_over_distance.distances[0],
+                            spl_over_distance.distances[-1]],
+                x_m=[drawn_lines.points_x[0], drawn_lines.points_x[-1]],
+                y_m=[drawn_lines.points_y[0], drawn_lines.points_y[-1]]))
+            middle = int(len(target.region_distances)/2)
+            middle_point = int(len(drawn_lines.points_x)/2)
             algorithm.target_reference_source.data.update(dict(
-                distance_m=[Opt_w.region_distances[middle]],
-                level_db=[Opt_w.region_levels_db[
-                    int(len(Opt_w.region_levels_db)/2)]],
-                x_m=[created_pal.points_x[middle_point]],
-                y_m=[created_pal.points_y[
-                    int(len(created_pal.points_y)/2)]]))
+                distance_m=[target.region_distances[middle]],
+                level_db=[target.region_levels_db[
+                    int(len(target.region_levels_db)/2)]],
+                x_m=[drawn_lines.points_x[middle_point]],
+                y_m=[drawn_lines.points_y[
+                    int(len(drawn_lines.points_y)/2)]]))
         else:
-            spl_source.data.update(dict(spl_db=SPLoverX.levels_db,
-                                        distance_m=SPLoverX.distances,
-                                        x_m=created_pal.points_x,
-                                        y_m=created_pal.points_y))
-            spl_ref_source.data.update(dict(
-                reference_spl_db=SPLoverX_ref.levels_db,
-                distance_m=SPLoverX_ref.distances,
-                x_m=created_pal.points_x, y_m=created_pal.points_y))
+            spl_source.data.update(dict(spl_db=spl_over_distance.levels_db,
+                                        distance_m=spl_over_distance.distances,
+                                        x_m=drawn_lines.points_x,
+                                        y_m=drawn_lines.points_y))
+            reference_spl_source.data.update(dict(
+                reference_spl_db=reference_spl_over_distance.levels_db,
+                distance_m=reference_spl_over_distance.distances,
+                x_m=drawn_lines.points_x, y_m=drawn_lines.points_y))
         # Homogeneity
         results.homogeneity_source.data = dict(
-            frequency_hz=Tech_res.frequencies,
-            homogeneity_db=Tech_res.homogeneity_db,
-            homogeneity_low_db=Tech_res.homogeneity_low_db,
-            homogeneity_high_db=Tech_res.homogeneity_high_db,
-            reference_homogeneity_db=Tech_res_ref.homogeneity_db)
+            frequency_hz=evaluation.frequencies,
+            homogeneity_db=evaluation.homogeneity_db,
+            homogeneity_low_db=evaluation.homogeneity_low_db,
+            homogeneity_high_db=evaluation.homogeneity_high_db,
+            reference_homogeneity_db=evaluation_reference.homogeneity_db)
         # Histogram
-        results.histogram_source.data = dict(count=Tech_res.histogram_tops,
-                                             spl_db=Tech_res.histogram_steps)
+        results.histogram_source.data = dict(count=evaluation.histogram_tops,
+                                             spl_db=evaluation.histogram_steps)
         results.reference_histogram_source.data = dict(
-            count=Tech_res_ref.histogram_tops,
-            spl_db=Tech_res_ref.histogram_steps)
+            count=evaluation_reference.histogram_tops,
+            spl_db=evaluation_reference.histogram_steps)
         # Ranges of bar charts, homogeneity, sound field and SPL over distance
         rng = st.ranges
-        histogram_x = rng.update_range('histogram_x', [-1, 1], Tech_res.histogram_steps,
-                                     Tech_res_ref.histogram_steps)
-        bar_top_range = rng.update_range('histogram_top', [-1, 2], Tech_res.histogram_tops,
-                                         Tech_res_ref.histogram_tops)
-        results.histogram_figure.x_range = histogram_x
-        results.histogram_figure.y_range = bar_top_range
-        results.reference_histogram_figure.x_range = histogram_x
-        results.reference_histogram_figure.y_range = bar_top_range
+        histogram_x_range = rng.update_range(
+            'histogram_x', [-1, 1], evaluation.histogram_steps,
+            evaluation_reference.histogram_steps)
+        histogram_top_range = rng.update_range(
+            'histogram_top', [-1, 2], evaluation.histogram_tops,
+            evaluation_reference.histogram_tops)
+        results.histogram_figure.x_range = histogram_x_range
+        results.histogram_figure.y_range = histogram_top_range
+        results.reference_histogram_figure.x_range = histogram_x_range
+        results.reference_histogram_figure.y_range = histogram_top_range
         results.homogeneity_figure.y_range = rng.update_range(
-            'homogeneity_y', [-2, 2], Tech_res.homogeneity_db, Tech_res_ref.homogeneity_db)
-        psfp_y_range = rng.update_range('sound_field_y', [-5, 5], Tech_res.spl_db,
-                                        Tech_res_ref.spl_db)
-        results.sound_field_figure.y_range = psfp_y_range
-        results.reference_sound_field_figure.y_range = psfp_y_range
+            'homogeneity_y', [-2, 2], evaluation.homogeneity_db,
+            evaluation_reference.homogeneity_db)
+        sound_field_y_range = rng.update_range(
+            'sound_field_y', [-5, 5], evaluation.spl_db,
+            evaluation_reference.spl_db)
+        results.sound_field_figure.y_range = sound_field_y_range
+        results.reference_sound_field_figure.y_range = sound_field_y_range
         algorithm.spl_over_distance_figure.y_range = rng.update_range(
-            'spl_over_distance_y', [-1, 1], Opt_w.region_levels_db, SPLoverX.region_levels_db,
-            SPLoverX.levels_db, SPLoverX_ref.levels_db)
+            'spl_over_distance_y', [-1, 1], target.region_levels_db,
+            spl_over_distance.region_levels_db, spl_over_distance.levels_db,
+            reference_spl_over_distance.levels_db)
         results.beam_checkbox.active, results.beam_checkbox.disabled = [], False
         # Array visualization
         self.cabinet_patches_source.data.update(dict(
-            x_list=optimized.patches_x, y_list=optimized.patches_y,
-            x_list_ref=reference.patches_x, y_list_ref=reference.patches_y))
+            patches_x=optimized.patches_x, patches_y=optimized.patches_y,
+            reference_patches_x=reference.patches_x,
+            reference_patches_y=reference.patches_y))

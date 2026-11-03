@@ -139,7 +139,7 @@ class VenuePage:
                                 legend_label='only SFP', line_dash='solid',
                                 line_color="orange", line_width=2,
                                 nonselection_line_alpha=0.5)
-        venue_figure.patches('x_list', 'y_list',
+        venue_figure.patches('patches_x', 'patches_y',
                              source=app.cabinet_patches_source, color="white")
         # array and its rays
         venue_figure.multi_line('center_rays_x', 'center_rays_y',

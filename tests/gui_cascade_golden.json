@@ -619,10 +619,10 @@ null
 },
 "5.venue_points_source.selected": [],
 "app.cabinet_patches_source.data": {
-"x_list": [],
-"x_list_ref": [],
-"y_list": [],
-"y_list_ref": []
+"patches_x": [],
+"patches_y": [],
+"reference_patches_x": [],
+"reference_patches_y": []
 },
 "app.cabinet_patches_source.selected": [],
 "app.config_error_info.disabled": false,
@@ -2013,8 +2013,8 @@ null
 "size": 1794
 },
 "app.cabinet_patches_source.data": {
-"sha1": "ca1f9ef7c40ab6c806a5352efdb8f4c18d2aef8a",
-"size": 1625
+"sha1": "7b6470b8ac2b05ec18d1ba23baa71b66ffd116fb",
+"size": 1649
 },
 "app.hit_points_source.data": {
 "hit_points_start_x": [

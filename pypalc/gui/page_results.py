@@ -87,7 +87,7 @@ class ResultsPage:
             tooltips=[("Index", "$index"), ("(x,y)", "(@x_m, @y_m)")],
             width=1220, height=300)
         self.venue_points_figure.toolbar.logo = None
-        self.venue_points_figure.patches('x_list', 'y_list',
+        self.venue_points_figure.patches('patches_x', 'patches_y',
                                          source=patches_source, color="white")
         self.venue_points_source.selected.on_change('indices',
                                                     self.venue_point_tapped)
@@ -141,7 +141,7 @@ class ResultsPage:
         beam_figure.multi_line('lines_x', 'lines_y', source=lines_source,
                                line_dash='solid', line_color="black",
                                line_width=4, selection_color="darkred")
-        beam_figure.patches('x_list', 'y_list', source=patches_source,
+        beam_figure.patches('patches_x', 'patches_y', source=patches_source,
                             color="black")
         self.beam_figure = beam_figure
         reference_beam_figure = figure(
@@ -169,7 +169,8 @@ class ResultsPage:
                                          line_dash='solid', line_color="black",
                                          line_width=4,
                                          selection_color="darkred")
-        reference_beam_figure.patches('x_list_ref', 'y_list_ref',
+        reference_beam_figure.patches('reference_patches_x',
+                                      'reference_patches_y',
                                       source=patches_source, color="black")
         beam_figure.xaxis.axis_label_text_font_style = "normal"
         self.reference_beam_figure = reference_beam_figure
