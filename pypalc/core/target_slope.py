@@ -119,8 +119,10 @@ class TargetSlopeState():
             True, if the while optimization loop has to stop: 10 loops were
             worse than the loop before, the difference stayed the same
             5 times in a row, or ``iteration_count`` is 500. The weights of
-            the loop with the lowest difference are then restored in
-            ``config``. Otherwise False.
+            the recorded loop with the lowest difference (a loop is
+            recorded when the next one is worse) are then restored in
+            ``config``; if no loop is recorded, the current weights are
+            kept. Otherwise False.
 
         """
         if np.round(diff_opt, decimals=8) == np.round(self.previous_differences['n-1'], decimals=8):
@@ -133,8 +135,11 @@ class TargetSlopeState():
         self.previous_differences['n-1'] = diff_opt
         self.previous_weights['n-1'] = np.array(config.weighting_weights[:])
         if len(self.previous_weights['lowest']) == 10 or self.previous_differences['same'] == 5 or iteration_count==500:
-            low_ind = np.argmin(self.previous_differences['lowest'])
-            config.weighting_weights = self.previous_weights['lowest'][low_ind][:]
+            # without a recorded loop (no loop was worse than the one
+            # before) the current weights are kept
+            if self.previous_differences['lowest']:
+                low_ind = np.argmin(self.previous_differences['lowest'])
+                config.weighting_weights = self.previous_weights['lowest'][low_ind][:]
             return True
         return False
             
