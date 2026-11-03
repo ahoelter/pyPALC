@@ -727,14 +727,15 @@ class AlgorithmPage:
         try:
             try:
                 text = base64.b64decode(new).decode('utf-8')
-            except (binascii.Error, ValueError):
-                raise SetupError('file', 'not a UTF-8 text file') from None
+            except (binascii.Error, ValueError) as exc:
+                raise SetupError('file', 'not a UTF-8 text file') from exc
             setup = load_setup_text(text)
             apply_setup(app, setup)
         except SetupError as exc:
             message = PATH_DIRECTIVITY_MESSAGE \
                 if exc.key == PATH_DIRECTIVITY_KEY else exc.message
             logger.info('Setup file not loaded: %s', exc)
+            logger.debug('Setup file not loaded', exc_info=True)
             app.config_error_info.text = \
                 'Error: setup file invalid at %s: %s' % (exc.key, message)
         except CALLBACK_ERRORS:

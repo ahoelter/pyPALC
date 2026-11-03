@@ -259,10 +259,10 @@ def _check_applicable(setup: Setup) -> None:
     if md is not None and md.csv is not None:
         try:
             parse_measured_directivity(md.csv, SoundFieldConfig())
-        except CALLBACK_ERRORS:
+        except CALLBACK_ERRORS as exc:
             raise SetupError("loudspeaker.measured_directivity.csv",
                              "cannot be read as measured loudspeaker data"
-                             ) from None
+                             ) from exc
     ar, ref, alg = setup.array, setup.reference_array, setup.algorithm
     if ar.discrete_tilt_angles_deg is not None and \
             len(ar.discrete_tilt_angles_deg) == 0:
@@ -279,7 +279,7 @@ def _check_applicable(setup: Setup) -> None:
         message = str(exc)
         if message.startswith('Error: '):
             message = message[len('Error: '):]
-        raise SetupError("venue.audience_lines", message) from None
+        raise SetupError("venue.audience_lines", message) from exc
     discrete_tilt_angles = [] if ar.discrete_tilt_angles_deg is None else \
         np.array(ar.discrete_tilt_angles_deg) * (np.pi/180)
     try:
@@ -289,7 +289,7 @@ def _check_applicable(setup: Setup) -> None:
             ref.use_discrete_angles and ar.discrete_tilt_angles_deg
             is not None, ref.tilt_angles_deg)
     except CALLBACK_ERRORS as exc:
-        raise SetupError("reference_array", str(exc)) from None
+        raise SetupError("reference_array", str(exc)) from exc
     if alg.weighting == 'target_slope':
         lines = len(setup.venue.audience_lines)
         if len(setup.target_slope.points) - 2 > lines:

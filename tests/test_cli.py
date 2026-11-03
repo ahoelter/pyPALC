@@ -12,7 +12,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from pypalc import cli
 from pypalc.cli import main
+from pypalc.core.errors import CalculationError
 from tests.baseline_cases import assert_matches_baseline
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -108,3 +110,43 @@ def test_python_m_entry_point(tmp_path):
         cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     assert proc.returncode == 0, proc.stderr
     assert (tmp_path / "tilt_angles.csv").exists()
+
+
+def _fail_with_cause(*args, **kwargs):
+    try:
+        raise IndexError("index 7 is out of bounds")
+    except IndexError as exc:
+        raise CalculationError("Error: PALC calculation failed") from exc
+
+
+def test_cli_error_shows_cause(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(cli, "run", _fail_with_cause)
+    assert main(["run", str(CASES / "simple.yaml"),
+                 "--out", str(tmp_path)]) == 4
+    err = capsys.readouterr().err
+    assert err == ("calculation error: PALC calculation failed (caused by "
+                   "IndexError: index 7 is out of bounds)\n")
+    assert not list(tmp_path.iterdir())
+
+
+def test_cli_traceback_flag_prints_chained_traceback(tmp_path, capsys,
+                                                     monkeypatch):
+    monkeypatch.setattr(cli, "run", _fail_with_cause)
+    assert main(["run", str(CASES / "simple.yaml"), "--out", str(tmp_path),
+                 "--traceback"]) == 4
+    err = capsys.readouterr().err
+    assert err.startswith("Traceback (most recent call last):")
+    assert "IndexError: index 7 is out of bounds" in err
+    assert "direct cause of the following exception" in err
+    assert "pypalc.core.errors.CalculationError: Error: PALC calculation " \
+           "failed" in err
+    assert err.endswith("calculation error: PALC calculation failed (caused "
+                        "by IndexError: index 7 is out of bounds)\n")
+
+
+def test_cli_setup_error_does_not_repeat_its_cause(tmp_path, capsys):
+    assert main(["run", str(tmp_path / "nope.yaml"),
+                 "--out", str(tmp_path / "o")]) == 2
+    err = capsys.readouterr().err
+    assert err.startswith("setup error at setup: cannot read ")
+    assert "caused by" not in err

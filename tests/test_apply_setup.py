@@ -32,6 +32,7 @@ import csv
 import dataclasses
 import functools
 import io
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -42,7 +43,7 @@ from bokeh.model import Model
 
 from pypalc.cli import main
 from pypalc.core import pipeline
-from pypalc.core.errors import ConvergenceError, SetupError
+from pypalc.core.errors import ConvergenceError, SetupError, VenueError
 from pypalc.core.palc import clamp_fixed_angle
 from pypalc.core.pipeline import fixed_angle_limits, result_arrays, run
 from pypalc.core.settings import (AudienceLine, MeasuredDirectivity,
@@ -286,6 +287,32 @@ def test_load_rejects_unusable_venue():
 
 def test_load_rejects_setup_without_lines():
     assert_load_rejected("version: 1\n", "venue.audience_lines")
+
+
+def _setup_with_reversed_line():
+    setup = case_setup("simple")
+    line = setup.venue.audience_lines[0]
+    lines = (line, AudienceLine(start=line.stop, stop=line.start))
+    return dataclasses.replace(setup, venue=dataclasses.replace(
+        setup.venue, audience_lines=lines))
+
+
+def test_apply_setup_keeps_cause_of_rejection():
+    with pytest.raises(SetupError) as info:
+        apply_setup(new_app(), _setup_with_reversed_line())
+    assert info.value.key == "venue.audience_lines"
+    assert isinstance(info.value.__cause__, VenueError)
+
+
+def test_load_logs_rejection_with_traceback_at_debug_level(caplog):
+    app = new_app()
+    with caplog.at_level(logging.DEBUG, logger="pypalc.gui.page_algorithm"):
+        load(app, dump_setup(_setup_with_reversed_line()))
+    assert app.config_error_info.text.startswith(
+        "Error: setup file invalid at venue.audience_lines: ")
+    debug = [r for r in caplog.records if r.levelno == logging.DEBUG]
+    assert len(debug) == 1 and debug[0].exc_info is not None
+    assert isinstance(debug[0].exc_info[1].__cause__, VenueError)
 
 
 def test_load_rejects_non_utf8_file():
