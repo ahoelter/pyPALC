@@ -16,7 +16,7 @@ from numpy import array as nar
 from scipy.special import erf
 from scipy.stats.mstats import mquantiles
 
-from .geometry import LSA_visualization
+from .geometry import cabinet_outlines
 from .palc import calcPALC
 from .sound_field import calcSFP, calcSPLoverX
 
@@ -838,7 +838,7 @@ def optimize_PALC(PALC_config, SFP_config, PALC_pal, PALC_plots, \
     loop = 0
     while int(loop) < int(max_loops):
         calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr)
-        x_patches, y_patches = LSA_visualization(PALC_plots, PALC_config, Opt_arr.gamma_n)
+        x_patches, y_patches = cabinet_outlines(PALC_plots, PALC_config, Opt_arr.gamma_n)
         PALC_plots.get_plot_array(Opt_arr)
         x_S, y_S = calcSFP(Opt_arr.gamma_tilt_deg, created_pal, SFP_config, \
                             Tech_res)#, dir_meas_LSA, dir_meas_degree)

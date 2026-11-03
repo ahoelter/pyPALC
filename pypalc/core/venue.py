@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .geometry import calc_intersection_PAL
+from .geometry import line_intersection
 
 
 class AudienceLines:
@@ -371,7 +371,7 @@ def draw_condition_3(x_start, x_stop, y_start, y_stop, slope, intercept, drawn_l
 
     """
     for n in range(np.shape(drawn_lines.line_start_x)[0]):
-        xy_s2,_,_,px = calc_intersection_PAL([x_start, y_start], [x_stop, y_stop], \
+        xy_s2,_,_,px = line_intersection([x_start, y_start], [x_stop, y_stop], \
                                       [drawn_lines.line_start_x[n], drawn_lines.line_start_y[n]], [drawn_lines.line_stop_x[n], drawn_lines.line_stop_y[n]])
         # check if overlay exists
         if not px and intercept == drawn_lines.intercept[n]:
@@ -483,9 +483,9 @@ def suggest_venue(drawn_lines, non_audience_lines, sound_field_only_lines):
             break
         # same handling for cases: [1,4], [3,5,6], [9], special handling case [7,8] and no handling in case 2
         if line_stop_x[m] <= line_start_x[m+1+nj] and line_stop_y[m] > line_start_y[m+1+nj]: # case 1 and 4
-            xy_s = calc_intersection_PAL([line_stop_x[m], line_stop_y[m]], [line_stop_x[m+1+nj], line_stop_y[m]], \
+            xy_s = line_intersection([line_stop_x[m], line_stop_y[m]], [line_stop_x[m+1+nj], line_stop_y[m]], \
                                          [line_start_x[m+1+nj], line_start_y[m+1+nj]], [line_stop_x[m+1+nj], line_stop_y[m+1+nj]])[0]
-            xy_s2 = calc_intersection_PAL([line_start_x[m], line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
+            xy_s2 = line_intersection([line_start_x[m], line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
                                          [line_start_x[m+1+nj], line_start_y[m+1+nj]], [line_stop_x[m+1+nj], line_stop_y[m+1+nj]])[0]
             if xy_s2[0] == line_stop_x[m] and xy_s2[1] == line_stop_y[m] \
                and line_start_x[m+1+nj] == xy_s2[0] == line_stop_x[m+1+nj]: # special case: line m+1 is vertical at stop pos of line m
@@ -509,7 +509,7 @@ def suggest_venue(drawn_lines, non_audience_lines, sound_field_only_lines):
             non_audience_lines.line_end_indices = np.append(non_audience_lines.line_end_indices, m).astype(int)
 
         elif line_stop_x[m] > line_start_x[m+1+nj] and line_stop_y[m] < line_start_y[m+1+nj]: # case 9
-            xy_s = calc_intersection_PAL([line_start_x[m],line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
+            xy_s = line_intersection([line_start_x[m],line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
                                          [line_start_x[m+1+nj],line_start_y[m]], [line_start_x[m+1+nj], line_stop_y[m+1+nj]])[0]
             non_audience_lines.append_line(xy_s[0], line_start_x[m+1+nj], xy_s[1], line_start_y[m+1+nj])
             sound_field_only_lines.append_line(xy_s[0], line_stop_x[m], xy_s[1], line_stop_y[m])
@@ -519,13 +519,13 @@ def suggest_venue(drawn_lines, non_audience_lines, sound_field_only_lines):
             sound_field_only_lines.cut_lines.append(['before end', m])
 
         elif (line_stop_x[m] > line_start_x[m+1+nj] and line_stop_y[m] >= line_start_y[m+1+nj]): # case 8 and 7 (special handling)
-            xy_s, _, _, p_ex = calc_intersection_PAL([line_start_x[m],line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
+            xy_s, _, _, p_ex = line_intersection([line_start_x[m],line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
                                          [line_start_x[m+1+nj],line_start_y[m+1+nj]], [line_stop_x[m+1+nj], line_stop_y[m+1+nj]])
-            xy_s2, _, _, p_ex2 = calc_intersection_PAL([line_stop_x[m],line_stop_y[m]], [line_stop_x[m], line_stop_y[m]+2], \
+            xy_s2, _, _, p_ex2 = line_intersection([line_stop_x[m],line_stop_y[m]], [line_stop_x[m], line_stop_y[m]+2], \
                                          [line_start_x[m+1+nj],line_start_y[m+1+nj]], [line_stop_x[m+1+nj], line_stop_y[m+1+nj]])
-            xy_s3, _, _, p_ex2 = calc_intersection_PAL([line_stop_x[m],line_stop_y[m]], [line_stop_x[m+1+nj], line_stop_y[m]], \
+            xy_s3, _, _, p_ex2 = line_intersection([line_stop_x[m],line_stop_y[m]], [line_stop_x[m+1+nj], line_stop_y[m]], \
                                          [line_start_x[m+1+nj],line_start_y[m+1+nj]], [line_stop_x[m+1+nj], line_stop_y[m+1+nj]])
-            xy_s4, _, _, p_ex2 = calc_intersection_PAL([line_start_x[m],line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
+            xy_s4, _, _, p_ex2 = line_intersection([line_start_x[m],line_start_y[m]], [line_stop_x[m], line_stop_y[m]], \
                                          [line_start_x[m+1+nj],line_start_y[m+1+nj]], [line_start_x[m+1+nj], line_start_y[m+1+nj]+2])
             # case 7: intersection point is on the lines:
             if (line_start_x[m] <= xy_s[0] < line_stop_x[m]) and (line_start_y[m] <= xy_s[1] <= line_stop_y[m]) \

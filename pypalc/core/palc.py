@@ -17,8 +17,8 @@ from copy import copy
 
 import numpy as np
 
-from .geometry import (LSA_visualization, calc_gamma, calc_intersection_PAL,
-                       source_pos)
+from .geometry import (cabinet_outlines, cabinet_tilt_angle, line_intersection,
+                       source_positions)
 
 logger = logging.getLogger(__name__)
 
@@ -348,7 +348,7 @@ def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt
                     # seg_rem = |x_a_t_n - x_PAL_k-1|                      
                     seg_rem = aud_l[k]  
                     # analytical Calculation of GammaTiltDeg_angle: 
-                    gamma_n[m] = calc_gamma(gamma_n, psi_n, \
+                    gamma_n[m] = cabinet_tilt_angle(gamma_n, psi_n, \
                        PALC_config.x_H, PALC_config.y_H, x_a_t_n, PALC_config.Lambda_y, m)
 
                 ############ FIXED FIRST ANGLE ############################
@@ -390,7 +390,7 @@ def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt
                     for o in range(np.shape(segments)[0]):
 
                         xy_s1[o,:], lambda_1, lambda_2, point_exists1[o] = \
-                        calc_intersection_PAL(np.array([source_x[0], source_y[0], 0]), np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
+                        line_intersection(np.array([source_x[0], source_y[0], 0]), np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
 
                         if point_exists1[o] == 1 and segments[o][0,0]<=np.round(xy_s1[o,0], decimals=3)<=segments[o][-1,0] and \
                            segments[o][0,1]<=np.round(xy_s1[o,1], decimals=3)<=segments[o][-1,1]:
@@ -428,7 +428,7 @@ def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt
                     gamma_n[m] = PALC_config.gamma_LSA[ind[0]] + PALC_config.last_angle_hm
             elif m > 0:
                 x_a_t_n[m,:] = x_a_b_n[m-1,:]
-                gamma_n[m] = calc_gamma(gamma_n, psi_n, x_start, y_start, x_a_t_n, PALC_config.Lambda_y, m)
+                gamma_n[m] = cabinet_tilt_angle(gamma_n, psi_n, x_start, y_start, x_a_t_n, PALC_config.Lambda_y, m)
  
                 ################## DISCRETE TILT ANGLES ###################
                 if PALC_config.use_gamma_LSA and np.shape(PALC_config.gamma_LSA)[0] > 1:
@@ -444,7 +444,7 @@ def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt
                     direction = gamma_n[m] - psi_n[m]  # angle of direction to x_a_t_n of m-th loudspeaker
                     hypo = 1/np.cos(direction)    # length if side adjacent is equal to one
                     direction_y = hypo * np.sin(direction) # length in y direction if side adjacent (x direction)  is equal to one
-                    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_pos(gamma_n, PALC_config) # source positions
+                    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_positions(gamma_n, PALC_config) # source positions
                     xmax = max(o.max() for o in segments)
                     end_x = np.array([xmax + 1]) # max length in x direction
                     end_y = y_c_n[m] - direction_y * (end_x - x_c_n[m]) #  max depth of y direction source_y - (end_x - source_x) / np.tan((np.pi/2) - (gamma_n[m]-psi_n[m]))
@@ -453,7 +453,7 @@ def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt
                     # check in which pal segment is the intersection point
                     for o in range(np.shape(segments)[0]):
                         xy_s1[0,:], lambda_1, lambda_2, point_exists2 = \
-                        calc_intersection_PAL(np.array([x_c_n[m], y_c_n[m], 0]), \
+                        line_intersection(np.array([x_c_n[m], y_c_n[m], 0]), \
                                               np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
                         if point_exists2 == True and segments[o][0,0]<=np.round(xy_s1[0,0], decimals=3)<=segments[o][-1,0] and \
                            segments[o][0,1]<=np.round(xy_s1[0,1], decimals=3)<=segments[o][-1,1]:
@@ -489,7 +489,7 @@ def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt
    
             ###############################################################################        
             # STEP 2: CALCULATE THE SOURCE POSITIONS  
-            x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_pos(gamma_n, PALC_config)
+            x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_positions(gamma_n, PALC_config)
                 
             ###############################################################################
             # STEP 3
@@ -746,32 +746,32 @@ def calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr):
 
         # Run the calculation for each continuous audience line
         for n in range(np.shape(pal_h)[0]-1,-1,-1):
-            N_margin = 0
+            margin_cabinet_count = 0
             for m in range(N):
                 if n == ls2seg[m]:
-                    N_margin += 1
+                    margin_cabinet_count += 1
 
             if n == np.shape(pal_h)[0]-1:
-                gamma_n = np.linspace(-0.0428, 0.7147, num=N_margin)
-                psi_n = np.linspace(0.00524, 0.00524, num=N_margin)
-                calc_angles(PALC_plots, pal_h[n], psi_n, gamma_n, N_margin, PALC_config, pal_e, Opt_arr)
-                x_patches, y_patches = LSA_visualization(PALC_plots, PALC_config, Opt_arr.gamma_n, \
-                                                          N_margin=np.shape(Opt_arr.gamma_tilt_deg)[0])
+                gamma_n = np.linspace(-0.0428, 0.7147, num=margin_cabinet_count)
+                psi_n = np.linspace(0.00524, 0.00524, num=margin_cabinet_count)
+                calc_angles(PALC_plots, pal_h[n], psi_n, gamma_n, margin_cabinet_count, PALC_config, pal_e, Opt_arr)
+                x_patches, y_patches = cabinet_outlines(PALC_plots, PALC_config, Opt_arr.gamma_n, \
+                                                          margin_cabinet_count=np.shape(Opt_arr.gamma_tilt_deg)[0])
 
                 Opt_arr_hm = copy(Opt_arr)
                 PALC_plots_hm = copy(PALC_plots)
             else:
 
                 PALC_config.last_angle_hm = Opt_arr_hm.gamma_tilt_deg[-1] * np.pi / 180
-                PALC_config.gamma_n = gamma_n = np.linspace(-0.0428, 0.7147, num=N_margin)
-                PALC_config.psi_n = psi_n = np.linspace(0.00524, 0.00524, num=N_margin)
+                PALC_config.gamma_n = gamma_n = np.linspace(-0.0428, 0.7147, num=margin_cabinet_count)
+                PALC_config.psi_n = psi_n = np.linspace(0.00524, 0.00524, num=margin_cabinet_count)
 
                 PALC_config.x_H = PALC_plots_hm.x_stop[-1] - np.sin(PALC_config.last_angle_hm) * PALC_config.Lambda_gap
                 PALC_config.y_H = PALC_plots_hm.y_stop[-1] - np.cos(PALC_config.last_angle_hm) * PALC_config.Lambda_gap
 
-                calc_angles(PALC_plots_hm, pal_h[n], psi_n, gamma_n, N_margin, PALC_config, pal_e, Opt_arr_hm)
-                x_patches_hm, y_patches_hm = LSA_visualization(PALC_plots_hm, PALC_config, Opt_arr_hm.gamma_n, \
-                                                          N_margin=np.shape(Opt_arr_hm.gamma_tilt_deg)[0])
+                calc_angles(PALC_plots_hm, pal_h[n], psi_n, gamma_n, margin_cabinet_count, PALC_config, pal_e, Opt_arr_hm)
+                x_patches_hm, y_patches_hm = cabinet_outlines(PALC_plots_hm, PALC_config, Opt_arr_hm.gamma_n, \
+                                                          margin_cabinet_count=np.shape(Opt_arr_hm.gamma_tilt_deg)[0])
                 for attr in ['x_c_n', 'y_c_n','x_start', 'y_start', 'x_stop', \
                               'y_stop', 'x_fin_unitn', 'y_fin_unitn']:
                     setattr(PALC_plots, attr, np.append(getattr(PALC_plots, attr), getattr(PALC_plots_hm, attr)))

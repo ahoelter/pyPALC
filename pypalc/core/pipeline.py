@@ -38,7 +38,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 from .errors import CalculationError, ConvergenceError, SetupError, VenueError
-from .geometry import (LSA_visualization, calc_diff_tilt_angles,
+from .geometry import (cabinet_outlines, inter_cabinet_angles,
                        reference_tilt_angles_deg)
 from .palc import (Array_opt, PALC_configuration, PALC_plotting, calcPALC,
                    clamp_fixed_angle, fixed_angle_borders)
@@ -514,11 +514,11 @@ class _Calculation:
         if self.optimized.num_iter == 500 or \
                 np.shape(self.optimized.gamma_tilt_deg)[0] == 0:
             raise ConvergenceError('Error: No convergence reached')
-        self.patches = LSA_visualization(self.plots, P,
+        self.patches = cabinet_outlines(self.plots, P,
                                          self.optimized.gamma_n)
         self.plots.get_plot_array(self.optimized)
         gamma_tilt_deg_diff, self.tilt_angles_deg = \
-            calc_diff_tilt_angles(self.optimized.gamma_tilt_deg)
+            inter_cabinet_angles(self.optimized.gamma_tilt_deg)
         self.optimized.gamma_tilt_deg_diff = gamma_tilt_deg_diff
         try:
             x_S, y_S = calcSFP(self.optimized.gamma_tilt_deg, drawn, S,
@@ -536,7 +536,7 @@ class _Calculation:
         except _CALCULATION_ERRORS as exc:
             raise CalculationError('Error: SFP calculation of reference '
                                    'array failed') from exc
-        self.patches_ref = LSA_visualization(self.plots_ref, P,
+        self.patches_ref = cabinet_outlines(self.plots_ref, P,
                                              self.reference.gamma_n)
         calcSPLoverX(self.plots_ref, drawn, self.evaluation_ref.p_SPL,
                      self.spl_ref, S.freq_range)
@@ -574,7 +574,7 @@ class _Calculation:
 
     def result(self) -> RunResult:
         """Collect the results of the last :meth:`calculate`."""
-        diff_ref, _ = calc_diff_tilt_angles(self.reference.gamma_tilt_deg)
+        diff_ref, _ = inter_cabinet_angles(self.reference.gamma_tilt_deg)
         optimized = ArrayResult(
             tilt_angles_deg=self.tilt_angles_deg,
             inter_cabinet_angles_deg=self.optimized.gamma_tilt_deg_diff,

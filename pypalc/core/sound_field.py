@@ -17,7 +17,7 @@ import scipy.signal as sig
 import scipy.special as sp
 from scipy.stats.mstats import mquantiles
 
-from .geometry import repmat, source_pos
+from .geometry import repmat, source_positions
 from .palc import PALC_configuration
 
 logger = logging.getLogger(__name__)
@@ -515,7 +515,7 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     #     dire_meas_deg = np.ones([np.shape(f)[0],np.shape(f)[0]])
         
     ######################### SPL CALCULATION #################################
-    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_pos(gamma_n, SFP_config)
+    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_positions(gamma_n, SFP_config)
 
     for n in range(np.shape(f)[0]):
         G_LSA_vert = CalcGreenFunctions(created_pal.points_x, created_pal.points_y, np.array([0]), \
@@ -604,7 +604,7 @@ def calcBeamplot(PALC_config, gamma_n, plt_ranges, f, dire_meas_LSA, dire_meas_d
         dire_meas_deg = np.ones([1,1])
     
     ######################### SPL CALCULATION #################################
-    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_pos(gamma_n, PALC_config)
+    x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_positions(gamma_n, PALC_config)
 
     G_LSA_vert = CalcGreenFunctions(x_vert, y_vert, z_vert, x_c_n, y_c_n, 0.82,\
                                     PALC_config.directivity, PALC_config.Lambda_y, \
