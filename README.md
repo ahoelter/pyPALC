@@ -42,11 +42,8 @@ In the conda environment from above, run from this folder:
 The full suite takes several minutes. `tests/test_pipeline_regression.py`
 and `tests/test_gui_equivalence.py` compare the results of every case in
 `tests/cases` with `tests/baseline`; a change of these numbers is a bug fix
-and comes with new baseline files. The GUI and CLI tests compare exactly,
-so they need numpy and scipy built with OpenBLAS (`nomkl` in
-`requirements.txt`, or the pip wheels); MKL differs in the last digits.
-Packages in `~/.local` override those of the environment; set
-`PYTHONNOUSERSITE=1` to keep them out.
+and comes with new baseline files. Set `PYTHONNOUSERSITE=1` if pip packages
+in `~/.local` would shadow those of the environment.
 
 ### Run without the GUI
 
