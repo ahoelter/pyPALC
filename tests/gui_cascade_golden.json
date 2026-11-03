@@ -92,8 +92,8 @@
 "2.directivity_select.value": "Circular Piston",
 "2.directivity_select.visible": true,
 "2.directivity_source.data": {
-"sha1": "9615aa4d9d247f3ab20a660a60686330d7eb5a35",
-"size": 8962
+"sha1": "cae34d2b451816d0e85327db8ecaa065c5d48122",
+"size": 8980
 },
 "2.directivity_source.selected": [],
 "2.directivity_upload.disabled": false,
@@ -1240,8 +1240,8 @@ null
 {
 "2.directivity_select.value": "Line Piston",
 "2.directivity_source.data": {
-"sha1": "f805e7f5c3fbf780ce9b9504e4f548c1c9a1b3cc",
-"size": 8952
+"sha1": "f84f8c3ccece5fa4c63719c160f6a6c6fa8f6e12",
+"size": 8970
 },
 "config.directivity": "Line Piston"
 }
@@ -1251,16 +1251,16 @@ null
 {
 "2.directivity_select.value": "Measured Loudspeaker Data",
 "2.directivity_source.data": {
-"amplitude_100": [
+"amplitude_100hz_db": [
 0
 ],
-"amplitude_10k": [
+"amplitude_10khz_db": [
 0
 ],
-"amplitude_1k": [
+"amplitude_1khz_db": [
 0
 ],
-"degree": [
+"angle_deg": [
 0
 ]
 },
@@ -1272,8 +1272,8 @@ null
 "upload",
 {
 "2.directivity_source.data": {
-"sha1": "df5b93c274a8dfa3cf1e940e3d398c17c5939ed1",
-"size": 9153
+"sha1": "4b2701c00113704346c7051d02c35530c31b593f",
+"size": 9171
 },
 "2.directivity_upload.value": {
 "sha1": "2980b228f7f641ab662e8e885d7d9372dfc77bfc",
@@ -1286,8 +1286,8 @@ null
 {
 "2.directivity_select.value": "Circular Piston",
 "2.directivity_source.data": {
-"sha1": "9615aa4d9d247f3ab20a660a60686330d7eb5a35",
-"size": 8962
+"sha1": "cae34d2b451816d0e85327db8ecaa065c5d48122",
+"size": 8980
 },
 "2.directivity_upload.visible": false,
 "config.directivity": "Circular Piston"

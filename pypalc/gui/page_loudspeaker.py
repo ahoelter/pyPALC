@@ -14,7 +14,8 @@ from bokeh.models import ColumnDataSource, LayoutDOM, Range1d
 from bokeh.models.widgets import FileInput, Panel, Select, Tabs, TextInput
 from bokeh.plotting import figure
 
-from pypalc.core.sound_field import (cabinet_directivity, initial_directivity_plot,
+from pypalc.core.sound_field import (cabinet_directivity,
+                                     initial_directivity_plot,
                                      parse_measured_directivity)
 from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
 
@@ -56,10 +57,10 @@ class LoudspeakerPage:
         """Upload of measured (complex) directivity data."""
         # directivity of 100 Hz, 1 kHz and 10 kHz used in the sound field
         # prediction
-        p_SPL = list(zip([0, 0]))
+        empty = list(zip([0, 0]))
         self.directivity_source = ColumnDataSource(data=dict(
-            amplitude_100=p_SPL, amplitude_1k=p_SPL, amplitude_10k=p_SPL,
-            degree=p_SPL))
+            amplitude_100hz_db=empty, amplitude_1khz_db=empty,
+            amplitude_10khz_db=empty, angle_deg=empty))
         self.directivity_figure = figure(
             title="Loudspeaker Directivity for Selected Frequencies",
             toolbar_sticky=False,
@@ -68,21 +69,24 @@ class LoudspeakerPage:
                       ("Angle in deg", "$x")],
             x_axis_label="Angle in deg", y_axis_label="Amplitude in dB",
             x_range=Range1d(-92, 92), height=550, width=690)
-        pdir = self.directivity_figure
-        pdir.toolbar.logo = None
-        pdir.line('degree', 'amplitude_100', source=self.directivity_source,
-                  legend_label='100 Hz', color='deepskyblue')
-        pdir.line('degree', 'amplitude_1k', source=self.directivity_source,
-                  legend_label='1 kHz', color='lime')
-        pdir.line('degree', 'amplitude_10k', source=self.directivity_source,
-                  legend_label='10 kHz', color='orange')
-        pdir.legend.title = "Frequencies"
-        pdir.legend.location = "bottom_right"
-        pdir.legend.background_fill_alpha = 0.5
-        pdir.xaxis.ticker = [-90, -60, -30, 0, 30, 60, 90]
+        directivity_figure = self.directivity_figure
+        directivity_figure.toolbar.logo = None
+        directivity_figure.line('angle_deg', 'amplitude_100hz_db',
+                                source=self.directivity_source,
+                                legend_label='100 Hz', color='deepskyblue')
+        directivity_figure.line('angle_deg', 'amplitude_1khz_db',
+                                source=self.directivity_source,
+                                legend_label='1 kHz', color='lime')
+        directivity_figure.line('angle_deg', 'amplitude_10khz_db',
+                                source=self.directivity_source,
+                                legend_label='10 kHz', color='orange')
+        directivity_figure.legend.title = "Frequencies"
+        directivity_figure.legend.location = "bottom_right"
+        directivity_figure.legend.background_fill_alpha = 0.5
+        directivity_figure.xaxis.ticker = [-90, -60, -30, 0, 30, 60, 90]
         self.tabs = Tabs(tabs=[Panel(child=app.venue_figure,
                                      title="Venue Slice"),
-                               Panel(child=pdir,
+                               Panel(child=directivity_figure,
                                      title="Loudspeaker Directivity")])
         self.compute_modeled_directivity()
         # callbacks
@@ -109,28 +113,32 @@ class LoudspeakerPage:
         """Compute and plot the modeled directivity of the configuration."""
         config = self.app.state.config
         sound_field_config = self.app.state.sound_field_config
-        c0, alpha, beta_deg, beta, f, omega, measured_directivity_data, measured_angles_deg, H_post = \
+        (c0, alpha, angles_deg, angles, frequencies, omega,
+         measured_directivity_data, measured_angles_deg, directivity) = \
             initial_directivity_plot()
-        for n in range(np.shape(f)[0]):
-            H_post[:, n] = cabinet_directivity(config.directivity, alpha,
-                                            config.cabinet_height, beta, omega[n],
-                                            c0, f, measured_directivity_data[:, n],
-                                            measured_angles_deg[:, 1], n)
-        setattr(sound_field_config, 'frequencies', f)
-        sound_field_config.set_plot_directivity(H_post, [100, 1000, 10000])
+        for n in range(np.shape(frequencies)[0]):
+            directivity[:, n] = cabinet_directivity(
+                config.directivity, alpha, config.cabinet_height, angles,
+                omega[n], c0, frequencies, measured_directivity_data[:, n],
+                measured_angles_deg[:, 1], n)
+        setattr(sound_field_config, 'frequencies', frequencies)
+        sound_field_config.set_plot_directivity(directivity,
+                                                [100, 1000, 10000])
         self.directivity_source.data = dict(
-            amplitude_100=sound_field_config.plot_directivity_db[0],
-            amplitude_1k=sound_field_config.plot_directivity_db[1],
-            amplitude_10k=sound_field_config.plot_directivity_db[2], degree=list(beta_deg))
+            amplitude_100hz_db=sound_field_config.plot_directivity_db[0],
+            amplitude_1khz_db=sound_field_config.plot_directivity_db[1],
+            amplitude_10khz_db=sound_field_config.plot_directivity_db[2],
+            angle_deg=list(angles_deg))
 
     def _show_measured_directivity(self) -> None:
         """Plot the uploaded measured directivity."""
         sound_field_config = self.app.state.sound_field_config
+        measured_db = sound_field_config.plot_measured_directivity_db
         self.directivity_source.data = dict(
-            amplitude_100=sound_field_config.plot_measured_directivity_db[0],
-            amplitude_1k=sound_field_config.plot_measured_directivity_db[1],
-            amplitude_10k=sound_field_config.plot_measured_directivity_db[2],
-            degree=sound_field_config.plot_measured_angles_deg)
+            amplitude_100hz_db=measured_db[0],
+            amplitude_1khz_db=measured_db[1],
+            amplitude_10khz_db=measured_db[2],
+            angle_deg=sound_field_config.plot_measured_angles_deg)
 
     def update_directivity_plot(self) -> None:
         """Show the upload for measured data or plot the modeled directivity.
