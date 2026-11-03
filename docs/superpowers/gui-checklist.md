@@ -89,6 +89,29 @@ These were not walked in a browser; they are noted from the legacy
 - [ ] Legend visibility (venue legend hidden; legends of directivity, SPL
   over distance and homogeneity shown) — needs browser
 
+## Save and load setup (Task 7)
+
+- [ ] Set up the `target_slope` case by hand (two lines (2,0)-(10,1) and
+  (10,1)-(20,3) at 5 points per m, check venue, weighting "Target
+  Slope", 1 hinge, drag the points), run, click "Save Setup": the browser
+  downloads `pypalc_setup.yaml`. Reload the page and load the file with
+  "Load Setup": the session lands on page 5 with the same tilt angles as
+  before — needs browser
+- [ ] "Save Setup" clicked twice without a change downloads twice — needs
+  browser
+- [ ] Load an invalid file (e.g. `algorithm: {variant: palc9}`): page 4
+  shows "Error: setup file invalid at algorithm.variant: ..." and nothing
+  else changes; load `tests/cases/measured.yaml` (directivity as a path):
+  the error names `loudspeaker.measured_directivity.path` and says to use
+  Save Setup or the headless runner — needs browser
+- [ ] After loading a setup with measured directivity, the directivity
+  upload on page 2 shows no file name (a browser file input cannot be
+  filled by the server); the directivity plot shows the loaded data —
+  needs browser
+- [ ] Known limitation: choosing the same file again in "Load Setup" may
+  not load it again (browsers send no change for the same file) — needs
+  browser
+
 ## Programmatic evidence (Task 5)
 
 Besides the tests, the split was compared with the legacy `main.py`
@@ -106,3 +129,4 @@ document. The only differences were the two error texts listed above.
 | date | by | result |
 |---|---|---|
 | 2026-11-02 | Task 5 implementer | no browser available; headless server smoke check only (page served to two sessions, no errors in the server log) |
+| 2026-11-03 | Task 7 implementer | no browser available; server smoke check (session pulled with bokeh.client, 183 models, no errors in the log); save/load checks above need a browser |

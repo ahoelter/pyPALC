@@ -3,7 +3,8 @@
 :func:`setup_from_app` collects what the user entered on the pages of a
 :class:`~pypalc.gui.app.PalcApp` into a setup. The GUI computes this setup
 with :func:`pypalc.core.pipeline.run`, the same input path as the headless
-runner.
+runner. :func:`apply_setup` does the opposite for "Load Setup": it puts a
+setup into a session and runs it.
 
 author: Arne Hoelter
 """
@@ -11,12 +12,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
-from pypalc.core.errors import SetupError
+import numpy as np
+
+from pypalc.core.errors import SetupError, VenueError
+from pypalc.core.geometry import reference_tilt_angles_deg
+from pypalc.core.pipeline import build_venue
 from pypalc.core.settings import (AlgorithmSettings, ArraySettings,
                                   LoudspeakerSettings, MeasuredDirectivity,
                                   ReferenceArraySettings, Setup,
                                   TargetPoint, TargetSlopeSettings,
-                                  VenueSettings)
+                                  VenueSettings, validate)
+from pypalc.core.sound_field import (SFP_configuration,
+                                     parse_measured_directivity)
+from pypalc.gui import CALLBACK_ERRORS
 from pypalc.gui.page_array import REFERENCE_TYPES
 
 if TYPE_CHECKING:
@@ -170,3 +178,262 @@ def setup_from_app(app: PalcApp) -> Setup:
         loudspeaker=_loudspeaker(app), array=_array(app),
         reference_array=_reference_array(app), algorithm=_algorithm(app),
         target_slope=_target_slope(app))
+
+
+# --------------------------------------------------------------------------
+# Applying a setup ("Load Setup")
+# --------------------------------------------------------------------------
+
+def _labels(options):
+    """Setting value -> option label."""
+    return {value: label for label, value in options.items()}
+
+
+#: Frequency range of the GUI's slider in Hz.
+FREQUENCY_SLIDER_RANGE = (0.0, 20000.0)
+
+
+def _typed(value: float) -> str:
+    """Text a user types for a number: ``2.0`` -> ``'2'``."""
+    text = repr(float(value))
+    return text[:-2] if text.endswith('.0') else text
+
+
+def _text(value: float, initial: str) -> str:
+    """Text of a number input: its initial text if that is the value (a
+    user leaves it), otherwise the typed number."""
+    return initial if float(initial) == float(value) else _typed(value)
+
+
+def _check_applicable(setup: Setup) -> None:
+    """Raise a SetupError if the GUI cannot show or compute a setup.
+
+    Checks everything :func:`apply_setup` could fail on before it changes
+    the session: the settings (:func:`~pypalc.core.settings.validate`), the
+    measured directivity, the venue, the reference array, the frequency
+    range and the number of target points.
+    """
+    validate(setup)
+    md = setup.loudspeaker.measured_directivity
+    if md is not None and md.path is not None:
+        raise SetupError("loudspeaker.measured_directivity.path",
+                         "the GUI cannot read a file path")
+    if md is not None and md.csv is not None:
+        try:
+            parse_measured_directivity(md.csv, SFP_configuration())
+        except CALLBACK_ERRORS:
+            raise SetupError("loudspeaker.measured_directivity.csv",
+                             "cannot be read as measured loudspeaker data"
+                             ) from None
+    ar, ref, alg = setup.array, setup.reference_array, setup.algorithm
+    if ar.discrete_tilt_angles_deg is not None and \
+            len(ar.discrete_tilt_angles_deg) == 0:
+        raise SetupError("array.discrete_tilt_angles_deg",
+                         "at least one angle required")
+    low, high = FREQUENCY_SLIDER_RANGE
+    if not low <= alg.frequency_range_hz[0] < alg.frequency_range_hz[1] \
+            <= high:
+        raise SetupError("algorithm.frequency_range_hz",
+                         "the GUI allows %g to %g Hz" % (low, high))
+    try:
+        build_venue(setup.venue, ar)
+    except VenueError as exc:
+        message = str(exc)
+        if message.startswith('Error: '):
+            message = message[len('Error: '):]
+        raise SetupError("venue.audience_lines", message) from None
+    gamma_lsa = [] if ar.discrete_tilt_angles_deg is None else \
+        np.array(ar.discrete_tilt_angles_deg) * (np.pi/180)
+    try:
+        reference_tilt_angles_deg(
+            ref.type, ar.cabinet_count, gamma_lsa, ref.top_angle_deg,
+            ref.angle_param_deg,
+            ref.use_discrete_angles and ar.discrete_tilt_angles_deg
+            is not None, ref.tilt_angles_deg)
+    except CALLBACK_ERRORS as exc:
+        raise SetupError("reference_array", str(exc)) from None
+    if alg.weighting == 'target_slope':
+        lines = len(setup.venue.audience_lines)
+        if len(setup.target_slope.points) - 2 > lines:
+            raise SetupError(
+                "target_slope.points",
+                "at most %d points (%d hinges) for %d audience lines"
+                % (lines + 2, lines, lines))
+
+
+def _set_loudspeaker(app: PalcApp, ls: LoudspeakerSettings) -> None:
+    page = app.pages[2]
+    page.aperture_input.value = _text(ls.aperture_angle_deg, '3.0')
+    page.cabinet_height_input.value = _text(ls.cabinet_height, '0.2')
+    page.directivity_select.value = _labels(DIRECTIVITIES)[ls.directivity]
+
+
+def _set_array(app: PalcApp, ar: ArraySettings,
+               ref: ReferenceArraySettings) -> None:
+    page = app.pages[3]
+    count = ar.cabinet_count
+    page.cabinet_count_input.value = '4' if count == 4 else str(int(count))
+    page.top_x_input.value = _text(ar.top_position[0], '0')
+    page.top_y_input.value = _text(ar.top_position[1], '2')
+    page.cabinet_gap_input.value = _text(ar.cabinet_gap, '0')
+    discrete = ar.discrete_tilt_angles_deg
+    page.use_discrete_angles_select.value = 'No' if discrete is None \
+        else 'Yes'
+    page.discrete_angles_input.value = '' if discrete is None else \
+        ','.join(_typed(a) for a in discrete)
+    page.discrete_angles_input.disabled = discrete is None
+    page.reference_discrete_angles_select.disabled = discrete is None
+    # the widgets of a straight reference array are those of a new session
+    page.reference_type_select.value = 'Straight'
+    page.arrange_reference_widgets()
+    page.reference_type_select.value = _labels(REFERENCE_TYPES)[ref.type]
+    page.arrange_reference_widgets()
+    page.reference_start_input.value = '0'
+    page.reference_user_angles_input.value = ''
+    if ref.type == 'user_defined':
+        page.reference_user_angles_input.value = ','.join(
+            _typed(a) for a in ref.tilt_angles_deg)
+    else:
+        page.reference_start_input.value = _text(ref.top_angle_deg, '0')
+        if ref.type != 'straight':
+            page.reference_step_stop_input.value = _text(
+                ref.angle_param_deg, '0')
+    page.reference_discrete_angles_select.value = 'Yes' \
+        if ref.use_discrete_angles and discrete is not None else 'No'
+
+
+def _set_algorithm(app: PalcApp, alg: AlgorithmSettings) -> None:
+    """Set the algorithm widgets; weighting and fixed angle as in a new
+    session (they are set after the venue check)."""
+    page = app.pages[4]
+    page.palc_variant_select.value = _labels(VARIANTS)[alg.variant]
+    page.gap_handling_select.options = ['Without', 'Hard Margin',
+                                        'Soft Margin']
+    page.gap_handling_select.value = _labels(GAP_HANDLINGS)[alg.gap_handling]
+    soft = alg.gap_handling == 'soft_margin'
+    page.soft_margin_slider.disabled = not soft
+    page.soft_margin_slider.value = float(alg.soft_margin_strength) \
+        if soft else 1.0
+    page.tolerance_slider.value = float(alg.tolerance)
+    page.frequency_range_slider.value = tuple(
+        float(f) for f in alg.frequency_range_hz)
+    page.weighting_select.options = list(WEIGHTINGS)
+    page.weighting_select.value = 'Without'
+    page.weighting_select.width = 255
+    page.hinges_select.visible = False
+    page.weighting_nu_slider.value = 1.0
+    for widget in (page.weighting_nu_slider, page.nu_plus_button,
+                   page.nu_minus_button, page.nu_step_select):
+        widget.disabled = True
+    page.use_fixed_angle_select.value = 'No'
+    page.use_fixed_angle_select.disabled = True
+    page.fixed_angle_input.value = '0.0'
+    page.fixed_angle_input.disabled = True
+    page.show_initial_fixed_angle_range()
+    page.start_toggle.active = False
+    page.tabs.active = 0
+
+
+def _set_fixed_angle(app: PalcApp, angle: Optional[float]) -> None:
+    """Fix the angle of the uppermost cabinet (venue checked)."""
+    if angle is None:
+        return
+    page, config = app.pages[4], app.state.config
+    page.use_fixed_angle_select.value = 'Yes'
+    page.update_fixed_angle_range()
+    page.fixed_angle_input.disabled = False
+    page.fixed_angle_input.value = _typed(angle)
+    config.use_fixed_angle = True
+    config.store_config('fixed_angle', page.fixed_angle_input.value)
+    page.round_fixed_angle()
+
+
+def _set_weighting(app: PalcApp, setup: Setup) -> bool:
+    """Select the weighting; for target slope run the initial calculation
+    and move the target points. False if that calculation failed."""
+    page, alg = app.pages[4], setup.algorithm
+    page.weighting_select.value = _labels(WEIGHTINGS)[alg.weighting]
+    if not page.show_weighting():
+        return False
+    if alg.weighting in ('linear', 'logarithmic'):
+        page.weighting_nu_slider.value = float(np.cbrt(alg.weighting_nu))
+        app.state.config.weighting_nu = float(alg.weighting_nu)
+    elif alg.weighting == 'target_slope':
+        ts = setup.target_slope
+        hinges = len(ts.points) - 2
+        page.hinges_select.value = str(hinges)
+        if hinges != 0:
+            page.place_hinges(hinges)
+        page.drag_target(ts.points, ts.reference_distance)
+    return True
+
+
+def apply_setup(app: PalcApp, setup: Setup) -> None:
+    """Put a setup into a session and run it ("Load Setup").
+
+    Leaves the session as a user who enters the setup by hand, page by
+    page, and clicks "PALC Run": it replaces the whole session state,
+    sets every widget, draws the audience lines, checks the venue
+    (:meth:`~.app.PalcApp.check_venue`), fixes the angle of the uppermost
+    cabinet, selects the weighting (for target slope: the initial
+    calculation, the hinges, the target points and the reference point),
+    runs the calculation (:meth:`~.app.PalcApp.run_calculation`) and shows
+    page 5.
+
+    While the widgets are set, ``state.applying_setup`` keeps their
+    callbacks from running; this function does their work itself, once and
+    in the right order.
+
+    Everything that could make the setup unusable is checked before the
+    session is changed; then a :class:`SetupError` is raised and nothing
+    changes. If the calculation itself fails (e.g. no convergence), the
+    setup stays applied, the error text is shown like for a failed "PALC
+    Run" and page 4 stays open.
+
+    Parameters
+    ----------
+    app : PalcApp
+        The session.
+    setup : Setup
+        The setup; a measured directivity must be embedded (``csv``).
+
+    Returns
+    -------
+    None.
+
+    Raises
+    ------
+    SetupError
+        If the GUI cannot show or compute the setup (invalid settings, a
+        measured directivity given as a path or unreadable, a venue that is
+        not PALC compatible, ...).
+    """
+    from .app import SessionState
+    _check_applicable(setup)
+    venue, loudspeaker, array, algorithm, results = (
+        app.pages[1], app.pages[2], app.pages[3], app.pages[4], app.pages[5])
+    state = SessionState(applying_setup=True)
+    app.state = state
+    try:
+        app.page_select.active = 4
+        venue.lines_source.selected.indices = []
+        results.venue_points_source.selected.indices = []
+        loudspeaker.compute_modeled_directivity()  # as at start-up
+        _set_loudspeaker(app, setup.loudspeaker)
+        _set_array(app, setup.array, setup.reference_array)
+        _set_algorithm(app, setup.algorithm)
+        venue.draw_lines(setup.venue.audience_lines)
+        md = setup.loudspeaker.measured_directivity
+        if md is not None:
+            loudspeaker.read_measured_directivity(md.csv)
+        state.config.store_config(
+            'use_gamma_LSA', setup.array.discrete_tilt_angles_deg is not None)
+        array.store_discrete_angles()
+        app.store_config_widgets()
+        array.update_reference_angles()
+        app.check_venue()
+        _set_fixed_angle(app, setup.algorithm.fixed_top_angle_deg)
+        if _set_weighting(app, setup) and app.run_calculation():
+            app.page_select.active = 5
+    finally:
+        state.applying_setup = False

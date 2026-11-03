@@ -36,7 +36,7 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 from bokeh.document import Document
 from bokeh.layouts import column, gridplot, row
-from bokeh.models import ColumnDataSource
+from bokeh.models import ColumnDataSource, Model
 from bokeh.models.widgets import Div, Paragraph, RadioButtonGroup, RadioGroup
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
@@ -51,7 +51,8 @@ from pypalc.core.sound_field import SFP_configuration
 from pypalc.core.target_slope import Opt_weight
 from pypalc.core.venue import (PAL, PALC_compatible_PAL,
                                get_PALC_compatible_PAL, suggestPAL)
-from pypalc.gui import APP_NAME, CALLBACK_ERRORS
+from pypalc.gui import (APP_NAME, CALLBACK_ERRORS,
+                        skipped_while_applying_setup)
 from pypalc.gui.help_text import HelpPage
 from pypalc.gui.page_algorithm import AlgorithmPage
 from pypalc.gui.page_array import ArrayPage
@@ -108,6 +109,10 @@ class SessionState:
         The target slope shown on page 4 (legacy ``Opt_w``).
     result : RunResult or None
         Results of the last successful calculation, None before.
+    applying_setup : bool
+        True while :func:`~.setup_io.apply_setup` sets the widgets; the
+        widget callbacks then do nothing
+        (:func:`~pypalc.gui.skipped_while_applying_setup`).
     """
     drawn: AudienceLines = field(default_factory=_initial_drawn_lines)
     audience_lines: List[AudienceLine] = field(default_factory=list)
@@ -122,6 +127,7 @@ class SessionState:
         default_factory=lambda: Array_opt(gamma_tilt_deg=np.zeros(4)))
     target: Opt_weight = field(default_factory=Opt_weight)
     result: Optional[RunResult] = None
+    applying_setup: bool = False
 
 
 def _error_text(exc: PalcError) -> str:
@@ -406,14 +412,87 @@ class PalcApp:
     # Values of the configuration widgets
     # ------------------------------------------------------------------
 
+    def _config_widgets(self) -> Dict[str, Model]:
+        """Configuration key -> widget whose value is stored under it."""
+        loudspeaker, array, algorithm = (self.pages[2], self.pages[3],
+                                         self.pages[4])
+        return {'constraint': algorithm.palc_variant_select,
+                'use_gamma_LSA': array.use_discrete_angles_select,
+                'gap_handling': algorithm.gap_handling_select,
+                'strength_sm': algorithm.soft_margin_slider,
+                'Lambda_y': loudspeaker.cabinet_height_input,
+                'Lambda_gap': array.cabinet_gap_input,
+                'directivity': loudspeaker.directivity_select,
+                'fixed_angle': algorithm.fixed_angle_input,
+                'x_H': array.top_x_input,
+                'y_H': array.top_y_input,
+                'N': array.cabinet_count_input,
+                'psi_n': loudspeaker.aperture_input,
+                'tolerance': algorithm.tolerance_slider,
+                'freq_range': algorithm.frequency_range_slider}
+
+    def _store_config_value(self, key: str, val, attr: str = 'value'
+                            ) -> None:
+        """Store one configuration value as entered in its widget.
+
+        Wrong input is replaced by the default value in the widget; a
+        mounting height that is too low for the array is raised and shown.
+        Values the sound field configuration also has are stored there too.
+        """
+        st = self.state
+        loudspeaker, array, algorithm = (self.pages[2], self.pages[3],
+                                         self.pages[4])
+        defaults = {'Lambda_y': (loudspeaker.cabinet_height_input, '0.2'),
+                    'N': (array.cabinet_count_input, '4'),
+                    'Lambda_gap': (array.cabinet_gap_input, '0'),
+                    'tolerance': (algorithm.tolerance_slider, '0.1'),
+                    'fixed_angle': (algorithm.fixed_angle_input, ''),
+                    'x_H': (array.top_x_input, '0'),
+                    'y_H': (array.top_y_input, '2'),
+                    'psi_n': (loudspeaker.aperture_input, '3.0')}
+        error_info, failed_key = st.config.store_config(key, val)
+        # if wrong user input --> insert default value
+        if failed_key in defaults:
+            widget, default = defaults[failed_key]
+            setattr(widget, attr, default)
+        if failed_key in ['too low']:
+            setattr(array.top_y_input, attr, str(st.config.y_H))
+        # Set attribute in SFP_config if possible
+        if hasattr(st.sound_field_config, key) and \
+                failed_key in [None, 'too low']:
+            st.sound_field_config.store_config(key, val)
+        self.config_error_info.text = str(error_info)
+
+    def _config_values_stored(self) -> None:
+        """Arrange the pages after configuration values were stored.
+
+        Refreshes the range of a fixed angle of the uppermost cabinet (it
+        depends on the position and height of the array) and clamps the
+        angle to it, arranges the gap handling and weighting widgets,
+        updates the directivity plot and the ranges of the venue figures.
+        """
+        st = self.state
+        loudspeaker, algorithm = self.pages[2], self.pages[4]
+        if st.config.use_fixed_angle and self.has_venue():
+            algorithm.update_fixed_angle_range()
+        algorithm.round_fixed_angle()
+        algorithm.arrange_gap_handling_widgets()
+        algorithm.exclude_hard_margin_target_slope()
+        loudspeaker.update_directivity_plot()
+        # more than one venue point (the legacy test ``xline != []``)
+        if np.size(st.drawn.xline) > 1:
+            self.update_venue_ranges()
+
+    @skipped_while_applying_setup
     def store_value(self, attr, old, new) -> None:
         """Store the value of a configuration widget (legacy ``get_value``).
 
         Stores every configuration value whose widget shows ``new`` in the
         PALC configuration (and the sound field configuration). Wrong input
-        is replaced by the default value. Afterwards clamps the fixed angle,
-        arranges the gap handling and weighting widgets, updates the
-        directivity plot and the ranges of the venue figures.
+        is replaced by the default value. Afterwards refreshes the range of
+        a fixed angle and clamps the angle to it, arranges the gap handling
+        and weighting widgets, updates the directivity plot and the ranges
+        of the venue figures.
 
         Triggered by the aperture angle, cabinet height, directivity,
         cabinet count, position, gap, PALC variant, gap handling, soft
@@ -430,55 +509,35 @@ class PalcApp:
         -------
         None.
         """
-        st = self.state
-        loudspeaker, array, algorithm = (self.pages[2], self.pages[3],
-                                         self.pages[4])
-        widget_dict = {'constraint': algorithm.palc_variant_select.value,
-                       'use_gamma_LSA': array.use_discrete_angles_select.value,
-                       'gap_handling': algorithm.gap_handling_select.value,
-                       'strength_sm': algorithm.soft_margin_slider.value,
-                       'Lambda_y': loudspeaker.cabinet_height_input.value,
-                       'Lambda_gap': array.cabinet_gap_input.value,
-                       'directivity': loudspeaker.directivity_select.value,
-                       'fixed_angle': algorithm.fixed_angle_input.value,
-                       'x_H': array.top_x_input.value,
-                       'y_H': array.top_y_input.value,
-                       'N': array.cabinet_count_input.value,
-                       'psi_n': loudspeaker.aperture_input.value,
-                       'tolerance': algorithm.tolerance_slider.value,
-                       'freq_range': algorithm.frequency_range_slider.value}
-        defaults = {'Lambda_y': (loudspeaker.cabinet_height_input, '0.2'),
-                    'N': (array.cabinet_count_input, '4'),
-                    'Lambda_gap': (array.cabinet_gap_input, '0'),
-                    'tolerance': (algorithm.tolerance_slider, '0.1'),
-                    'fixed_angle': (algorithm.fixed_angle_input, ''),
-                    'x_H': (array.top_x_input, '0'),
-                    'y_H': (array.top_y_input, '2'),
-                    'psi_n': (loudspeaker.aperture_input, '3.0')}
-        # iterate over widget_dict to detect changed value and store in object
-        for key, val in widget_dict.items():
+        values = {key: widget.value
+                  for key, widget in self._config_widgets().items()}
+        # iterate over the values to detect changed value and store it
+        for key, val in values.items():
             if new == val:
-                error_info, failed_key = st.config.store_config(key, val)
-                # if wrong user input --> insert default value
-                if failed_key in defaults:
-                    widget, default = defaults[failed_key]
-                    setattr(widget, attr, default)
-                if failed_key in ['too low']:
-                    setattr(array.top_y_input, attr, str(st.config.y_H))
-                # Set attribute in SFP_config if possible
-                if hasattr(st.sound_field_config, key) and \
-                        failed_key in [None, 'too low']:
-                    st.sound_field_config.store_config(key, val)
-                self.config_error_info.text = str(error_info)
+                self._store_config_value(key, val, attr)
                 if key in ['N', 'use_gamma_LSA']:
-                    array.update_reference_angles(chg_n=True)
-        algorithm.round_fixed_angle()
-        algorithm.arrange_gap_handling_widgets()
-        algorithm.exclude_hard_margin_target_slope()
-        loudspeaker.update_directivity_plot()
-        # more than one venue point (the legacy test ``xline != []``)
-        if np.size(st.drawn.xline) > 1:
-            self.update_venue_ranges()
+                    self.pages[3].update_reference_angles(chg_n=True)
+        self._config_values_stored()
+
+    def store_config_widgets(self) -> None:
+        """Store the values of all configuration widgets.
+
+        Used by :func:`~.setup_io.apply_setup` after it has set the
+        widgets. Stores like :meth:`store_value`, but every value, the
+        mounting height last (so that only the final values decide whether
+        it is raised, as in the headless runner). The discrete tilt angles
+        and the fixed angle are stored by their own steps.
+
+        Returns
+        -------
+        None.
+        """
+        widgets = self._config_widgets()
+        keys = [key for key in widgets
+                if key not in ('use_gamma_LSA', 'fixed_angle', 'y_H')]
+        for key in keys + ['y_H']:
+            self._store_config_value(key, widgets[key].value)
+        self._config_values_stored()
 
     # ------------------------------------------------------------------
     # Calculation
@@ -498,27 +557,30 @@ class PalcApp:
                 setup.algorithm, weighting='without'))
         return setup
 
-    def run_calculation(self) -> None:
+    def run_calculation(self) -> bool:
         """Run PALC and the sound field prediction (legacy ``start_calc``).
 
         Callback body of the start toggle; also runs when "Target Slope" is
         selected (the initial run). Computes :func:`setup_from_app` with
-        :func:`pypalc.core.pipeline.run` on the checked venue, stores the
-        result in ``state.result`` and shows it.
+        :func:`pypalc.core.pipeline.run` on the checked venue, shows the
+        result and then stores it in ``state.result``.
 
-        If the calculation fails, its error text is shown and the sources
-        keep the previous results. The start toggle is released in every
-        case; unexpected exceptions are logged and raised again.
+        If the calculation or showing its result fails, the error text is
+        shown and ``state.result`` keeps the previous result (the sources
+        keep it too if the calculation failed). The start toggle is
+        released in every case; unexpected exceptions are logged and raised
+        again.
 
         Returns
         -------
-        None.
+        bool
+            True if the result was computed and shown.
         """
         st = self.state
         try:
             if not self.has_venue():
                 self.config_error_info.text = 'Error: Please CREATE and GET PALC compatible venue proposal on page 1.'
-                return
+                return False
             try:
                 result = pipeline.run(self._calculation_setup(),
                                       venue=st.venue)
@@ -526,20 +588,21 @@ class PalcApp:
                 logger.warning('PALC calculation failed: %s', exc,
                                exc_info=True)
                 self.config_error_info.text = _error_text(exc)
-                return
+                return False
             except CALLBACK_ERRORS:
                 logger.exception('PALC calculation failed')
                 self.config_error_info.text = 'Error: PALC calculation failed'
-                return
-            st.result = result
+                return False
             try:
                 self._show_result(result)
             except CALLBACK_ERRORS:
                 logger.exception('Could not store the output')
                 self.config_error_info.text = 'Error: Could not store the output'
-                return
+                return False
+            st.result = result
             self.pages[4].start_toggle.active = False
             self.show()
+            return True
         except Exception:
             logger.exception('PALC calculation failed unexpectedly')
             raise

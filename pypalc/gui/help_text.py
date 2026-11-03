@@ -89,7 +89,8 @@ def help_tabs() -> Tabs:
     page4_10 = "27. <b>Delete the result visualization</b>: Removes the visualization of the results. This is automatically executed if clicking on '1. PAL' in the menu."
     page4_col0 = Div(text = page4_info + llspace + page4_1 + lspace + page4_2, width=350)
     page4_col1 = Div(text = empty_head + llspace + page4_3 + lspace + page4_4 + lspace + page4_5, width=350)
-    page4_col2 = Div(text = empty_head + llspace + page4_6 + lspace + page4_7 + lspace + page4_8 + lspace + page4_9 + lspace + page4_10, width=350)
+    page4_11 = "<b>Save Setup</b> downloads all inputs, the drawn venue and the target slope as the file pypalc_setup.yaml (uploaded measured loudspeaker data is embedded); it also runs headless with 'python -m pypalc run'. <b>Load Setup</b> reads such a file, restores everything and runs the calculation."
+    page4_col2 = Div(text = empty_head + llspace + page4_6 + lspace + page4_7 + lspace + page4_8 + lspace + page4_9 + lspace + page4_10 + lspace + page4_11, width=350)
     
     ########################## Text for page 5 ################################
     page5_info = "<b>V. Visualization of the Sound Field Prediction!</b>"

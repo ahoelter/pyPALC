@@ -14,7 +14,7 @@ from bokeh.models.widgets import (DataTable, Paragraph, Select, TableColumn,
                                   TextAreaInput, TextInput)
 
 from pypalc.core.geometry import reference_tilt_angles_deg
-from pypalc.gui import CALLBACK_ERRORS
+from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
 from pypalc.gui.page_venue import RULE, RULE_LONG
 
 if TYPE_CHECKING:
@@ -103,16 +103,15 @@ class ArrayPage:
             "value", self.choose_discrete_angles)
         self.discrete_angles_input.on_change("value",
                                              self.read_discrete_angles)
-        self.discrete_angles_input.on_change(
-            "value", lambda attr, old, new: self.update_reference_angles())
+        self.discrete_angles_input.on_change("value",
+                                             self.reference_input_changed)
         self.reference_type_select.on_change("value",
                                              self.choose_reference_type)
         for widget in (self.reference_start_input,
                        self.reference_step_stop_input,
                        self.reference_discrete_angles_select,
                        self.reference_user_angles_input):
-            widget.on_change(
-                "value", lambda attr, old, new: self.update_reference_angles())
+            widget.on_change("value", self.reference_input_changed)
 
     def layout(self) -> LayoutDOM:
         """Body of the page below the header.
@@ -140,6 +139,7 @@ class ArrayPage:
     # Callbacks
     # ------------------------------------------------------------------
 
+    @skipped_while_applying_setup
     def choose_discrete_angles(self, attr, old, new) -> None:
         """Enable the discrete tilt angles (with a default set) or disable
         them. Triggered by "Use Discrete Tilt Angles?".
@@ -169,6 +169,7 @@ class ArrayPage:
             self.reference_discrete_angles_select.value = "No"
         self.read_discrete_angles(attr, old, new)
 
+    @skipped_while_applying_setup
     def read_discrete_angles(self, attr, old, new) -> None:
         """Read the set of discrete tilt angles (',' separates values).
 
@@ -183,6 +184,11 @@ class ArrayPage:
         -------
         None.
         """
+        self.store_discrete_angles()
+
+    def store_discrete_angles(self) -> None:
+        """Store the discrete tilt angles of the input in the configuration
+        (body of :meth:`read_discrete_angles`)."""
         config = self.app.state.config
         error_info = self.app.config_error_info
         # discrete angles were disabled
@@ -198,6 +204,24 @@ class ArrayPage:
         except ValueError:
             error_info.text = 'Error: Could not process the input'
 
+    @skipped_while_applying_setup
+    def reference_input_changed(self, attr, old, new) -> None:
+        """Compute the reference angles after an input of them changed.
+
+        Parameters
+        ----------
+        attr : str
+            Changed attribute (value).
+        old, new : str
+            Old and new value.
+
+        Returns
+        -------
+        None.
+        """
+        self.update_reference_angles()
+
+    @skipped_while_applying_setup
     def choose_reference_type(self, attr, old, new) -> None:
         """Arrange the reference array widgets for the selected type and
         compute the reference angles. Triggered by the reference type.
@@ -213,10 +237,10 @@ class ArrayPage:
         -------
         None.
         """
-        self._arrange_reference_widgets()
+        self.arrange_reference_widgets()
         self.update_reference_angles()
 
-    def _arrange_reference_widgets(self) -> None:
+    def arrange_reference_widgets(self) -> None:
         """Show, hide, enable and disable the reference array widgets."""
         ref_type = self.reference_type_select.value
         start, step_stop = self.reference_start_input, \

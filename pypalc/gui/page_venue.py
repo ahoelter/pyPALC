@@ -5,7 +5,7 @@ author: Arne Hoelter
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 from bokeh.layouts import column, row
@@ -16,6 +16,7 @@ from pypalc.core.errors import VenueError
 from pypalc.core.pipeline import check_line
 from pypalc.core.settings import AudienceLine
 from pypalc.core.venue import get_slope_b
+from pypalc.gui import skipped_while_applying_setup
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -179,6 +180,7 @@ class VenuePage:
     # Callbacks
     # ------------------------------------------------------------------
 
+    @skipped_while_applying_setup
     def update_point(self, attr, old, new) -> None:
         """Read the start and end point of the next audience line.
 
@@ -272,6 +274,51 @@ class VenuePage:
                                       ylineplt=drawn.plot_y)
         self.app.set_venue_checked(False)
         self.app.show()
+
+    def draw_lines(self, lines: Sequence[AudienceLine]) -> None:
+        """Draw audience lines into the empty venue of a new session state.
+
+        Used by :func:`~.setup_io.apply_setup`. Every line is checked and
+        appended as "Save Current Audience Line" does; the point inputs
+        show the last line, as after entering the lines by hand.
+
+        Parameters
+        ----------
+        lines : sequence of AudienceLine
+            The lines, at least one; they must pass the draw conditions.
+
+        Returns
+        -------
+        None.
+
+        Raises
+        ------
+        VenueError
+            If a line is rejected.
+        """
+        state = self.app.state
+        drawn = state.drawn
+        for line in lines:
+            check_line(drawn, line)
+            (x_start, y_start), (x_stop, y_stop) = line.start, line.stop
+            slope, b = get_slope_b(x_start, x_stop, y_start, y_stop)
+            diff = np.sqrt((x_stop - x_start)**2 + (y_stop - y_start)**2)
+            drawn.append_line(x_start, x_stop, y_start, y_stop, slope, b,
+                              diff*line.points_per_meter)
+            state.audience_lines.append(line)
+        last = lines[-1]
+        self.start_x_input.value = repr(float(last.start[0]))
+        self.end_x_input.value = repr(float(last.stop[0]))
+        self.points_per_meter_input.value = repr(float(last.points_per_meter))
+        self.start_y_input.value = repr(float(last.start[1]))
+        self.end_y_input.value = repr(float(last.stop[1]))
+        self.point_source.data = dict(
+            x=np.array([float(last.start[0]), float(last.stop[0])]),
+            y=np.array([float(last.start[1]), float(last.stop[1])]))
+        self.venue_error_info.text = ''
+        self.lines_source.data = dict(xlineplt=drawn.plot_x,
+                                      ylineplt=drawn.plot_y)
+        self.app.update_venue_ranges()
 
     def remove_line(self) -> None:
         """Remove the last audience line ("Remove Last Audience Line").

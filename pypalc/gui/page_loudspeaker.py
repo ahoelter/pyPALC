@@ -16,7 +16,7 @@ from bokeh.plotting import figure
 
 from pypalc.core.sound_field import (calc_directivity, init_dir_plot,
                                      parse_measured_directivity)
-from pypalc.gui import CALLBACK_ERRORS
+from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -84,7 +84,7 @@ class LoudspeakerPage:
                                      title="Venue Slice"),
                                Panel(child=pdir,
                                      title="Loudspeaker Directivity")])
-        self._compute_modeled_directivity()
+        self.compute_modeled_directivity()
         # callbacks
         self.aperture_input.on_change("value", app.store_value)
         self.cabinet_height_input.on_change("value", app.store_value)
@@ -105,7 +105,7 @@ class LoudspeakerPage:
         col2 = column([self.app.venue_axes_row(), self.tabs], width=690)
         return row([col0, col1, col2])
 
-    def _compute_modeled_directivity(self) -> None:
+    def compute_modeled_directivity(self) -> None:
         """Compute and plot the modeled directivity of the configuration."""
         config = self.app.state.config
         sf_config = self.app.state.sound_field_config
@@ -141,11 +141,28 @@ class LoudspeakerPage:
         """
         if self.app.state.config.directivity in MODELED_DIRECTIVITIES:
             self.directivity_upload.visible = False
-            self._compute_modeled_directivity()
+            self.compute_modeled_directivity()
         else:
             self.directivity_upload.visible = True
             self._show_measured_directivity()
 
+    def read_measured_directivity(self, text: str) -> None:
+        """Read measured directivity data, keep its text and plot it.
+
+        Parameters
+        ----------
+        text : str
+            Text of the CSV file.
+
+        Returns
+        -------
+        None.
+        """
+        parse_measured_directivity(text, self.app.state.sound_field_config)
+        self.app.state.measured_directivity_csv = text
+        self._show_measured_directivity()
+
+    @skipped_while_applying_setup
     def upload_directivity(self, attr, old, new) -> None:
         """Read uploaded measured directivity data and plot it.
 
@@ -167,11 +184,8 @@ class LoudspeakerPage:
         None.
         """
         try:
-            text = base64.b64decode(new).decode('utf-8')
-            parse_measured_directivity(text,
-                                       self.app.state.sound_field_config)
-            self.app.state.measured_directivity_csv = text
-            self._show_measured_directivity()
+            self.read_measured_directivity(
+                base64.b64decode(new).decode('utf-8'))
         except CALLBACK_ERRORS:
             logger.exception('Could not read the measured loudspeaker data')
             self.app.config_error_info.text = 'Error: Could not read Measured Loudspeaker Data'

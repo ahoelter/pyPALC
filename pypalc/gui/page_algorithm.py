@@ -4,22 +4,28 @@ author: Arne Hoelter
 """
 from __future__ import annotations
 
+import base64
+import binascii
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 from bokeh.layouts import column, row
 from bokeh.models import (ColumnDataSource, CustomJS, FuncTickFormatter,
                           LayoutDOM)
 from bokeh.models.tools import PointDrawTool
-from bokeh.models.widgets import (Button, DataTable, Panel, Paragraph,
-                                  RangeSlider, Select, Slider, TableColumn,
-                                  Tabs, TextInput, Toggle)
+from bokeh.models.widgets import (Button, DataTable, Div, FileInput, Panel,
+                                  Paragraph, RangeSlider, Select, Slider,
+                                  TableColumn, Tabs, TextInput, Toggle)
 from bokeh.plotting import figure
 
+from pypalc.core.errors import SetupError
 from pypalc.core.palc import clamp_fixed_angle, fixed_angle_borders
+from pypalc.core.settings import (TargetPoint, dump_setup, load_setup_text,
+                                  validate)
 from pypalc.core.target_slope import get_weight_links, snap_to_distance_grid
-from pypalc.gui import DOWNLOAD_JS
+from pypalc.gui import (CALLBACK_ERRORS, DOWNLOAD_JS, DOWNLOAD_TEXT_JS,
+                        skipped_while_applying_setup)
 from pypalc.gui.page_venue import RULE
 
 if TYPE_CHECKING:
@@ -30,6 +36,15 @@ logger = logging.getLogger(__name__)
 #: Weightings available without target slope.
 WEIGHTINGS_WITHOUT_TARGET_SLOPE = ['Without', 'Linear Spacing',
                                    'Logarithmic Spacing']
+#: Name of the file "Save Setup" downloads.
+SETUP_FILE_NAME = 'pypalc_setup.yaml'
+#: Key of the error of a setup file that gives the measured directivity as
+#: a path, and the error text the GUI shows for it.
+PATH_DIRECTIVITY_KEY = 'loudspeaker.measured_directivity.path'
+PATH_DIRECTIVITY_MESSAGE = (
+    "the GUI cannot read a measured directivity file given as a path. "
+    "Upload the data on page 2 and use Save Setup (it embeds the data), or "
+    "run the setup file with the headless runner (python -m pypalc run)")
 
 
 class AlgorithmPage:
@@ -69,6 +84,8 @@ class AlgorithmPage:
         self.target_region_source = ColumnDataSource(data=dict(
             x=[0, 0, 0, 0], y=[0, 0, 0, 0]))
         """Polygon of the optimization region."""
+        self.setup_file_source = ColumnDataSource(data=dict(text=[]))
+        """Text of the setup file "Save Setup" downloads."""
         self.results_table = DataTable(
             source=self.results_source,
             columns=[TableColumn(field="a_num_LS", title="LS", width=20),
@@ -87,7 +104,6 @@ class AlgorithmPage:
 
     def _build_widgets(self) -> None:
         """Create the widgets of the page."""
-        fixed_angle = self.app.state.optimized_array.fixed_angle
         self.palc_variant_select = Select(
             title="18. PALC-Algorithm", value="PALC 2",
             options=["PALC 1", "PALC 2", "PALC 3"], width=255, height=50)
@@ -133,10 +149,9 @@ class AlgorithmPage:
         self.fixed_angle_input = TextInput(
             title="25. Angle of Uppermost Cabinet in deg", value="0.0",
             disabled=True, width=255)
-        self.fixed_angle_text = Paragraph(
-            text='Max: ' + str(fixed_angle[0]) + ', Min: '
-                 + str(fixed_angle[2]))
+        self.fixed_angle_text = Paragraph(text='')
         """Allowed range of the fixed angle."""
+        self.show_initial_fixed_angle_range()
         self.start_toggle = Toggle(label="26. PALC Run", button_type="success",
                                    disabled=True, width=255, active=False)
         """Starts the PALC computation; active while it runs."""
@@ -150,6 +165,13 @@ class AlgorithmPage:
             value=(200, 8000), step=20)
         self.download_spl_button = Button(label="Download SPL",
                                           button_type="success", width=255)
+        self.save_setup_button = Button(label="Save Setup",
+                                        button_type="success", width=255)
+        """Downloads the setup as a YAML file."""
+        self.load_setup_title = Div(text="Load Setup")
+        self.load_setup_input = FileInput(accept=".yaml,.yml", width=255)
+        """Upload of a setup file; loading it restores the setup and runs
+        the calculation."""
         self.rule_gap = Paragraph(text=RULE)
         self.rule_tolerance = Paragraph(text=RULE)
 
@@ -231,6 +253,17 @@ class AlgorithmPage:
                        app.pages[5].homogeneity_source):
             self.download_spl_button.js_on_click(CustomJS(
                 args=dict(source=source), code=download_js))
+        self.save_setup_button.on_click(self.save_setup)
+        # the source must belong to the document so that its JavaScript
+        # callback runs in the browser; the layout reaches it only through
+        # the args of this (empty) callback of the button
+        self.save_setup_button.js_on_click(CustomJS(
+            args=dict(source=self.setup_file_source), code=''))
+        self.setup_file_source.js_on_change('data', CustomJS(
+            args=dict(source=self.setup_file_source,
+                      filename=SETUP_FILE_NAME),
+            code=DOWNLOAD_TEXT_JS.read_text()))
+        self.load_setup_input.on_change('value', self.load_setup)
 
     def layout(self) -> LayoutDOM:
         """Body of the page below the header.
@@ -252,7 +285,9 @@ class AlgorithmPage:
         col1 = column([app.pages[1].check_venue_button, self.start_toggle,
                        self.clear_results_button, self.download_angles_button,
                        app.config_error_info, self.results_table,
-                       self.download_spl_button], width=270)
+                       self.download_spl_button, self.save_setup_button,
+                       self.load_setup_title, self.load_setup_input],
+                      width=270)
         col2 = column([app.venue_axes_row(), self.tabs], width=690)
         return row([col0, col1, col2])
 
@@ -299,6 +334,33 @@ class AlgorithmPage:
             self.nu_step_select.disabled = False
             self.weighting_nu_slider.disabled = False
 
+    def update_fixed_angle_range(self) -> list:
+        """Compute and show the allowed range of the fixed angle.
+
+        The range depends on the venue (it must be checked) and on the
+        position and height of the array in the configuration.
+
+        Returns
+        -------
+        list of float
+            Maximum, mid and minimum tilt angle in degree, also stored in
+            ``state.optimized_array.fixed_angle``.
+        """
+        state = self.app.state
+        fixed_angle = fixed_angle_borders(state.venue.palc_venue.pal[-1],
+                                          state.config)
+        state.optimized_array.fixed_angle = fixed_angle
+        self.fixed_angle_text.text = \
+            'Max: ' + str(np.round(fixed_angle[0], decimals=2)) + \
+            ', Min: ' + str(np.round(fixed_angle[2], decimals=2))
+        return fixed_angle
+
+    def show_initial_fixed_angle_range(self) -> None:
+        """Show the range of the fixed angle as in a new session."""
+        fixed_angle = self.app.state.optimized_array.fixed_angle
+        self.fixed_angle_text.text = 'Max: ' + str(fixed_angle[0]) + \
+            ', Min: ' + str(fixed_angle[2])
+
     def round_fixed_angle(self) -> None:
         """Clamp the fixed angle of the uppermost cabinet to its range."""
         config = self.app.state.config
@@ -315,6 +377,7 @@ class AlgorithmPage:
     # Callbacks
     # ------------------------------------------------------------------
 
+    @skipped_while_applying_setup
     def start_toggled(self, active: bool) -> None:
         """Run the calculation when the start toggle is pressed.
 
@@ -330,6 +393,7 @@ class AlgorithmPage:
         if active:
             self.app.run_calculation()
 
+    @skipped_while_applying_setup
     def choose_weighting(self, attr, old, new) -> None:
         """Arrange the page for the selected weighting.
 
@@ -347,9 +411,22 @@ class AlgorithmPage:
         -------
         None.
         """
+        self.show_weighting()
+
+    def show_weighting(self) -> bool:
+        """Arrange the page for the selected weighting (body of
+        :meth:`choose_weighting`).
+
+        Returns
+        -------
+        bool
+            False if the initial calculation of "Target Slope" failed,
+            otherwise True.
+        """
+        done = True
         self._arrange_weighting_widgets()
         if self.weighting_select.value in ['Target Slope']:
-            self.app.run_calculation()
+            done = self.app.run_calculation()
             self.app.state.target.init = True
             self.tabs.active = 1
             self.hinges_select.visible = True
@@ -360,7 +437,9 @@ class AlgorithmPage:
         self.app.state.config.store_config('use_weighting',
                                            self.weighting_select.value)
         self.exclude_hard_margin_target_slope()
+        return done
 
+    @skipped_while_applying_setup
     def set_nu_step(self, attr, old, new) -> None:
         """Set the step size of the ν slider.
 
@@ -385,6 +464,7 @@ class AlgorithmPage:
         """Decrease ν by the step size."""
         self.weighting_nu_slider.value -= float(self.nu_step_select.value)
 
+    @skipped_while_applying_setup
     def store_nu(self, attr, old, new) -> None:
         """Store ν (the slider value to the power of 3).
 
@@ -402,6 +482,7 @@ class AlgorithmPage:
         self.app.state.config.weighting_nu = np.round(
             self.weighting_nu_slider.value**3, decimals=2)
 
+    @skipped_while_applying_setup
     def choose_fixed_angle(self, attr, old, new) -> None:
         """Enable or disable the fixed angle of the uppermost cabinet.
 
@@ -421,17 +502,12 @@ class AlgorithmPage:
         """
         state = self.app.state
         if self.use_fixed_angle_select.value == 'Yes' and self.app.has_venue():
-            fixed_angle = fixed_angle_borders(state.venue.palc_venue.pal[-1],
-                                              state.config)
-            state.optimized_array.fixed_angle = fixed_angle
+            fixed_angle = self.update_fixed_angle_range()
             self.fixed_angle_input.disabled = False
             if fixed_angle[1] < fixed_angle[0]:
                 self.fixed_angle_input.value = str(fixed_angle[1])
             else:
                 self.fixed_angle_input.value = str(fixed_angle[0]-1)
-            self.fixed_angle_text.text = \
-                'Max: ' + str(np.round(fixed_angle[0], decimals=2)) + \
-                ', Min: ' + str(np.round(fixed_angle[2], decimals=2))
             state.config.use_fixed_angle = True
         elif self.use_fixed_angle_select.value == 'No':
             self.fixed_angle_input.disabled = True
@@ -443,6 +519,7 @@ class AlgorithmPage:
         target sources again (see :meth:`snap_target`)."""
         self.app.state.target.is2update = 0
 
+    @skipped_while_applying_setup
     def choose_hinges(self, attr, old, new) -> None:
         """Place the selected number of hinges on the target slope.
 
@@ -460,12 +537,29 @@ class AlgorithmPage:
         -------
         None.
         """
+        self.place_hinges(int(new))
+
+    def place_hinges(self, hinges: int) -> None:
+        """Place hinges on the target slope (body of :meth:`choose_hinges`).
+
+        The hinges are placed on the SPL over distance of the last
+        calculation; without a calculation nothing happens.
+
+        Parameters
+        ----------
+        hinges : int
+            Number of hinges.
+
+        Returns
+        -------
+        None.
+        """
         state = self.app.state
         if state.result is None:
             return
         SPLoverX = state.result.optimized.spl_over_distance
         drawn = state.drawn
-        ind = get_weight_links(int(new), SPLoverX)
+        ind = get_weight_links(hinges, SPLoverX)
         self.target_source.data.update(dict(
             SPL=np.array(SPLoverX.SPL)[ind], x=SPLoverX.x[ind],
             x_v=drawn.xline[ind], y_v=drawn.yline[ind]))
@@ -506,3 +600,102 @@ class AlgorithmPage:
             x=[Opt_w.x[0], Opt_w.x[0], Opt_w.x[-1], Opt_w.x[-1]],
             y=[Opt_w.SPL[0]+100, Opt_w.SPL[-1]-100, Opt_w.SPL[-1]-100,
                Opt_w.SPL[0]+100]))
+
+    def drag_target(self, points: Sequence[TargetPoint],
+                    reference_distance: float) -> None:
+        """Move the target points and the reference point, as dragging them
+        in the browser does; they snap to the grid (:meth:`snap_target`).
+
+        Parameters
+        ----------
+        points : sequence of TargetPoint
+            The target points; as many as the target slope shows.
+        reference_distance : float
+            Distance of the reference point in m.
+
+        Returns
+        -------
+        None.
+        """
+        data = self.target_source.data
+        self.target_selected('indices', [], [0])
+        self.target_source.data = dict(
+            x=[float(p.distance) for p in points],
+            SPL=[float(p.level_db) for p in points],
+            x_v=list(data['x_v']), y_v=list(data['y_v']))
+        data = self.target_reference_source.data
+        self.target_selected('indices', [], [0])
+        self.target_reference_source.data = dict(
+            x_ref=[float(reference_distance)], SPL=list(data['SPL']),
+            x_v=list(data['x_v']), y_v=list(data['y_v']))
+
+    # ------------------------------------------------------------------
+    # Setup files
+    # ------------------------------------------------------------------
+
+    def save_setup(self) -> None:
+        """Download the entered setup as a YAML file ("Save Setup").
+
+        Writes the text of :func:`~.setup_io.setup_from_app` into
+        ``setup_file_source``; its JavaScript callback downloads it as
+        :data:`SETUP_FILE_NAME`. An uploaded measured directivity is
+        embedded. A setup that cannot be read or is invalid is not saved;
+        the reason is shown in the error text.
+
+        Returns
+        -------
+        None.
+        """
+        from .setup_io import setup_from_app
+        app = self.app
+        try:
+            setup = setup_from_app(app)
+            validate(setup)
+        except SetupError as exc:
+            app.config_error_info.text = \
+                'Error: setup not saved, invalid input at %s: %s' \
+                % (exc.key, exc.message)
+            return
+        # empty first, so that saving the same text again downloads again
+        self.setup_file_source.data = dict(text=[])
+        self.setup_file_source.data = dict(text=[dump_setup(setup)])
+
+    def load_setup(self, attr, old, new) -> None:
+        """Load an uploaded setup file ("Load Setup").
+
+        Decodes the file (UTF-8), reads it with
+        :func:`~pypalc.core.settings.load_setup_text` and applies it with
+        :func:`~.setup_io.apply_setup`, which runs the calculation. An
+        invalid file shows ``Error: setup file invalid at <key>: <msg>`` and
+        changes nothing. A measured directivity given as a path is invalid
+        here, because the GUI only receives the file's contents.
+
+        Parameters
+        ----------
+        attr : str
+            Changed attribute (value).
+        old, new : str
+            Old and new upload (base64 encoded).
+
+        Returns
+        -------
+        None.
+        """
+        from .setup_io import apply_setup
+        app = self.app
+        try:
+            try:
+                text = base64.b64decode(new).decode('utf-8')
+            except (binascii.Error, ValueError):
+                raise SetupError('file', 'not a UTF-8 text file') from None
+            setup = load_setup_text(text)
+            apply_setup(app, setup)
+        except SetupError as exc:
+            message = PATH_DIRECTIVITY_MESSAGE \
+                if exc.key == PATH_DIRECTIVITY_KEY else exc.message
+            logger.info('Setup file not loaded: %s', exc)
+            app.config_error_info.text = \
+                'Error: setup file invalid at %s: %s' % (exc.key, message)
+        except CALLBACK_ERRORS:
+            logger.exception('Could not load the setup file')
+            app.config_error_info.text = 'Error: Could not load the setup file'

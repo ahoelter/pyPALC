@@ -37,6 +37,14 @@ Accepted differences to the legacy GUI
   recorded exception differ; see :func:`test_failed_run_keeps_results`).
 * The rewording of the "more than 2000 points" text is not reached by
   these steps.
+* ``document.model_count`` on page 4 (steps ``page4`` and ``page4b`` and
+  the steps up to the next page change) is 8 higher: the "Save Setup"
+  button, the "Load Setup" title and file input, the source of the setup
+  file download and their JavaScript callbacks (Task 7). Nothing else of
+  the golden file changed; the new widgets are not among :data:`MODELS`
+  (``tests/test_apply_setup.py`` covers them). Refreshing the range of a
+  fixed angle when the array position changes (Task 7) changes no
+  recorded value.
 
 The values are rounded to 9 decimals. Besides the widgets, the values of
 the PALC configuration that the configuration widgets store
