@@ -106,3 +106,31 @@ def test_text_load_rejects_path_without_base_dir():
 
 def test_version_mismatch():
     assert _key("version: 2") == "version"
+
+
+def test_empty_discrete_angles_rejected():
+    assert _key("array: {discrete_tilt_angles_deg: []}") == \
+        "array.discrete_tilt_angles_deg"
+
+
+@pytest.mark.parametrize("value", ["[-100, 50000]", "[-100, 8000]",
+                                   "[200, 20001]"])
+def test_frequency_range_outside_the_gui_slider_rejected(value):
+    assert _key("algorithm: {frequency_range_hz: %s}" % value) == \
+        "algorithm.frequency_range_hz"
+
+
+def test_frequency_range_of_the_whole_slider_accepted():
+    s = load_setup_text("algorithm: {frequency_range_hz: [0, 20000]}")
+    assert s.algorithm.frequency_range_hz == (0.0, 20000.0)
+
+
+@pytest.mark.parametrize("text,key", [
+    ("loudspeaker: {cabinet_height: .nan}", "loudspeaker.cabinet_height"),
+    ("loudspeaker: {aperture_angle_deg: .inf}",
+     "loudspeaker.aperture_angle_deg"),
+    ("array: {top_position: [0, -.inf]}", "array.top_position[1]"),
+    ("array: {cabinet_gap: %d}" % 10**400, "array.cabinet_gap"),
+])
+def test_non_finite_numbers_rejected(text, key):
+    assert _key(text) == key

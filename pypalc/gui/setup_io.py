@@ -227,10 +227,6 @@ def _labels(options):
     return {value: label for label, value in options.items()}
 
 
-#: Frequency range of the GUI's slider in Hz.
-FREQUENCY_SLIDER_RANGE = (0.0, 20000.0)
-
-
 def _typed(value: float) -> str:
     """Text a user types for a number: ``2.0`` -> ``'2'``."""
     text = repr(float(value))
@@ -247,9 +243,10 @@ def _check_applicable(setup: Setup) -> None:
     """Raise a SetupError if the GUI cannot show or compute a setup.
 
     Checks everything :func:`apply_setup` could fail on before it changes
-    the session: the settings (:func:`~pypalc.core.settings.validate`), the
-    measured directivity, the venue, the reference array, the frequency
-    range and the number of target points.
+    the session: the settings (:func:`~pypalc.core.settings.validate`,
+    which also checks the discrete tilt angles and the frequency range
+    against the GUI's slider), the measured directivity, the venue, the
+    reference array and the number of target points.
     """
     validate(setup)
     md = setup.loudspeaker.measured_directivity
@@ -264,15 +261,6 @@ def _check_applicable(setup: Setup) -> None:
                              "cannot be read as measured loudspeaker data"
                              ) from exc
     ar, ref, alg = setup.array, setup.reference_array, setup.algorithm
-    if ar.discrete_tilt_angles_deg is not None and \
-            len(ar.discrete_tilt_angles_deg) == 0:
-        raise SetupError("array.discrete_tilt_angles_deg",
-                         "at least one angle required")
-    low, high = FREQUENCY_SLIDER_RANGE
-    if not low <= alg.frequency_range_hz[0] < alg.frequency_range_hz[1] \
-            <= high:
-        raise SetupError("algorithm.frequency_range_hz",
-                         "the GUI allows %g to %g Hz" % (low, high))
     try:
         build_venue(setup.venue, ar)
     except VenueError as exc:

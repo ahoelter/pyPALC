@@ -16,6 +16,9 @@ import yaml
 from .errors import SetupError
 
 SETUP_VERSION = 1
+#: Frequencies allowed in ``algorithm.frequency_range_hz`` in Hz (the range
+#: of the GUI's frequency slider).
+FREQUENCY_RANGE_HZ = (0.0, 20000.0)
 
 
 @dataclass(frozen=True)
@@ -161,7 +164,14 @@ def _convert(tp: Any, value: Any, key: str) -> Any:
     if tp is float:
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise SetupError(key, "expected a number")
-        return float(value)
+        try:
+            number = float(value)
+        except OverflowError:
+            number = math.inf
+        if not math.isfinite(number):
+            raise SetupError(key, "expected a finite number, got %r"
+                             % (value,))
+        return number
     if tp is str:
         if not isinstance(value, str):
             raise SetupError(key, "expected a string")
@@ -210,6 +220,9 @@ def _check_choice(key: str, value: str, options: Tuple[str, ...]) -> None:
 def validate(setup: Setup) -> None:
     """Check ranges, enumerations and cross-field constraints.
 
+    The GUI's "Load Setup" applies the same checks, so that the GUI and the
+    headless runner accept the same setups.
+
     Parameters
     ----------
     setup : Setup
@@ -239,6 +252,10 @@ def validate(setup: Setup) -> None:
     _check_range("array.cabinet_count", ar.cabinet_count, 1, 30)
     if ar.cabinet_gap < 0:
         raise SetupError("array.cabinet_gap", "must not be negative")
+    if ar.discrete_tilt_angles_deg is not None and \
+            len(ar.discrete_tilt_angles_deg) == 0:
+        raise SetupError("array.discrete_tilt_angles_deg",
+                         "at least one angle required")
 
     _check_choice("reference_array.type", setup.reference_array.type,
                   _REFERENCE_TYPES)
@@ -255,6 +272,9 @@ def validate(setup: Setup) -> None:
     if not low < high:
         raise SetupError("algorithm.frequency_range_hz",
                          "lower frequency must be below the upper one")
+    if not (FREQUENCY_RANGE_HZ[0] <= low and high <= FREQUENCY_RANGE_HZ[1]):
+        raise SetupError("algorithm.frequency_range_hz",
+                         "must be between %g and %g Hz" % FREQUENCY_RANGE_HZ)
 
     if alg.weighting == "target_slope":
         if setup.target_slope is None:

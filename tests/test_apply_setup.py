@@ -315,6 +315,22 @@ def test_load_logs_rejection_with_traceback_at_debug_level(caplog):
     assert isinstance(debug[0].exc_info[1].__cause__, VenueError)
 
 
+def test_load_rejects_empty_discrete_angles():
+    setup = case_setup("discrete_angles")
+    assert_load_rejected(dump_setup(dataclasses.replace(
+        setup, array=dataclasses.replace(setup.array,
+                                         discrete_tilt_angles_deg=()))),
+        "array.discrete_tilt_angles_deg")
+
+
+def test_load_rejects_frequency_range_outside_slider():
+    setup = case_setup("simple")
+    assert_load_rejected(dump_setup(dataclasses.replace(
+        setup, algorithm=dataclasses.replace(
+            setup.algorithm, frequency_range_hz=(-100.0, 50000.0)))),
+        "algorithm.frequency_range_hz")
+
+
 def test_load_rejects_non_utf8_file():
     app = new_app()
     before = state_of(app)
