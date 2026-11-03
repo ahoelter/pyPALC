@@ -601,6 +601,13 @@ class AlgorithmPage:
             y=[Opt_w.SPL[0]+100, Opt_w.SPL[-1]-100, Opt_w.SPL[-1]-100,
                Opt_w.SPL[0]+100]))
 
+    def shown_target(self) -> tuple:
+        """The shown target slope: ``(x, SPL, x_ref)`` as lists of float."""
+        target = self.target_source.data
+        return ([float(x) for x in target['x']],
+                [float(spl) for spl in target['SPL']],
+                [float(x) for x in self.target_reference_source.data['x_ref']])
+
     def drag_target(self, points: Sequence[TargetPoint],
                     reference_distance: float) -> None:
         """Move the target points and the reference point, as dragging them
@@ -636,7 +643,7 @@ class AlgorithmPage:
     def save_setup(self) -> None:
         """Download the entered setup as a YAML file ("Save Setup").
 
-        Writes the text of :func:`~.setup_io.setup_from_app` into
+        Writes the text of :func:`~.setup_io.setup_to_save` into
         ``setup_file_source``; its JavaScript callback downloads it as
         :data:`SETUP_FILE_NAME`. An uploaded measured directivity is
         embedded. A setup that cannot be read or is invalid is not saved;
@@ -646,10 +653,10 @@ class AlgorithmPage:
         -------
         None.
         """
-        from .setup_io import setup_from_app
+        from .setup_io import setup_to_save
         app = self.app
         try:
-            setup = setup_from_app(app)
+            setup = setup_to_save(app)
             validate(setup)
         except SetupError as exc:
             app.config_error_info.text = \

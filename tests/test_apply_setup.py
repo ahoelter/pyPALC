@@ -12,6 +12,8 @@ every baseline case. Two differences are accepted (:data:`NOT_COMPARED`):
   the server, so after a load the directivity upload shows no file. The
   data is restored in the session (``state.measured_directivity_csv``).
 * ``4.load_setup_input.value``: the uploaded setup file itself.
+* ``4.setup_file_source.data``: the text of the last "Save Setup" (the
+  tests save from the shared loaded sessions).
 * ``3.reference_angles_source.data`` of a new session holds each column as
   a nested list (one table row with all cabinets); load writes the
   computed table, as every change of the reference array does. The angles
@@ -54,7 +56,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TARGET_SLOPE_CASES = ("target_slope", "gap_soft_margin_target_slope")
 #: Values that differ on purpose between load and the hand path.
 NOT_COMPARED = ("app.page_select.active", "2.directivity_upload.value",
-                "4.load_setup_input.value")
+                "4.load_setup_input.value", "4.setup_file_source.data")
 PATH_KEY = "loudspeaker.measured_directivity.path"
 
 
@@ -165,6 +167,7 @@ def test_load_shows_results(case):
     assert app.page_select.active == 5
     assert app.state.result is not None
     assert app.pages[4].start_toggle.active is False
+    assert app.state.applying_setup is False
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -246,6 +249,7 @@ def test_apply_setup_raises_for_path_directivity():
         apply_setup(app, setup)
     assert info.value.key == PATH_KEY
     assert app.state is state
+    assert app.state.applying_setup is False
     assert not differences(before, state_of(app))
 
 
@@ -306,6 +310,7 @@ def test_failed_run_after_load_shows_error(monkeypatch):
     assert app.config_error_info.text == 'Error: No convergence reached'
     assert app.page_select.active == 4
     assert app.state.result is None
+    assert app.state.applying_setup is False
     assert setup_from_app(app) == load_setup_text(case_text("simple"))
 
 
@@ -412,3 +417,58 @@ def test_fixed_angle_follows_top_position():
     assert shown == clamp_fixed_angle(-4.93, max_deg, min_deg) != -4.93
     assert setup_from_app(app).algorithm.fixed_top_angle_deg == shown
     assert clamp_fixed_angle(shown, max_deg, min_deg) == shown
+
+
+# --------------------------------------------------------------------------
+# Saving and loading a target slope again and again
+# --------------------------------------------------------------------------
+
+def dense(case, points_per_meter):
+    """A case with all audience lines discretized more densely."""
+    setup = case_setup(case)
+    lines = tuple(dataclasses.replace(line, points_per_meter=float(
+        points_per_meter)) for line in setup.venue.audience_lines)
+    return dataclasses.replace(setup, venue=dataclasses.replace(
+        setup.venue, audience_lines=lines))
+
+
+def load_and_save(text):
+    """Load a setup file into a new session; the session and its save."""
+    app = new_app()
+    load(app, text)
+    assert app.config_error_info.text == '', app.config_error_info.text
+    return app, saved_text(app)
+
+
+@pytest.mark.parametrize("points_per_meter", [None, 20, 40])
+@pytest.mark.parametrize("case", TARGET_SLOPE_CASES)
+def test_repeated_save_and_load_is_stable(case, points_per_meter):
+    setup = case_setup(case) if points_per_meter is None else \
+        dense(case, points_per_meter)
+    _, a = load_and_save(dump_setup(setup))
+    app_a, b = load_and_save(a)
+    app_b, c = load_and_save(b)
+    assert load_setup_text(b) == load_setup_text(a)
+    assert load_setup_text(c) == load_setup_text(b)
+    got = result_arrays(app_b.state.result)
+    want = result_arrays(app_a.state.result)
+    for key in want:
+        np.testing.assert_array_equal(got[key], want[key], err_msg=key)
+
+
+def test_save_after_dragging_writes_dragged_points():
+    app = new_app()
+    load(app, case_text("target_slope"))
+    algorithm = app.pages[4]
+    ts = app.state.result.setup.target_slope
+    grid = list(algorithm.spl_over_distance_source.data['x'])
+    moved = (ts.points[0], dataclasses.replace(ts.points[1],
+                                               distance=grid[20],
+                                               level_db=-2.0),
+             ts.points[2])
+    quiet(algorithm.drag_target, moved, ts.reference_distance)
+    saved = load_setup_text(saved_text(app)).target_slope
+    assert saved == setup_from_app(app).target_slope
+    assert saved != ts
+    assert saved.points[1].distance == grid[20]
+    assert saved.points[1].level_db == -2.0

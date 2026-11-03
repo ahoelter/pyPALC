@@ -10,6 +10,7 @@ author: Arne Hoelter
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
@@ -178,6 +179,41 @@ def setup_from_app(app: PalcApp) -> Setup:
         loudspeaker=_loudspeaker(app), array=_array(app),
         reference_array=_reference_array(app), algorithm=_algorithm(app),
         target_slope=_target_slope(app))
+
+
+def setup_to_save(app: PalcApp) -> Setup:
+    """The setup "Save Setup" writes.
+
+    This is :func:`setup_from_app`, except for a target slope that was not
+    moved since the last calculation: after a calculation the GUI shows
+    the target points snapped to the distance grid of the optimized array,
+    and saving those would move them again when the file is loaded (it
+    snaps them to the grid of the initial calculation). Then the target
+    slope of that calculation is saved, so that loading the file gives the
+    shown results. A target moved after the calculation is saved as shown.
+
+    Parameters
+    ----------
+    app : PalcApp
+        The GUI session.
+
+    Returns
+    -------
+    Setup
+        The setup; it is not validated.
+
+    Raises
+    ------
+    SetupError
+        If an input cannot be read.
+    """
+    setup = setup_from_app(app)
+    st = app.state
+    if setup.target_slope is not None and st.result is not None and \
+            st.result.setup.target_slope is not None and \
+            st.target_of_result == app.pages[4].shown_target():
+        setup = replace(setup, target_slope=st.result.setup.target_slope)
+    return setup
 
 
 # --------------------------------------------------------------------------
@@ -386,7 +422,9 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
 
     Everything that could make the setup unusable is checked before the
     session is changed; then a :class:`SetupError` is raised and nothing
-    changes. If the calculation itself fails (e.g. no convergence), the
+    changes. Other exceptions (a bug) are not caught here: the session is
+    then already replaced and may be partly applied. If the calculation
+    itself fails (e.g. no convergence), the
     setup stays applied, the error text is shown like for a failed "PALC
     Run" and page 4 stays open.
 

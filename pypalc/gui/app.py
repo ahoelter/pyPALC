@@ -109,6 +109,11 @@ class SessionState:
         The target slope shown on page 4 (legacy ``Opt_w``).
     result : RunResult or None
         Results of the last successful calculation, None before.
+    target_of_result : tuple or None
+        The target slope as shown right after the last successful
+        calculation: ``(x, SPL, x_ref)`` of the target sources. Save
+        compares it with the shown target to find out whether the target
+        was moved since (:func:`~.setup_io.setup_to_save`).
     applying_setup : bool
         True while :func:`~.setup_io.apply_setup` sets the widgets; the
         widget callbacks then do nothing
@@ -127,6 +132,7 @@ class SessionState:
         default_factory=lambda: Array_opt(gamma_tilt_deg=np.zeros(4)))
     target: Opt_weight = field(default_factory=Opt_weight)
     result: Optional[RunResult] = None
+    target_of_result: Optional[tuple] = None
     applying_setup: bool = False
 
 
@@ -600,6 +606,7 @@ class PalcApp:
                 self.config_error_info.text = 'Error: Could not store the output'
                 return False
             st.result = result
+            st.target_of_result = self.pages[4].shown_target()
             self.pages[4].start_toggle.active = False
             self.show()
             return True
