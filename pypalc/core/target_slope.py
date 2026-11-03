@@ -107,12 +107,17 @@ class TargetSlopeState():
             Contains the configuration of the PALC algorithm.
         diff_opt : float
             Single value of the optimized PALC computation.
+        iteration_count : int
+            Number of the current optimization loop. At 500 the loop stops.
 
         Returns
         -------
         bool
-            True, if diff_opt was 5 times higher than past value. Then break
-            of while optimization loop. Otherwise False.
+            True, if the while optimization loop has to stop: 10 loops were
+            worse than the loop before, the difference stayed the same
+            5 times in a row, or ``iteration_count`` is 500. The weights of
+            the loop with the lowest difference are then restored in
+            ``config``. Otherwise False.
 
         """
         if np.round(diff_opt, decimals=8) == np.round(self.previous_differences['n-1'], decimals=8):
@@ -197,7 +202,8 @@ def hinge_indices(hinge_count, spl_over_distance):
 def optimization_region(spl_over_distance, target):
     """
     Find the indices of the user defined optimization region in
-    the SPL over distance figure. :any:`start_calc` and :any:`optimize_target_slope`.
+    the SPL over distance figure. Called by :func:`pypalc.core.pipeline.run`
+    and :any:`optimize_target_slope`.
 
     Parameters
     ----------
@@ -219,7 +225,6 @@ def optimization_region(spl_over_distance, target):
     ind = []
     for val in list(target.region_distances):
         ind.append(np.argmin(np.abs(np.round(list(spl_over_distance.distances),2) - np.round(val,2))))#[0,0])
-    #spl_over_distance.region_levels_db = spl_over_distance.SPL - np.amax(spl_over_distance.SPL[ind])
     spl_over_distance.region_levels_db = spl_over_distance.levels_db[ind]
     target.region_distances      = spl_over_distance.distances[ind]
     target.distances             = [spl_over_distance.distances[ind[0]], spl_over_distance.distances[ind[-1]]]
@@ -693,6 +698,8 @@ def sv_gaussian(x, sig, offset, mir=0):
         Sigma of gaussian distribution.
     offset : float
         Height of start of gaussian distribution.
+    mir : float, optional
+        Value to control point to flip. The default is 0.
 
     Returns
     -------
@@ -801,8 +808,8 @@ def optimize_target_slope(config, sound_field_config, palc_venue, ray_plot, \
                   max_loops=80):
     """
     Runs the while loop of target slope optimization. Will return the optimized
-    weighting factors in :any:`target`. Called by :any:`start_calc`. Calls mainly
-    methods of :py:class:`TargetSlopeState`, this module and
+    weighting factors in ``target``. Called by :func:`pypalc.core.pipeline.run`.
+    Calls mainly methods of :py:class:`TargetSlopeState`, this module and
     :py:mod:`pypalc.core.sound_field`.
 
     Parameters
@@ -839,14 +846,14 @@ def optimize_target_slope(config, sound_field_config, palc_venue, ray_plot, \
         patches_x, patches_y = cabinet_outlines(ray_plot, config, optimized_array.tilt_angles)
         ray_plot.get_plot_array(optimized_array)
         array_center_x, array_center_y = predict_sound_field(optimized_array.tilt_angles_deg, drawn_lines, sound_field_config, \
-                            evaluation)#, dir_meas_LSA, dir_meas_degree)
+                            evaluation)
         compute_spl_over_distance(ray_plot, drawn_lines, evaluation.spl_db, spl_over_distance, sound_field_config.frequency_range_hz)
         
         # get difference between reference and PALC at optimization points
         # indices of optimization region
         region_indices = optimization_region(spl_over_distance, target)
         
-        # shift target SPL at x_ref on spl_over_distance
+        # shift target SPL at the reference distance on spl_over_distance
         shift_to_reference(target, spl_over_distance, region_indices, [])
         # indices that belong to the loudspeakers
         cabinet_point_indices, cabinet_region_indices = cabinet_points(config.cabinet_count, optimized_array, drawn_lines, region_indices=region_indices)
@@ -921,6 +928,6 @@ def snap_to_distance_grid(target, distances, points_x, points_y, shown_target,
     target.sort_points()
     target.region_distances = list(distances[np.argmin(np.abs(distances-target.distances[0])):np.argmin(np.abs(distances-target.distances[-1]))+1])
     target.interpolate_levels()
-    # find nearest index for x_ref
+    # find nearest index for the reference distance
     reference_index = np.argmin(np.abs(target.reference_distance[0] - np.array(target.region_distances)))
     target.reference_distance, target.reference_index = target.region_distances[reference_index], reference_index

@@ -280,12 +280,12 @@ def _check_applicable(setup: Setup) -> None:
         if message.startswith('Error: '):
             message = message[len('Error: '):]
         raise SetupError("venue.audience_lines", message) from None
-    gamma_lsa = [] if ar.discrete_tilt_angles_deg is None else \
+    discrete_tilt_angles = [] if ar.discrete_tilt_angles_deg is None else \
         np.array(ar.discrete_tilt_angles_deg) * (np.pi/180)
     try:
         reference_tilt_angles_deg(
-            ref.type, ar.cabinet_count, gamma_lsa, ref.top_angle_deg,
-            ref.angle_param_deg,
+            ref.type, ar.cabinet_count, discrete_tilt_angles,
+            ref.top_angle_deg, ref.angle_param_deg,
             ref.use_discrete_angles and ar.discrete_tilt_angles_deg
             is not None, ref.tilt_angles_deg)
     except CALLBACK_ERRORS as exc:

@@ -71,7 +71,7 @@ def show_rays(rays_source, hit_points_source, \
                     ray_plot, optimized_array):
     """
     Stores venue slice data in a ColumnDataSource to plot the data in the
-    venue slice plot any:`p`.
+    venue slice plot (:attr:`pypalc.gui.app.PalcApp.venue_figure`).
 
     Parameters
     ----------

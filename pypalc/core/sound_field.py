@@ -469,7 +469,8 @@ def predict_sound_field(tilt_angles_deg, drawn_lines, sound_field_config, evalua
     """
     Main function to compute 2D sound field prediction with a 3D transfer
     function. Calls :any:`air_absorption_coefficient` and :any:`green_functions`.
-    Called by :any:`start_calc` and :any:`optimize_target_slope`.
+    Called by :func:`pypalc.core.pipeline.run` and
+    :any:`optimize_target_slope`.
 
     Parameters
     ----------
@@ -625,7 +626,8 @@ def compute_homogeneity(evaluation, array_center_x, array_center_y, points_x, po
     """
     Computes the homogeneity of a given sound field. Computes also the values
     to be visualized in the bar chart (Number of SPL values per audience
-    positions). Here the output of :any:`predict_sound_field`. Called by :any:`start_calc`.
+    positions). Here the output of :any:`predict_sound_field`. Called by
+    :func:`pypalc.core.pipeline.run`.
 
     Parameters
     ----------
@@ -690,7 +692,7 @@ def compute_homogeneity(evaluation, array_center_x, array_center_y, points_x, po
 def compute_histogram(evaluation):
     """
     Computes the Histogram values to be visualized in bokeh. Called by
-    :any:`start_calc`.
+    :func:`pypalc.core.pipeline.run`.
 
     Parameters
     ----------
@@ -713,8 +715,8 @@ def compute_histogram(evaluation):
 def compute_spl_over_distance(ray_plot, drawn_lines, spl_db, spl_over_distance, frequency_range_hz):
     """
     Computes the SPL over distance. The distance is measured from the center
-    of the LSA to the receiver positions. Called by :any:`start_calc` and
-    :any:`optimize_target_slope`.
+    of the LSA to the receiver positions. Called by
+    :func:`pypalc.core.pipeline.run` and :any:`optimize_target_slope`.
 
     Parameters
     ----------

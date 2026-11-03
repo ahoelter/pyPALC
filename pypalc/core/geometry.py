@@ -52,7 +52,8 @@ def list_sort(seq):
 
 def inter_cabinet_angles(tilt_angles_deg):
     """
-    Calculates the intercabinet tilt angles. Called by :any:`start_calc`.
+    Calculates the intercabinet tilt angles. Called by
+    :func:`pypalc.core.pipeline.run`.
 
     Parameters
     ----------
@@ -354,7 +355,7 @@ def line_intersection(xy_1_a, xy_1_b, xy_2_a, xy_2_b):
 def cabinet_outlines(ray_plot, config, tilt_angles, margin_cabinet_count=[]):
     """
     Calculates the positions of the LSA cabinet edges to visualize them in a
-    bokeh figure as patches. Called by :any:`start_calc`.
+    bokeh figure as patches. Called by :func:`pypalc.core.pipeline.run`.
 
     Parameters
     ----------
