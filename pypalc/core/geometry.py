@@ -257,8 +257,8 @@ def calc_intersection_PAL(xy_1_a, xy_1_b, xy_2_a, xy_2_b):
     is used to create the non-audience lines.
     Calculation of the intersection of two adjacent sections of the polygonal
     audience line based on the intersection of two linear functions in vector
-    representation. Called by :any:`calc_angles`, :any:`pal_draw_condition_3`
-    and :any:`suggestPAL`.
+    representation. Called by :any:`calc_angles`, :any:`draw_condition_3`
+    and :any:`suggest_venue`.
     
     
         * vec{OP_1} = vec{OA_1} + lambda_1 * ( vec{OB_1} - vec{OA_1} )

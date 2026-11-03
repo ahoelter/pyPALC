@@ -504,7 +504,7 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     omega = 2 * np.pi * f
     omega_xy = 2 * np.pi * f_xy
     D_opt_LSA = np.ones([N, np.shape(f)[0]])
-    P_LSA = np.zeros([np.shape(created_pal.xline)[0],np.shape(f)[0]], dtype=complex)
+    P_LSA = np.zeros([np.shape(created_pal.points_x)[0],np.shape(f)[0]], dtype=complex)
 
     # air attenuation
     alpha, c = AirAbsorptionCoefficient(f, T=293.15, p=101.325*10**(3), h=50)
@@ -518,7 +518,7 @@ def calcSFP(gamma_tilt_deg, created_pal, SFP_config, Tech_res):
     x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_pos(gamma_n, SFP_config)
 
     for n in range(np.shape(f)[0]):
-        G_LSA_vert = CalcGreenFunctions(created_pal.xline, created_pal.yline, np.array([0]), \
+        G_LSA_vert = CalcGreenFunctions(created_pal.points_x, created_pal.points_y, np.array([0]), \
                                         x_c_n, y_c_n, 0.82, SFP_config.directivity, \
                                         SFP_config.Lambda_y, gamma_n, c, omega[n], 1, \
                                         np.array(SFP_config.dir_meas[:,n]), \
@@ -737,8 +737,8 @@ def calcSPLoverX(PALC_plots, created_pal, p_SPL, SPLoverX, freq_range):
     f_ind_min = np.argmin(np.abs(f-freq_range[0]))
     f_ind_max = np.argmin(np.abs(f-freq_range[1]))
     # distance source --> receiver
-    total_dist = np.sqrt(((PALC_plots.x_start[0]+PALC_plots.x_stop[-1])/2 - created_pal.xline)**2 + \
-                         ((PALC_plots.y_start[0]+PALC_plots.y_stop[-1])/2 - created_pal.yline)**2)
+    total_dist = np.sqrt(((PALC_plots.x_start[0]+PALC_plots.x_stop[-1])/2 - created_pal.points_x)**2 + \
+                         ((PALC_plots.y_start[0]+PALC_plots.y_stop[-1])/2 - created_pal.points_y)**2)
     # SPLoverX computation
     p_sum = np.sum(p0 * 10**(p_SPL[:,f_ind_min:f_ind_max+1]/20), axis=1)
     p_SPL_x_vert = 20 * np.log10(np.abs(p_sum) / p0)

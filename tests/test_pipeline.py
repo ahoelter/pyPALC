@@ -10,12 +10,12 @@ from pypalc.core.pipeline import (build_venue, check_line, fixed_angle_limits,
                                   initial_target_slope, result_arrays, run)
 from pypalc.core.settings import (AudienceLine, Setup, VenueSettings,
                                   load_setup)
-from pypalc.core.venue import PAL
+from pypalc.core.venue import AudienceLines
 from tests.legacy.capture import case_path
 
 
 def _empty_lines():
-    return PAL(pal_index=np.array([0]).astype(int))
+    return AudienceLines(line_end_indices=np.array([0]).astype(int))
 
 
 def test_fixed_angle_is_clamped():
@@ -105,7 +105,7 @@ def test_legacy_classes_do_not_share_default_lists():
     from pypalc.core.palc import Array_opt, PALC_configuration
     from pypalc.core.sound_field import SFP_configuration
     from pypalc.core.target_slope import Opt_weight
-    from pypalc.core.venue import PALC_compatible_PAL
+    from pypalc.core.venue import PalcVenue
     from pypalc.gui.ranges import Plot_ranges
 
     def attrs(cls, names):
@@ -113,8 +113,8 @@ def test_legacy_classes_do_not_share_default_lists():
         for name in names:
             assert getattr(a, name) is not getattr(b, name), (cls, name)
 
-    attrs(PAL, ["xline_start", "xline", "pal_index", "plot_x", "ind_iscut"])
-    attrs(PALC_compatible_PAL, ["pal", "pal_no_nal", "xline"])
+    attrs(AudienceLines, ["line_start_x", "points_x", "line_end_indices", "plot_x", "cut_lines"])
+    attrs(PalcVenue, ["segments", "audience_segments", "points_x"])
     attrs(PALC_configuration, ["gamma_LSA", "weighting_factors", "psi_n",
                                "gamma_n", "last_angle_hm", "gap_weights",
                                "weighting_weights"])

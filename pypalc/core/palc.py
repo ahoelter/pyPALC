@@ -234,7 +234,7 @@ class Array_opt():
             self.seg_pos_stop = new_input['x_a_b_n']
 
 
-def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr):
+def calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr):
     """
     Main routine of the PALC computation and is calles by :py:meth:`calcPALC`.
     Computes the tilt angles of the LSA cabinets.
@@ -269,15 +269,15 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
     # aud_angle: epsilon
     # aud_pos_seg
     # aud_length: total length of the audience line
-    aud_l = np.empty([np.shape(pal)[0]],float)
-    aud_angle = np.empty([np.shape(pal)[0]],float)
-    aud_pos_seg = np.empty([np.shape(pal)[0]+1,3],float)
-    for n in range(np.shape(pal)[0]):
-        aud_l[n] = np.sqrt(np.sum((pal[n][np.shape(pal[n])[0]-1,:]-pal[n][0,:])**2))
-        aud_angle[n] = (pal[n][1,1]-pal[n][0,1]) / (pal[n][1,0]-pal[n][0,0])
-        aud_pos_seg[n,:] = pal[n][0,:]
+    aud_l = np.empty([np.shape(segments)[0]],float)
+    aud_angle = np.empty([np.shape(segments)[0]],float)
+    aud_pos_seg = np.empty([np.shape(segments)[0]+1,3],float)
+    for n in range(np.shape(segments)[0]):
+        aud_l[n] = np.sqrt(np.sum((segments[n][np.shape(segments[n])[0]-1,:]-segments[n][0,:])**2))
+        aud_angle[n] = (segments[n][1,1]-segments[n][0,1]) / (segments[n][1,0]-segments[n][0,0])
+        aud_pos_seg[n,:] = segments[n][0,:]
     #aud_pos_seg[np.shape(pal)[0],:] = pal[np.shape(pal)[0]-1][np.shape(pal[np.shape(pal)[0]-1])[0]-1,:]
-    aud_pos_seg[-1,:] = pal[-1][-1,:]
+    aud_pos_seg[-1,:] = segments[-1][-1,:]
     aud_pos_seg = np.flipud(aud_pos_seg)
     aud_l = np.flipud(aud_l)
     aud_angle = np.arctan(np.flipud(aud_angle))-np.pi
@@ -361,7 +361,7 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                     # 4. wenn nicht: pal in aud_pos_seg einfügen
                     # 5. x_a_t_n berechnen 
                     if num_iter > 0 and np.any(point_exists1) == 0:
-                        del pal[-1]
+                        del segments[-1]
                         aud_pos_seg = np.delete(aud_pos_seg, [0,1,2]).reshape(int((np.shape(aud_pos_seg)[0]-1)),3)
                         aud_length -= aud_l[0]
                         aud_l = np.delete(aud_l, 0)
@@ -381,19 +381,19 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                     source_y = [PALC_config.y_H - (np.cos(gamma_n[m]) * PALC_config.Lambda_y)/2]
                     # find maximum value on x-axis of pal and end point of ray
 
-                    xmax = max(o.max() for o in pal)
+                    xmax = max(o.max() for o in segments)
                     end_x = np.array([xmax + 1])
                     end_y = source_y - direction_y * (end_x - source_x)
                     # find the intersection point if exists
-                    xy_s1 = np.empty([np.shape(pal)[0],2])
-                    point_exists1 = np.empty(np.shape(pal)[0])
-                    for o in range(np.shape(pal)[0]):
+                    xy_s1 = np.empty([np.shape(segments)[0],2])
+                    point_exists1 = np.empty(np.shape(segments)[0])
+                    for o in range(np.shape(segments)[0]):
 
                         xy_s1[o,:], lambda_1, lambda_2, point_exists1[o] = \
-                        calc_intersection_PAL(np.array([source_x[0], source_y[0], 0]), np.array([end_x[0], end_y[0], 0]), pal[o][0,:], pal[o][-1,:])
+                        calc_intersection_PAL(np.array([source_x[0], source_y[0], 0]), np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
 
-                        if point_exists1[o] == 1 and pal[o][0,0]<=np.round(xy_s1[o,0], decimals=3)<=pal[o][-1,0] and \
-                           pal[o][0,1]<=np.round(xy_s1[o,1], decimals=3)<=pal[o][-1,1]:
+                        if point_exists1[o] == 1 and segments[o][0,0]<=np.round(xy_s1[o,0], decimals=3)<=segments[o][-1,0] and \
+                           segments[o][0,1]<=np.round(xy_s1[o,1], decimals=3)<=segments[o][-1,1]:
 
                             point_exists1[o] = int(1)
                         else:
@@ -401,18 +401,18 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                             point_exists1[o] = int(0)
                     # add a audience line if intersection point doesnt exist
                     if np.any(point_exists1) == 0:
-                        pal.append(np.array([pal[-1][-1,0],pal[-1][-1,1], 0, xmax, source_y[0] - direction_y * (xmax - source_x[0]), 0]).reshape(2,3))
-                        aud_l = np.append(np.sqrt(np.sum((pal[-1][-1,:]-pal[-1][0,:])**2)), aud_l)
-                        aud_angle = np.append(np.arctan((pal[-1][1,1]-pal[-1][0,1]) / (pal[-1][1,0]-pal[-1][0,0]))-np.pi, aud_angle)
+                        segments.append(np.array([segments[-1][-1,0],segments[-1][-1,1], 0, xmax, source_y[0] - direction_y * (xmax - source_x[0]), 0]).reshape(2,3))
+                        aud_l = np.append(np.sqrt(np.sum((segments[-1][-1,:]-segments[-1][0,:])**2)), aud_l)
+                        aud_angle = np.append(np.arctan((segments[-1][1,1]-segments[-1][0,1]) / (segments[-1][1,0]-segments[-1][0,0]))-np.pi, aud_angle)
                         aud_length += aud_l[0]
-                        aud_pos_seg = np.append([pal[-1][-1,:]], aud_pos_seg, axis=0)
+                        aud_pos_seg = np.append([segments[-1][-1,:]], aud_pos_seg, axis=0)
 
                         x_a_t_n[m,:] = aud_pos_seg[k,:] 
                         seg_rem = aud_l[k]
                     # case if the highest LS cabinet covers the last audience line
                     elif point_exists1[-1] == 1:
                         x_a_t_n[m,:-1] = xy_s1[np.argmax(point_exists1),:]
-                        seg_rem = aud_l[k] - np.sqrt(np.sum((pal[-1][np.shape(pal[-1])[0]-1,:-1]-xy_s1[np.argmax(point_exists1),:])**2))
+                        seg_rem = aud_l[k] - np.sqrt(np.sum((segments[-1][np.shape(segments[-1])[0]-1,:-1]-xy_s1[np.argmax(point_exists1),:])**2))
                         aud_length -= (aud_l[k] - seg_rem)
                         aud_pos_seg[k,:-1] = xy_s1[np.argmax(point_exists1),:]
                     # if the highest LS cabinet hits pal 0,1,...n-1: no convergence
@@ -445,43 +445,43 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
                     hypo = 1/np.cos(direction)    # length if side adjacent is equal to one
                     direction_y = hypo * np.sin(direction) # length in y direction if side adjacent (x direction)  is equal to one
                     x_start, y_start, x_stop, y_stop, x_c_n, y_c_n, x_S, y_S = source_pos(gamma_n, PALC_config) # source positions
-                    xmax = max(o.max() for o in pal)
+                    xmax = max(o.max() for o in segments)
                     end_x = np.array([xmax + 1]) # max length in x direction
                     end_y = y_c_n[m] - direction_y * (end_x - x_c_n[m]) #  max depth of y direction source_y - (end_x - source_x) / np.tan((np.pi/2) - (gamma_n[m]-psi_n[m]))
-                    xy_s1 = np.empty([np.shape(pal)[0],2])
+                    xy_s1 = np.empty([np.shape(segments)[0],2])
                     point_exists2 = False
                     # check in which pal segment is the intersection point
-                    for o in range(np.shape(pal)[0]):
+                    for o in range(np.shape(segments)[0]):
                         xy_s1[0,:], lambda_1, lambda_2, point_exists2 = \
                         calc_intersection_PAL(np.array([x_c_n[m], y_c_n[m], 0]), \
-                                              np.array([end_x[0], end_y[0], 0]), pal[o][0,:], pal[o][-1,:])
-                        if point_exists2 == True and pal[o][0,0]<=np.round(xy_s1[0,0], decimals=3)<=pal[o][-1,0] and \
-                           pal[o][0,1]<=np.round(xy_s1[0,1], decimals=3)<=pal[o][-1,1]:
+                                              np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
+                        if point_exists2 == True and segments[o][0,0]<=np.round(xy_s1[0,0], decimals=3)<=segments[o][-1,0] and \
+                           segments[o][0,1]<=np.round(xy_s1[0,1], decimals=3)<=segments[o][-1,1]:
                             # check if current pal[o] is equal to current k
-                            if o == (np.shape(pal)[0]-1-k):
+                            if o == (np.shape(segments)[0]-1-k):
                                 x_a_t_n[m,:] = [xy_s1[0,0], xy_s1[0,1], 0] # new top position on audience line
-                                seg_rem = aud_l[k] - np.sqrt(np.sum((pal[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
+                                seg_rem = aud_l[k] - np.sqrt(np.sum((segments[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
                                 # calc total overlap on audience line to correct Gamma_aud
                                 if np.sum(x_a_t_n[m,:]-x_a_b_n[m-1,:]) >= 0:
                                     aud_overlap += np.sqrt(np.sum((x_a_t_n[m,:]-x_a_b_n[m-1,:])**2))
                                 elif np.sum(x_a_t_n[m,:]-x_a_b_n[m-1,:]) < 0:
                                     aud_overlap -= np.sqrt(np.sum((x_a_t_n[m,:]-x_a_b_n[m-1,:])**2))
                             # case if current pal[o] is on the pal segment above or rather on k-1
-                            elif o == (np.shape(pal)[0]-k):
-                                aud_overlap += np.sqrt(np.sum((x_a_t_n[m,:]-pal[-1-k][-1,:])**2)) # old k-th segment overlap
+                            elif o == (np.shape(segments)[0]-k):
+                                aud_overlap += np.sqrt(np.sum((x_a_t_n[m,:]-segments[-1-k][-1,:])**2)) # old k-th segment overlap
                                 k -= 1 # update k
                                 epsilon = -aud_angle[k] - (np.pi / 2) # angle of new pal segment
                                 x_a_t_n[m,:] = [xy_s1[0,0], xy_s1[0,1], 0] # new top position on audience line
-                                seg_rem = aud_l[k] - np.sqrt(np.sum((pal[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
-                                aud_overlap += np.sqrt(np.sum((x_a_t_n[m,:]-pal[-1-k][0,:])**2)) # new k-th segment overlap
+                                seg_rem = aud_l[k] - np.sqrt(np.sum((segments[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
+                                aud_overlap += np.sqrt(np.sum((x_a_t_n[m,:]-segments[-1-k][0,:])**2)) # new k-th segment overlap
                             # case if current pal[o] is on the pal segment below or rather on k+1
-                            elif o == (np.shape(pal)[0]-2-k):
-                                aud_overlap -= np.sqrt(np.sum((x_a_t_n[m,:]-pal[-1-k][0,:])**2)) # old k-th segment overlap
+                            elif o == (np.shape(segments)[0]-2-k):
+                                aud_overlap -= np.sqrt(np.sum((x_a_t_n[m,:]-segments[-1-k][0,:])**2)) # old k-th segment overlap
                                 k += 1 # update k
                                 epsilon = -aud_angle[k] - (np.pi / 2) # angle of new pal segment
                                 x_a_t_n[m,:] = [xy_s1[0,0], xy_s1[0,1], 0] # new top position on audience line
-                                seg_rem = aud_l[k] - np.sqrt(np.sum((pal[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
-                                aud_overlap -= np.sqrt(np.sum((x_a_t_n[m,:]-pal[-1-k][-1,:])**2)) # new k-th segment overlap
+                                seg_rem = aud_l[k] - np.sqrt(np.sum((segments[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
+                                aud_overlap -= np.sqrt(np.sum((x_a_t_n[m,:]-segments[-1-k][-1,:])**2)) # new k-th segment overlap
                         
                     if point_exists2 == False:
                             logger.warning('Error in discrete tilt angles')
@@ -608,28 +608,28 @@ def calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
             PALC_config.gap_weights = np.ones(PALC_config.N)
             m = 0
             o = 0
-            for n in range(np.shape(pal)[0]):
-                if PALC_config.use_fixed_angle and np.any(point_exists1) == 0 and n == np.shape(pal)[0]-1:
+            for n in range(np.shape(segments)[0]):
+                if PALC_config.use_fixed_angle and np.any(point_exists1) == 0 and n == np.shape(segments)[0]-1:
                     o=1
-                if pal_e[n-m-o][0,0] != pal[n][0,0] or pal_e[n-m-o][0,1] != pal[n][0,1]:
+                if pal_e[n-m-o][0,0] != segments[n][0,0] or pal_e[n-m-o][0,1] != segments[n][0,1]:
                     m += 1
                     ind_na_line = np.append(ind_na_line, n)
             # Second step: check which loudspeaker hits which line on which point and 
             #              add the weighting
-            for n in range(np.shape(pal)[0]):
+            for n in range(np.shape(segments)[0]):
                 if np.any(n==ind_na_line):
                     for m in range(N):
-                        if pal[n][0,0] <= Opt_arr.seg_pos[m,0] <= pal[n][-1,0] and \
-                           pal[n][0,1] <= Opt_arr.seg_pos[m,1] <= pal[n][-1,1]:
+                        if segments[n][0,0] <= Opt_arr.seg_pos[m,0] <= segments[n][-1,0] and \
+                           segments[n][0,1] <= Opt_arr.seg_pos[m,1] <= segments[n][-1,1]:
                                # compute the length of non-audience line and
                                # distance of deg_opt to next audience line
-                            dist_na_line = np.sqrt((pal[n][-1,0]-pal[n][0,0])**2 + \
-                                                      (pal[n][-1,1]-pal[n][0,1])**2)
-                            dist_high = np.sqrt((pal[n][-1,0]-Opt_arr.seg_pos[m,0])**2 + \
-                                                   (pal[n][-1,1]-Opt_arr.seg_pos[m,1])**2)
-                            dist_low = np.sqrt((Opt_arr.seg_pos[m,0]-pal[n][0,0])**2 + \
-                                                  (Opt_arr.seg_pos[m,1]-pal[n][0,1])**2)
-                            if n == np.shape(pal)[0]-1:
+                            dist_na_line = np.sqrt((segments[n][-1,0]-segments[n][0,0])**2 + \
+                                                      (segments[n][-1,1]-segments[n][0,1])**2)
+                            dist_high = np.sqrt((segments[n][-1,0]-Opt_arr.seg_pos[m,0])**2 + \
+                                                   (segments[n][-1,1]-Opt_arr.seg_pos[m,1])**2)
+                            dist_low = np.sqrt((Opt_arr.seg_pos[m,0]-segments[n][0,0])**2 + \
+                                                  (Opt_arr.seg_pos[m,1]-segments[n][0,1])**2)
+                            if n == np.shape(segments)[0]-1:
                                 dist_near = dist_low
                             else:
                                 dist_near = np.amin([dist_high, dist_low])
@@ -703,30 +703,30 @@ def calcPALC(PALC_plots, PALC_pal, PALC_config, Opt_arr):
     gamma_n = np.array(PALC_config.gamma_n)
     psi_n   = np.array(PALC_config.psi_n)
 
-    pal_e = list(PALC_pal.pal_no_nal)
-    pal = list(PALC_pal.pal)
+    pal_e = list(PALC_pal.audience_segments)
+    segments = list(PALC_pal.segments)
 
     # no Gap Handling or Soft Margin
     if PALC_config.gap_handling in ['Without', 'Soft Margin']:
         t1 = time.time()
-        calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
+        calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
         t2 = time.time()
         dt = t2 - t1
         logger.debug('elapsed time in s: %s', dt)
         return 
     # Gap Handling: Hard Margin Approach
     elif PALC_config.gap_handling in ['Hard Margin']:
-        calc_angles(PALC_plots, pal, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
+        calc_angles(PALC_plots, segments, psi_n, gamma_n, N, PALC_config, pal_e, Opt_arr)
         # create pal_h that contains lists with the continuous audience lines
         pal_h = []
         pal_h.append([])
         m = 0
         for n in range(np.shape(pal_e)[0]):
-            if pal_e[n][0,0] != pal[n+m][0,0] or pal_e[n][0,1] != pal[n+m][0,1]:
+            if pal_e[n][0,0] != segments[n+m][0,0] or pal_e[n][0,1] != segments[n+m][0,1]:
                 pal_h.append([])
                 m += 1
-            if pal_e[n][0,0] == pal[n+m][0,0] and pal_e[n][0,1] == pal[n+m][0,1]:
-                pal_h[m].append(pal[n+m])
+            if pal_e[n][0,0] == segments[n+m][0,0] and pal_e[n][0,1] == segments[n+m][0,1]:
+                pal_h[m].append(segments[n+m])
         # check which loudspeaker cabinets belong to which continuous audience line
         ls2seg = np.empty(N).astype(int)
         seg_dist_high = np.empty(np.shape(pal_h)[0])

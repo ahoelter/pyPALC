@@ -347,7 +347,7 @@ class AlgorithmPage:
             ``state.optimized_array.fixed_angle``.
         """
         state = self.app.state
-        fixed_angle = fixed_angle_borders(state.venue.palc_venue.pal[-1],
+        fixed_angle = fixed_angle_borders(state.venue.palc_venue.segments[-1],
                                           state.config)
         state.optimized_array.fixed_angle = fixed_angle
         self.fixed_angle_text.text = \
@@ -562,7 +562,7 @@ class AlgorithmPage:
         ind = get_weight_links(hinges, SPLoverX)
         self.target_source.data.update(dict(
             SPL=np.array(SPLoverX.SPL)[ind], x=SPLoverX.x[ind],
-            x_v=drawn.xline[ind], y_v=drawn.yline[ind]))
+            x_v=drawn.points_x[ind], y_v=drawn.points_y[ind]))
 
     def snap_target(self, attr, old, new) -> None:
         """Snap the dragged target slope to the SPL over distance grid.

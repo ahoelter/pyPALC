@@ -51,14 +51,12 @@ from .sound_field import (SFP_configuration, Technical_meas_results,
 from .target_slope import (Opt_weight, get_opt_region, get_weight_links,
                            optimize_PALC, shift2ref, shift_ref_on_zero,
                            snap_to_distance_grid)
-from .venue import (PAL, PALC_compatible_PAL, check_draw_conditions,
-                    get_PALC_compatible_PAL, suggestPAL)
+from .venue import (AudienceLines, PalcVenue, check_draw_conditions,
+                    fill_palc_venue, suggest_venue)
 
 logger = logging.getLogger(__name__)
 
 # Final names of the legacy classes (renamed in a later step).
-AudienceLines = PAL
-PalcVenue = PALC_compatible_PAL
 ArrayEvaluation = Technical_meas_results
 TargetSlopeState = Opt_weight
 ArrayGeometry = Array_opt
@@ -178,9 +176,10 @@ class RunResult:
 
 def _new_audience_lines() -> AudienceLines:
     """Empty audience lines, with fresh lists for all attributes."""
-    return PAL(xline_start=[], xline_stop=[], yline_start=[], yline_stop=[],
-               slope=[], b=[], xline=[], yline=[], pal_index=[], plot_x=[],
-               plot_y=[], ind_iscut=[])
+    return AudienceLines(line_start_x=[], line_stop_x=[], line_start_y=[],
+                         line_stop_y=[], slope=[], intercept=[], points_x=[],
+                         points_y=[], line_end_indices=[], plot_x=[],
+                         plot_y=[], cut_lines=[])
 
 
 def _checked_line(lines: AudienceLines, line: AudienceLine
@@ -188,7 +187,7 @@ def _checked_line(lines: AudienceLines, line: AudienceLine
     """Check a line as ``save_line`` does; return its values for appending."""
     x_start, y_start = float(line.start[0]), float(line.start[1])
     x_stop, y_stop = float(line.stop[0]), float(line.stop[1])
-    condition1, condition2, condition3, slope, b, message = \
+    condition1, condition2, condition3, slope, intercept, message = \
         check_draw_conditions(x_start, x_stop, y_start, y_stop, lines)
     if not (condition1 and condition2 and condition3):
         raise VenueError(message or 'Error: The audience line lies on an '
@@ -197,10 +196,10 @@ def _checked_line(lines: AudienceLines, line: AudienceLine
     eval_points = diff * float(line.points_per_meter)
     # AudienceLines.append_line discretizes with int(eval_points) points
     new_points = int(eval_points) if eval_points else 0
-    if np.shape(lines.xline)[0] + new_points > MAX_VENUE_POINTS:
+    if np.shape(lines.points_x)[0] + new_points > MAX_VENUE_POINTS:
         raise VenueError('Error: Maximum discretized points are %d. Please '
                          'reduce the discretization.' % MAX_VENUE_POINTS)
-    return x_start, x_stop, y_start, y_stop, slope, b, eval_points
+    return x_start, x_stop, y_start, y_stop, slope, intercept, eval_points
 
 
 def check_line(lines: AudienceLines, line: AudienceLine) -> None:
@@ -249,21 +248,21 @@ def build_venue(venue: VenueSettings, array: ArraySettings) -> VenueResult:
     if not venue.audience_lines:
         raise VenueError('Error: Please create audience lines first')
     drawn = _new_audience_lines()
-    drawn.pal_index = np.array([0]).astype(int)
+    drawn.line_end_indices = np.array([0]).astype(int)
     for line in venue.audience_lines:
         values = _checked_line(drawn, line)
         drawn.append_line(*values)
     non_audience = _new_audience_lines()
     sound_field_only = _new_audience_lines()
-    palc_venue = PALC_compatible_PAL(pal=[], pal_no_nal=[])
+    palc_venue = PalcVenue(segments=[], audience_segments=[])
     try:
-        suggestPAL(drawn, non_audience, sound_field_only)
-        get_PALC_compatible_PAL(palc_venue, drawn, non_audience,
+        suggest_venue(drawn, non_audience, sound_field_only)
+        fill_palc_venue(palc_venue, drawn, non_audience,
                                 sound_field_only)
-        palc_venue.create_pal_without_nal(non_audience)
+        palc_venue.collect_audience_segments(non_audience)
     except _CALCULATION_ERRORS as exc:
         raise VenueError('Error: Could not create PAL proposal') from exc
-    if len(palc_venue.pal) == 0:
+    if len(palc_venue.segments) == 0:
         raise VenueError('Error: Could not create PAL proposal')
     return VenueResult(drawn=drawn, palc_venue=palc_venue,
                        non_audience=non_audience,
@@ -405,7 +404,7 @@ def fixed_angle_limits(venue: VenueResult, setup: Setup
         ``(max_deg, min_deg)``, as the GUI computes them when "fix angle of
         uppermost cabinet" is enabled.
     """
-    borders = fixed_angle_borders(venue.palc_venue.pal[-1],
+    borders = fixed_angle_borders(venue.palc_venue.segments[-1],
                                   _palc_config(setup))
     return borders[0], borders[2]
 
@@ -448,7 +447,7 @@ class _Calculation:
         self.patches_ref: Tuple[list, list] = ([], [])
         fixed = setup.algorithm.fixed_top_angle_deg
         if fixed is not None:
-            borders = fixed_angle_borders(venue.palc_venue.pal[-1],
+            borders = fixed_angle_borders(venue.palc_venue.segments[-1],
                                           self.config)
             self.optimized.fixed_angle = borders
             self.config.use_fixed_angle = True
@@ -528,7 +527,8 @@ class _Calculation:
             raise CalculationError('Error: SFP calculation failed') from exc
         calcSPLoverX(self.plots, drawn, self.evaluation.p_SPL, self.spl,
                      S.freq_range)
-        calcHomogeneity(self.evaluation, x_S, y_S, drawn.xline, drawn.yline)
+        calcHomogeneity(self.evaluation, x_S, y_S, drawn.points_x,
+                        drawn.points_y)
         calcHistogram(self.evaluation)
         try:
             x_S, y_S = calcSFP(self.reference.gamma_tilt_deg, drawn, S,
@@ -540,10 +540,10 @@ class _Calculation:
                                              self.reference.gamma_n)
         calcSPLoverX(self.plots_ref, drawn, self.evaluation_ref.p_SPL,
                      self.spl_ref, S.freq_range)
-        calcHomogeneity(self.evaluation_ref, x_S, y_S, drawn.xline,
-                        drawn.yline)
+        calcHomogeneity(self.evaluation_ref, x_S, y_S, drawn.points_x,
+                        drawn.points_y)
         calcHistogram(self.evaluation_ref)
-        self.grid = (self.spl.x, drawn.xline, drawn.yline)
+        self.grid = (self.spl.x, drawn.points_x, drawn.points_y)
         if not self.target.init:
             shift_ref_on_zero(self.target, self.spl, self.spl_ref)
         elif target_run:
@@ -726,8 +726,8 @@ def result_arrays(result: RunResult) -> Dict[str, np.ndarray]:
         "histogram_tops": _arr(ev.Hist_tops),
         "reference_histogram_steps": _arr(ev_ref.Hist_steps),
         "reference_histogram_tops": _arr(ev_ref.Hist_tops),
-        "venue_x": _arr(result.venue.drawn.xline),
-        "venue_y": _arr(result.venue.drawn.yline),
+        "venue_x": _arr(result.venue.drawn.points_x),
+        "venue_y": _arr(result.venue.drawn.points_y),
     }
     if result.target is not None:
         out["target_x"] = _arr(result.target.x)

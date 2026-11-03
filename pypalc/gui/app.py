@@ -49,8 +49,8 @@ from pypalc.core.pipeline import AudienceLines, RunResult, VenueResult
 from pypalc.core.settings import AudienceLine, Setup
 from pypalc.core.sound_field import SFP_configuration
 from pypalc.core.target_slope import Opt_weight
-from pypalc.core.venue import (PAL, PALC_compatible_PAL,
-                               get_PALC_compatible_PAL, suggestPAL)
+from pypalc.core.venue import (AudienceLines, PalcVenue,
+                               fill_palc_venue, suggest_venue)
 from pypalc.gui import (APP_NAME, CALLBACK_ERRORS,
                         skipped_while_applying_setup)
 from pypalc.gui.help_text import HelpPage
@@ -72,7 +72,7 @@ Page = Union[HelpPage, VenuePage, LoudspeakerPage, ArrayPage, AlgorithmPage,
 
 def _initial_drawn_lines() -> AudienceLines:
     """Audience lines of a new session (no lines drawn)."""
-    return PAL(pal_index=np.array([0]).astype(int))
+    return AudienceLines(line_end_indices=np.array([0]).astype(int))
 
 
 @dataclass
@@ -287,7 +287,7 @@ class PalcApp:
     def has_venue(self) -> bool:
         """True if a PALC compatible venue was created."""
         venue = self.state.venue
-        return venue is not None and len(venue.palc_venue.pal) > 0
+        return venue is not None and len(venue.palc_venue.segments) > 0
 
     def check_venue(self) -> None:
         """Create the PALC compatible venue (legacy ``check_PAL``).
@@ -304,21 +304,24 @@ class PalcApp:
         st = self.state
         venue_page, algorithm = self.pages[1], self.pages[4]
         try:
-            suggested_nal = PAL(ind_iscut=[])
-            suggested_sfp = PAL(ind_iscut=[])
-            suggestPAL(st.drawn, suggested_nal, suggested_sfp)
+            non_audience_lines = AudienceLines(cut_lines=[])
+            sound_field_only_lines = AudienceLines(cut_lines=[])
+            suggest_venue(st.drawn, non_audience_lines,
+                          sound_field_only_lines)
             venue_page.non_audience_source.data = dict(
-                xnalplt=suggested_nal.plot_x, ynalplt=suggested_nal.plot_y)
+                xnalplt=non_audience_lines.plot_x,
+                ynalplt=non_audience_lines.plot_y)
             venue_page.sound_field_only_source.data = dict(
-                xsfpplt=suggested_sfp.plot_x, ysfpplt=suggested_sfp.plot_y)
+                xsfpplt=sound_field_only_lines.plot_x,
+                ysfpplt=sound_field_only_lines.plot_y)
             st.venue = None
-            palc_venue = PALC_compatible_PAL(pal=[], pal_no_nal=[])
-            get_PALC_compatible_PAL(palc_venue, st.drawn, suggested_nal,
-                                    suggested_sfp)
-            palc_venue.create_pal_without_nal(suggested_nal)
+            palc_venue = PalcVenue(segments=[], audience_segments=[])
+            fill_palc_venue(palc_venue, st.drawn, non_audience_lines,
+                            sound_field_only_lines)
+            palc_venue.collect_audience_segments(non_audience_lines)
             st.venue = VenueResult(drawn=st.drawn, palc_venue=palc_venue,
-                                   non_audience=suggested_nal,
-                                   sound_field_only=suggested_sfp)
+                                   non_audience=non_audience_lines,
+                                   sound_field_only=sound_field_only_lines)
             self.set_venue_checked(True)
             self.config_error_info.text = ''
             self.show()
@@ -326,7 +329,7 @@ class PalcApp:
                 algorithm.weighting_select.value = 'Without'
                 st.target.init = False
                 algorithm.choose_weighting(0, 0, 0)
-            weight_links = np.arange(np.shape(st.drawn.xline_start)[0]+1)
+            weight_links = np.arange(np.shape(st.drawn.line_start_x)[0]+1)
             algorithm.hinges_select.options = [str(n) for n in
                                                list(weight_links)]
             algorithm.hinges_select.value = '0'
@@ -381,10 +384,10 @@ class PalcApp:
         """
         st = self.state
         results = self.pages[5]
-        x_range = st.ranges.update_range('p_x', [-2, 2], st.drawn.xline_start,
-                                         st.drawn.xline_stop, st.config.x_H)
-        y_range = st.ranges.update_range('p_y', [-2, 2], st.drawn.yline_start,
-                                         st.drawn.yline_stop, st.config.y_H)
+        x_range = st.ranges.update_range('p_x', [-2, 2], st.drawn.line_start_x,
+                                         st.drawn.line_stop_x, st.config.x_H)
+        y_range = st.ranges.update_range('p_y', [-2, 2], st.drawn.line_start_y,
+                                         st.drawn.line_stop_y, st.config.y_H)
         self.scale_venue_axes(call=False)
         set_figure_ranges(st.ranges, [results.beam_figure,
                                       results.reference_beam_figure,
@@ -486,7 +489,7 @@ class PalcApp:
         algorithm.exclude_hard_margin_target_slope()
         loudspeaker.update_directivity_plot()
         # more than one venue point (the legacy test ``xline != []``)
-        if np.size(st.drawn.xline) > 1:
+        if np.size(st.drawn.points_x) > 1:
             self.update_venue_ranges()
 
     @skipped_while_applying_setup
@@ -648,8 +651,8 @@ class PalcApp:
             c_gamma_tilt_deg_diff=optimized.inter_cabinet_angles_deg)
         # Sound Field Prediction
         results.venue_points_source.data = dict(
-            x_vert=created_pal.xline, y_vert=created_pal.yline,
-            foo=list(np.arange(np.shape(created_pal.xline)[0])))
+            x_vert=created_pal.points_x, y_vert=created_pal.points_y,
+            foo=list(np.arange(np.shape(created_pal.points_x)[0])))
         results.venue_points_figure.x(
             'x_vert', 'y_vert', source=results.venue_points_source,
             color=linear_cmap('foo', rainbow[::-1], 0,
@@ -674,38 +677,38 @@ class PalcApp:
         spl_ref_source = algorithm.reference_spl_over_distance_source
         if result.target is not None:
             spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
-                                        x_v=created_pal.xline,
-                                        y_v=created_pal.yline))
+                                        x_v=created_pal.points_x,
+                                        y_v=created_pal.points_y))
             algorithm.target_source.data.update(dict(SPL=result.target.SPL))
             algorithm.target_reference_source.data.update(dict(
                 SPL=[Opt_w.SPL_interp[Opt_w.ref_ind]]))
             spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL))
         elif not Opt_w.init:
             spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
-                                        x_v=created_pal.xline,
-                                        y_v=created_pal.yline))
+                                        x_v=created_pal.points_x,
+                                        y_v=created_pal.points_y))
             spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL,
                                             x=SPLoverX_ref.x,
-                                            x_v=created_pal.xline,
-                                            y_v=created_pal.yline))
+                                            x_v=created_pal.points_x,
+                                            y_v=created_pal.points_y))
             algorithm.target_source.data.update(dict(
                 SPL=[SPLoverX.SPL[0], SPLoverX.SPL[-1]],
                 x=[SPLoverX.x[0], SPLoverX.x[-1]],
-                x_v=[created_pal.xline[0], created_pal.xline[-1]],
-                y_v=[created_pal.yline[0], created_pal.yline[-1]]))
+                x_v=[created_pal.points_x[0], created_pal.points_x[-1]],
+                y_v=[created_pal.points_y[0], created_pal.points_y[-1]]))
             algorithm.target_reference_source.data.update(dict(
                 x_ref=[Opt_w.x_interp[int(len(Opt_w.x_interp)/2)]],
                 SPL=[Opt_w.SPL_interp[int(len(Opt_w.SPL_interp)/2)]],
-                x_v=[created_pal.xline[int(len(created_pal.xline)/2)]],
-                y_v=[created_pal.yline[int(len(created_pal.yline)/2)]]))
+                x_v=[created_pal.points_x[int(len(created_pal.points_x)/2)]],
+                y_v=[created_pal.points_y[int(len(created_pal.points_y)/2)]]))
         else:
             spl_source.data.update(dict(SPL=SPLoverX.SPL, x=SPLoverX.x,
-                                        x_v=created_pal.xline,
-                                        y_v=created_pal.yline))
+                                        x_v=created_pal.points_x,
+                                        y_v=created_pal.points_y))
             spl_ref_source.data.update(dict(SPL=SPLoverX_ref.SPL,
                                             x=SPLoverX_ref.x,
-                                            x_v=created_pal.xline,
-                                            y_v=created_pal.yline))
+                                            x_v=created_pal.points_x,
+                                            y_v=created_pal.points_y))
         # Homogeneity
         results.homogeneity_source.data = dict(
             H=Tech_res.H, f=Tech_res.f, H_dist_high=Tech_res.H_dist[1],

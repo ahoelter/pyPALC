@@ -275,8 +275,8 @@ def ls2pal(N, Opt_arr, created_pal, **kwargs):
 
     """
     # tolerance (optional input) default is ndiscretization / np.sqrt(2)
-    discr = np.sqrt((created_pal.xline[1]-created_pal.xline[0])**2 + \
-                    (created_pal.yline[1]-created_pal.yline[0])**2) / np.sqrt(2)
+    discr = np.sqrt((created_pal.points_x[1]-created_pal.points_x[0])**2 + \
+                    (created_pal.points_y[1]-created_pal.points_y[0])**2) / np.sqrt(2)
     if 'tol' not in kwargs.keys(): kwargs['tol'] = discr#0.00001
     tol = kwargs['tol']
     # list to store index of pal for each ls
@@ -284,11 +284,11 @@ def ls2pal(N, Opt_arr, created_pal, **kwargs):
     for n in range(N):
         ind = [[],[]]
         # check x-values
-        for m,val in enumerate(created_pal.xline):
+        for m,val in enumerate(created_pal.points_x):
             if val >= Opt_arr.seg_pos_stop[n][0]-tol and val <= Opt_arr.seg_pos_start[n][0]+tol:
                 ind[0].append(m)
         # check y-values
-        for m,val in enumerate(created_pal.yline):
+        for m,val in enumerate(created_pal.points_y):
             if val >= Opt_arr.seg_pos_stop[n][1]-tol and val <= Opt_arr.seg_pos_start[n][1]+tol:
                 ind[1].append(m)
         # check for matching index

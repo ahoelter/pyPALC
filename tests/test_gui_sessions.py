@@ -33,9 +33,9 @@ def test_sessions_do_not_share_state():
     a = PalcApp(Document())
     b = PalcApp(Document())
     _add_line(a, (2, 0), (10, 1))
-    assert len(a.state.drawn.xline_start) == 1
-    assert len(b.state.drawn.xline_start) == 0
-    assert len(b.state.drawn.xline) == 0
+    assert len(a.state.drawn.line_start_x) == 1
+    assert len(b.state.drawn.line_start_x) == 0
+    assert len(b.state.drawn.points_x) == 0
     assert b.pages[1].lines_source.data['xlineplt'] == []
     assert a.pages[1].lines_source is not b.pages[1].lines_source
     assert a.state.config is not b.state.config

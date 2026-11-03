@@ -71,6 +71,6 @@ def test_setup_lines_follow_drawn_lines():
     lines = setup_from_app(app).venue.audience_lines
     assert [(line.start, line.stop) for line in lines] == [
         ((x0, y0), (x1, y1)) for x0, y0, x1, y1 in zip(
-            drawn.xline_start, drawn.yline_start, drawn.xline_stop,
-            drawn.yline_stop)]
+            drawn.line_start_x, drawn.line_start_y, drawn.line_stop_x,
+            drawn.line_stop_y)]
     assert [line.points_per_meter for line in lines] == [4.0, 5.0]
