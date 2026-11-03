@@ -49,8 +49,9 @@ from pypalc.core.settings import (AudienceLine, MeasuredDirectivity,
                                   dump_setup, load_setup, load_setup_text)
 from pypalc.gui.app import PalcApp
 from pypalc.gui.setup_io import apply_setup, setup_from_app
+from tests.baseline_cases import CASES
 from tests.test_gui_cascade import CONFIG_KEYS, PROPS, _norm, compact
-from tests.test_gui_equivalence import CASES, drive, enter
+from tests.test_gui_equivalence import drive, enter
 
 ROOT = Path(__file__).resolve().parent.parent
 TARGET_SLOPE_CASES = ("target_slope", "gap_soft_margin_target_slope")

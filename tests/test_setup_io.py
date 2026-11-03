@@ -10,7 +10,8 @@ from bokeh.document import Document
 from pypalc.core.settings import Setup, load_setup
 from pypalc.gui.app import PalcApp
 from pypalc.gui.setup_io import setup_from_app
-from tests.test_gui_equivalence import CASES, enter
+from tests.baseline_cases import CASES
+from tests.test_gui_equivalence import enter
 
 ROOT = Path(__file__).resolve().parent.parent
 NOT_MEASURED = tuple(case for case in CASES if case != "measured")

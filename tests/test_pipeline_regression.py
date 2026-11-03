@@ -4,7 +4,7 @@ import pytest
 
 from pypalc.core.pipeline import result_arrays, run
 from pypalc.core.settings import load_setup
-from tests.legacy.capture import CASES, baseline_path, case_path
+from tests.baseline_cases import CASES, baseline_path, case_path
 
 
 @pytest.mark.parametrize("case", CASES)

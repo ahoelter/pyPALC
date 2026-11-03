@@ -2,9 +2,10 @@
 
 Every case of ``tests/cases`` is entered into a fresh :class:`PalcApp` the
 way a user does it, page by page, through the widgets and the button
-callbacks (the click order of ``tests/legacy/capture.py``). For target slope
-the target points and the reference point are dragged by writing the target
-sources, as Bokeh does when a point is dragged in the browser. Afterwards the
+callbacks, in the click order of the legacy replay that recorded the
+baselines (see :mod:`tests.baseline_cases`). For target slope the target
+points and the reference point are dragged by writing the target sources,
+as Bokeh does when a point is dragged in the browser. Afterwards the
 sources the GUI shows (and the session's last result, ``state.result``) must
 equal ``tests/baseline/<case>.npz`` exactly.
 """
@@ -19,13 +20,7 @@ from bokeh.document import Document
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-
-ROOT = Path(__file__).resolve().parent.parent
-CASES = (
-    "simple", "gap_without", "gap_hard_margin", "gap_soft_margin", "palc1",
-    "palc3", "discrete_angles", "fixed_angle", "measured", "linear_weighting",
-    "log_weighting", "target_slope", "gap_soft_margin_target_slope",
-)
+from tests.baseline_cases import CASES, baseline_path, case_path
 
 _VARIANTS = {"palc1": "PALC 1", "palc2": "PALC 2", "palc3": "PALC 3"}
 _GAP_HANDLING = {"without": "Without", "hard_margin": "Hard Margin",
@@ -194,12 +189,12 @@ def drive(app, setup):
 
 @pytest.mark.parametrize("case", CASES)
 def test_gui_matches_baseline(case):
-    setup = load_setup(ROOT / "tests" / "cases" / ("%s.yaml" % case))
+    setup = load_setup(case_path(case))
     app = PalcApp(Document())
     app.show()
     with contextlib.redirect_stdout(io.StringIO()):
         gui = drive(app, setup)
-    with np.load(ROOT / "tests" / "baseline" / ("%s.npz" % case)) as baseline:
+    with np.load(baseline_path(case)) as baseline:
         assert sorted(gui) == sorted(baseline.files)
         for key in baseline.files:
             np.testing.assert_array_equal(gui[key], baseline[key],

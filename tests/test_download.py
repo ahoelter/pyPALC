@@ -10,7 +10,7 @@ from pypalc.core import export
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
 from pypalc.gui.page_algorithm import DOWNLOAD_FILE_NAMES
-from tests.legacy.capture import case_path
+from tests.baseline_cases import case_path
 from tests.test_gui_equivalence import drive
 
 

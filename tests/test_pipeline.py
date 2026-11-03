@@ -11,7 +11,7 @@ from pypalc.core.pipeline import (build_venue, check_line, fixed_angle_limits,
 from pypalc.core.settings import (AudienceLine, Setup, VenueSettings,
                                   load_setup)
 from pypalc.core.venue import AudienceLines
-from tests.legacy.capture import case_path
+from tests.baseline_cases import case_path
 
 
 def _empty_lines():
