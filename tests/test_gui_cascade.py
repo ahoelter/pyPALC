@@ -197,8 +197,9 @@ def _steps(app):
     def drag():
         data = algorithm.target_source.data
         algorithm.target_source.data = dict(
-            x=[5.0, 12.0, 18.0, 25.0], SPL=[0.0, -2.0, -4.0, -8.0],
-            x_v=list(data['x_v']), y_v=list(data['y_v']))
+            distance_m=[5.0, 12.0, 18.0, 25.0],
+            level_db=[0.0, -2.0, -4.0, -8.0],
+            x_m=list(data['x_m']), y_m=list(data['y_m']))
 
     return [
         ('page1', setv('app.page_select', 1, 'active')),

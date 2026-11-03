@@ -459,10 +459,12 @@ class _Calculation:
             self.config.fixed_angle = clamp_fixed_angle(
                 float(fixed), borders[0], borders[2])
 
-    def show_target(self, x: list, SPL: list, x_v: list, y_v: list) -> None:
+    def show_target(self, distances: list, levels_db: list, points_x: list,
+                    points_y: list) -> None:
         """Set the shown target points and snap them to the grid."""
-        self.shown_target = dict(x=list(x), SPL=list(SPL), x_v=list(x_v),
-                                 y_v=list(y_v))
+        self.shown_target = dict(distance_m=list(distances),
+                                 level_db=list(levels_db),
+                                 x_m=list(points_x), y_m=list(points_y))
         self.snap_target()
 
     def show_reference(self, distance: float) -> None:
@@ -472,12 +474,13 @@ class _Calculation:
 
     def snap_target(self) -> None:
         """Snap the shown target to the grid (``update_draw``)."""
-        x, x_v, y_v = self.grid
-        snap_to_distance_grid(self.target, x, x_v, y_v, self.shown_target,
-                              self.shown_reference)
+        distances, points_x, points_y = self.grid
+        snap_to_distance_grid(self.target, distances, points_x, points_y,
+                              self.shown_target, self.shown_reference)
         t = self.target
-        self.shown_target = dict(x=t.distances, SPL=t.levels_db,
-                                 x_v=t.points_x, y_v=t.points_y)
+        self.shown_target = dict(distance_m=t.distances,
+                                 level_db=t.levels_db, x_m=t.points_x,
+                                 y_m=t.points_y)
         self.shown_reference = [t.reference_distance]
 
     def _reset_config(self) -> None:
@@ -570,7 +573,7 @@ class _Calculation:
                                region_indices,
                                self.reference_spl_over_distance)
             optimization_region(self.spl_over_distance, self.target)
-            self.shown_target['SPL'] = self.target.levels_db
+            self.shown_target['level_db'] = self.target.levels_db
             self.snap_target()
 
     def initial_target(self, hinges: int) -> None:
@@ -581,10 +584,12 @@ class _Calculation:
         choosing the number of hinges places them on the grid
         (``chg_weight_links``).
         """
-        x, x_v, y_v = self.grid
+        distances, points_x, points_y = self.grid
         levels_db = self.spl_over_distance.levels_db
-        self.show_target([x[0], x[-1]], [levels_db[0], levels_db[-1]],
-                         [x_v[0], x_v[-1]], [y_v[0], y_v[-1]])
+        self.show_target([distances[0], distances[-1]],
+                         [levels_db[0], levels_db[-1]],
+                         [points_x[0], points_x[-1]],
+                         [points_y[0], points_y[-1]])
         region_distances = self.target.region_distances
         self.show_reference(region_distances[int(len(region_distances) / 2)])
         if hinges != 0:
@@ -592,7 +597,7 @@ class _Calculation:
             ind = hinge_indices(int(hinges), spl)
             self.show_target(list(spl.distances[ind]),
                              list(np.array(spl.levels_db)[ind]),
-                             list(x_v[ind]), list(y_v[ind]))
+                             list(points_x[ind]), list(points_y[ind]))
 
     def result(self) -> RunResult:
         """Collect the results of the last :meth:`calculate`."""

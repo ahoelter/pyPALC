@@ -647,9 +647,9 @@ class PalcApp:
                         result.ray_plot, result.geometry)
         # tilt angles
         algorithm.results_source.data = dict(
-            a_num_LS=np.linspace(1, cabinet_count, num=cabinet_count),
-            b_gamma_tilt_deg=optimized.tilt_angles_deg,
-            c_gamma_tilt_deg_diff=optimized.inter_cabinet_angles_deg)
+            cabinet=np.linspace(1, cabinet_count, num=cabinet_count),
+            tilt_angle_deg=optimized.tilt_angles_deg,
+            inter_cabinet_angle_deg=optimized.inter_cabinet_angles_deg)
         # Sound Field Prediction
         results.venue_points_source.data = dict(
             x_m=created_pal.points_x, y_m=created_pal.points_y,
@@ -679,39 +679,48 @@ class PalcApp:
         spl_source = algorithm.spl_over_distance_source
         spl_ref_source = algorithm.reference_spl_over_distance_source
         if result.target is not None:
-            spl_source.data.update(dict(SPL=SPLoverX.levels_db, x=SPLoverX.distances,
-                                        x_v=created_pal.points_x,
-                                        y_v=created_pal.points_y))
-            algorithm.target_source.data.update(dict(SPL=result.target.levels_db))
-            algorithm.target_reference_source.data.update(dict(
-                SPL=[Opt_w.region_levels_db[Opt_w.reference_index]]))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.levels_db))
-        elif not Opt_w.initialized:
-            spl_source.data.update(dict(SPL=SPLoverX.levels_db, x=SPLoverX.distances,
-                                        x_v=created_pal.points_x,
-                                        y_v=created_pal.points_y))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.levels_db,
-                                            x=SPLoverX_ref.distances,
-                                            x_v=created_pal.points_x,
-                                            y_v=created_pal.points_y))
+            spl_source.data.update(dict(spl_db=SPLoverX.levels_db,
+                                        distance_m=SPLoverX.distances,
+                                        x_m=created_pal.points_x,
+                                        y_m=created_pal.points_y))
             algorithm.target_source.data.update(dict(
-                SPL=[SPLoverX.levels_db[0], SPLoverX.levels_db[-1]],
-                x=[SPLoverX.distances[0], SPLoverX.distances[-1]],
-                x_v=[created_pal.points_x[0], created_pal.points_x[-1]],
-                y_v=[created_pal.points_y[0], created_pal.points_y[-1]]))
+                level_db=result.target.levels_db))
             algorithm.target_reference_source.data.update(dict(
-                x_ref=[Opt_w.region_distances[int(len(Opt_w.region_distances)/2)]],
-                SPL=[Opt_w.region_levels_db[int(len(Opt_w.region_levels_db)/2)]],
-                x_v=[created_pal.points_x[int(len(created_pal.points_x)/2)]],
-                y_v=[created_pal.points_y[int(len(created_pal.points_y)/2)]]))
+                level_db=[Opt_w.region_levels_db[Opt_w.reference_index]]))
+            spl_ref_source.data.update(dict(
+                reference_spl_db=SPLoverX_ref.levels_db))
+        elif not Opt_w.initialized:
+            spl_source.data.update(dict(spl_db=SPLoverX.levels_db,
+                                        distance_m=SPLoverX.distances,
+                                        x_m=created_pal.points_x,
+                                        y_m=created_pal.points_y))
+            spl_ref_source.data.update(dict(
+                reference_spl_db=SPLoverX_ref.levels_db,
+                distance_m=SPLoverX_ref.distances,
+                x_m=created_pal.points_x, y_m=created_pal.points_y))
+            algorithm.target_source.data.update(dict(
+                level_db=[SPLoverX.levels_db[0], SPLoverX.levels_db[-1]],
+                distance_m=[SPLoverX.distances[0], SPLoverX.distances[-1]],
+                x_m=[created_pal.points_x[0], created_pal.points_x[-1]],
+                y_m=[created_pal.points_y[0], created_pal.points_y[-1]]))
+            middle = int(len(Opt_w.region_distances)/2)
+            middle_point = int(len(created_pal.points_x)/2)
+            algorithm.target_reference_source.data.update(dict(
+                distance_m=[Opt_w.region_distances[middle]],
+                level_db=[Opt_w.region_levels_db[
+                    int(len(Opt_w.region_levels_db)/2)]],
+                x_m=[created_pal.points_x[middle_point]],
+                y_m=[created_pal.points_y[
+                    int(len(created_pal.points_y)/2)]]))
         else:
-            spl_source.data.update(dict(SPL=SPLoverX.levels_db, x=SPLoverX.distances,
-                                        x_v=created_pal.points_x,
-                                        y_v=created_pal.points_y))
-            spl_ref_source.data.update(dict(SPL=SPLoverX_ref.levels_db,
-                                            x=SPLoverX_ref.distances,
-                                            x_v=created_pal.points_x,
-                                            y_v=created_pal.points_y))
+            spl_source.data.update(dict(spl_db=SPLoverX.levels_db,
+                                        distance_m=SPLoverX.distances,
+                                        x_m=created_pal.points_x,
+                                        y_m=created_pal.points_y))
+            spl_ref_source.data.update(dict(
+                reference_spl_db=SPLoverX_ref.levels_db,
+                distance_m=SPLoverX_ref.distances,
+                x_m=created_pal.points_x, y_m=created_pal.points_y))
         # Homogeneity
         results.homogeneity_source.data = dict(
             frequency_hz=Tech_res.frequencies,

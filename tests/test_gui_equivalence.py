@@ -129,14 +129,14 @@ def enter(app, setup):
         d = algorithm.target_source.data
         algorithm.target_selected('indices', [], [0])
         algorithm.target_source.data = dict(
-            x=[p.distance for p in ts.points],
-            SPL=[p.level_db for p in ts.points],
-            x_v=list(d['x_v']), y_v=list(d['y_v']))
+            distance_m=[p.distance for p in ts.points],
+            level_db=[p.level_db for p in ts.points],
+            x_m=list(d['x_m']), y_m=list(d['y_m']))
         r = algorithm.target_reference_source.data
         algorithm.target_selected('indices', [], [0])
         algorithm.target_reference_source.data = dict(
-            x_ref=[ts.reference_distance], SPL=list(r['SPL']),
-            x_v=list(r['x_v']), y_v=list(r['y_v']))
+            distance_m=[ts.reference_distance], level_db=list(r['level_db']),
+            x_m=list(r['x_m']), y_m=list(r['y_m']))
 
 
 def drive(app, setup):
@@ -154,20 +154,22 @@ def drive(app, setup):
         return np.array(v, dtype=float)
 
     out = {
-        'tilt_angles_deg': a(algorithm.results_source.data['b_gamma_tilt_deg']),
+        'tilt_angles_deg': a(algorithm.results_source.data['tilt_angle_deg']),
         'inter_cabinet_angles_deg':
-            a(algorithm.results_source.data['c_gamma_tilt_deg_diff']),
+            a(algorithm.results_source.data['inter_cabinet_angle_deg']),
         'reference_tilt_angles_deg': a(st.result.reference.tilt_angles_deg),
         'frequencies_hz': a(st.result.optimized.evaluation.frequencies),
         'spl_db': a(st.result.optimized.evaluation.spl_db),
         'reference_spl_db': a(st.result.reference.evaluation.spl_db),
         'spl_over_distance_x':
-            a(algorithm.spl_over_distance_source.data['x']),
+            a(algorithm.spl_over_distance_source.data['distance_m']),
         'spl_over_distance_db':
-            a(algorithm.spl_over_distance_source.data['SPL']),
+            a(algorithm.spl_over_distance_source.data['spl_db']),
         'reference_spl_over_distance_db':
-            a(algorithm.reference_spl_over_distance_source.data['SPL']),
-        'homogeneity_db': a(results.homogeneity_source.data['homogeneity_db']),
+            a(algorithm.reference_spl_over_distance_source.data[
+                'reference_spl_db']),
+        'homogeneity_db':
+            a(results.homogeneity_source.data['homogeneity_db']),
         'homogeneity_low_db':
             a(results.homogeneity_source.data['homogeneity_low_db']),
         'homogeneity_high_db':
@@ -184,8 +186,8 @@ def drive(app, setup):
         'venue_y': a(results.venue_points_source.data['y_m']),
     }
     if alg.weighting == 'target_slope':
-        out['target_x'] = a(algorithm.target_source.data['x'])
-        out['target_db'] = a(algorithm.target_source.data['SPL'])
+        out['target_x'] = a(algorithm.target_source.data['distance_m'])
+        out['target_db'] = a(algorithm.target_source.data['level_db'])
         out['weighting_weights'] = a(st.result.weighting_weights)
     return out
 

@@ -898,9 +898,11 @@ def snap_to_distance_grid(target, distances, points_x, points_y, shown_target,
     points_x, points_y : ndarray
         Venue points belonging to the distances.
     shown_target : dict
-        Target slope points with the keys 'x', 'SPL', 'x_v' and 'y_v' (lists
-        of equal length). Like the ColumnDataSource of the GUI, the lists
-        'x', 'x_v' and 'y_v' are snapped in place.
+        Target slope points with the keys 'distance_m', 'level_db', 'x_m'
+        and 'y_m' (lists of equal length; the columns of the target source
+        of the GUI and of ``target_slope.csv``). Like the ColumnDataSource of
+        the GUI, the lists 'distance_m', 'x_m' and 'y_m' are snapped in
+        place.
     reference_distance : list of float
         One-element list with the distance of the reference point.
 
@@ -909,8 +911,9 @@ def snap_to_distance_grid(target, distances, points_x, points_y, shown_target,
     None.
 
     """
-    target.distances, target.levels_db = shown_target['x'], shown_target['SPL']
-    target.points_x, target.points_y = shown_target['x_v'], shown_target['y_v']
+    target.distances = shown_target['distance_m']
+    target.levels_db = shown_target['level_db']
+    target.points_x, target.points_y = shown_target['x_m'], shown_target['y_m']
     target.reference_distance = reference_distance
     for ind, val in enumerate(target.distances):
         arg = np.argmin(np.abs(np.array(distances)-val))

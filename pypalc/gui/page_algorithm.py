@@ -62,24 +62,26 @@ class AlgorithmPage:
         state = app.state
         self._build_widgets()
         # sources
-        p_SPL = list(zip([0, 0]))
-        x_vert = list(zip([0, 0]))
+        empty = list(zip([0, 0]))
+        # The columns of the downloaded sources are those of the files of
+        # the headless export (pypalc.core.export), in the same order.
         self.results_source = ColumnDataSource(data=dict(
-            a_num_LS=np.linspace(1, state.config.cabinet_count, num=0),
-            b_gamma_tilt_deg=np.array([]), c_gamma_tilt_deg_diff=np.array([])))
+            cabinet=np.linspace(1, state.config.cabinet_count, num=0),
+            tilt_angle_deg=np.array([]),
+            inter_cabinet_angle_deg=np.array([])))
         """Tilt angles of the cabinets computed by PALC."""
         self.spl_over_distance_source = ColumnDataSource(data=dict(
-            SPL=p_SPL, x=x_vert, x_v=x_vert, y_v=x_vert))
+            distance_m=empty, spl_db=empty, x_m=empty, y_m=empty))
         """SPL over the distance between the array and the venue points,
         normalized to 0 dB (at the reference point for target slope)."""
         self.reference_spl_over_distance_source = ColumnDataSource(data=dict(
-            SPL=p_SPL, x=x_vert, x_v=x_vert, y_v=x_vert))
+            distance_m=empty, reference_spl_db=empty, x_m=empty, y_m=empty))
         """SPL over distance of the reference array."""
         self.target_source = ColumnDataSource(data=dict(
-            SPL=p_SPL, x=x_vert, x_v=[0, 0], y_v=[0, 0]))
+            distance_m=empty, level_db=empty, x_m=[0, 0], y_m=[0, 0]))
         """Target slope points (draggable)."""
         self.target_reference_source = ColumnDataSource(data=dict(
-            x_ref=[10], SPL=[0], x_v=[0], y_v=[0]))
+            distance_m=[10], level_db=[0], x_m=[0], y_m=[0]))
         """Reference point of the target slope (draggable)."""
         self.target_region_source = ColumnDataSource(data=dict(
             x=[0, 0, 0, 0], y=[0, 0, 0, 0]))
@@ -88,11 +90,11 @@ class AlgorithmPage:
         """Text of the setup file "Save Setup" downloads."""
         self.results_table = DataTable(
             source=self.results_source,
-            columns=[TableColumn(field="a_num_LS", title="LS", width=20),
-                     TableColumn(field="b_gamma_tilt_deg",
+            columns=[TableColumn(field="cabinet", title="LS", width=20),
+                     TableColumn(field="tilt_angle_deg",
                                  title="Total Angle", width=80),
-                     TableColumn(field="c_gamma_tilt_deg_diff", title="ICA",
-                                 width=80)],
+                     TableColumn(field="inter_cabinet_angle_deg",
+                                 title="ICA", width=80)],
             index_position=None, width=250, height=700, fit_columns=False)
         self._build_spl_over_distance_figure()
         self.tabs = Tabs(tabs=[
@@ -177,51 +179,56 @@ class AlgorithmPage:
 
     def _build_spl_over_distance_figure(self) -> None:
         """SPL over distance figure with the draggable target slope."""
-        fig = figure(
+        spl_figure = figure(
             title="SPL over Distance (maximum SPL normalized to 0 dB)",
             x_axis_label="Distance LSA to Receiver in m",
             y_axis_label="SPL change in dB", toolbar_sticky=False,
             tools="box_zoom,pan,wheel_zoom,reset,hover,save, tap",
             tooltips=[("Title", "$name"), ("Index", "$index"),
                       ("SPL in dB", "$y"), ("Distance", "$x"),
-                      ("(x,y) of Venue Slice in m", "@x_v, @y_v")],
+                      ("(x,y) of Venue Slice in m", "@x_m, @y_m")],
             y_range=(-15, 0.3), height=550, width=690)
-        fig.toolbar.logo = None
-        fig.line('x', 'SPL', source=self.spl_over_distance_source,
-                 color="lightskyblue", name="PALC",
-                 legend_label='PALC (optimized)')
-        fig.line('x', 'SPL', source=self.reference_spl_over_distance_source,
-                 color="orange", name="Reference",
-                 legend_label='Reference LSA')
-        target_line = fig.line('x', 'SPL', source=self.target_source,
-                               color="lime", name="Reference",
-                               legend_label='Target Slope')
-        target_points = fig.circle('x', 'SPL', source=self.target_source,
-                                   line_color="yellow", fill_color="black",
-                                   line_width=2, name="Reference",
-                                   legend_label='Target Slope')
-        reference_point = fig.circle('x_ref', 'SPL',
-                                     source=self.target_reference_source,
-                                     color="darkred", fill_color="red",
-                                     size=10, name="Reference Point",
-                                     legend_label="Reference Point")
-        fig.patch('x', 'y', source=self.target_region_source, alpha=0.2,
-                  line_width=0.1)
-        fig.legend.location, fig.legend.orientation = 'top_right', \
-            'horizontal'
-        fig.legend.margin, fig.legend.glyph_width = 0, 30
-        fig.legend.background_fill_alpha, fig.legend.spacing = 0.5, 15
+        spl_figure.toolbar.logo = None
+        spl_figure.line('distance_m', 'spl_db',
+                        source=self.spl_over_distance_source,
+                        color="lightskyblue", name="PALC",
+                        legend_label='PALC (optimized)')
+        spl_figure.line('distance_m', 'reference_spl_db',
+                        source=self.reference_spl_over_distance_source,
+                        color="orange", name="Reference",
+                        legend_label='Reference LSA')
+        target_line = spl_figure.line('distance_m', 'level_db',
+                                      source=self.target_source,
+                                      color="lime", name="Reference",
+                                      legend_label='Target Slope')
+        target_points = spl_figure.circle('distance_m', 'level_db',
+                                          source=self.target_source,
+                                          line_color="yellow",
+                                          fill_color="black", line_width=2,
+                                          name="Reference",
+                                          legend_label='Target Slope')
+        reference_point = spl_figure.circle(
+            'distance_m', 'level_db', source=self.target_reference_source,
+            color="darkred", fill_color="red", size=10,
+            name="Reference Point", legend_label="Reference Point")
+        spl_figure.patch('x', 'y', source=self.target_region_source,
+                         alpha=0.2, line_width=0.1)
+        legend = spl_figure.legend
+        legend.location, legend.orientation = 'top_right', 'horizontal'
+        legend.margin, legend.glyph_width = 0, 30
+        legend.background_fill_alpha, legend.spacing = 0.5, 15
         self.target_source.selected.on_change('indices',
                                               self.target_selected)
         self.target_reference_source.selected.on_change('indices',
                                                         self.target_selected)
         draw_tool = PointDrawTool(renderers=[target_points, target_line,
                                              reference_point], add=False)
-        fig.add_tools(draw_tool)
-        fig.toolbar.active_tap = draw_tool
-        fig.background_fill_color, fig.border_fill_color = None, None
-        fig.output_backend = "svg"
-        self.spl_over_distance_figure = fig
+        spl_figure.add_tools(draw_tool)
+        spl_figure.toolbar.active_tap = draw_tool
+        spl_figure.background_fill_color = None
+        spl_figure.border_fill_color = None
+        spl_figure.output_backend = "svg"
+        self.spl_over_distance_figure = spl_figure
 
     def _wire_callbacks(self) -> None:
         """Connect the widgets with their callbacks."""
@@ -557,12 +564,13 @@ class AlgorithmPage:
         state = self.app.state
         if state.result is None:
             return
-        SPLoverX = state.result.optimized.spl_over_distance
+        spl_over_distance = state.result.optimized.spl_over_distance
         drawn_lines = state.drawn_lines
-        ind = hinge_indices(hinges, SPLoverX)
+        ind = hinge_indices(hinges, spl_over_distance)
         self.target_source.data.update(dict(
-            SPL=np.array(SPLoverX.levels_db)[ind], x=SPLoverX.distances[ind],
-            x_v=drawn_lines.points_x[ind], y_v=drawn_lines.points_y[ind]))
+            level_db=np.array(spl_over_distance.levels_db)[ind],
+            distance_m=spl_over_distance.distances[ind],
+            x_m=drawn_lines.points_x[ind], y_m=drawn_lines.points_y[ind]))
 
     def snap_target(self, attr, old, new) -> None:
         """Snap the dragged target slope to the SPL over distance grid.
@@ -583,30 +591,39 @@ class AlgorithmPage:
         -------
         None.
         """
-        Opt_w = self.app.state.target
+        target = self.app.state.target
         grid = self.spl_over_distance_source.data
-        x, x_v, y_v = grid['x'], grid['x_v'], grid['y_v']
-        snap_to_distance_grid(Opt_w, x, x_v, y_v, self.target_source.data,
-                              self.target_reference_source.data['x_ref'])
-        xv_ind = np.argmin(np.abs(np.array(x)-Opt_w.reference_distance))
-        if Opt_w.update_count < 4:
-            Opt_w.update_count += 1
-            self.target_source.data.update(dict(x=Opt_w.distances, SPL=Opt_w.levels_db,
-                                                x_v=Opt_w.points_x, y_v=Opt_w.points_y))
+        distances, points_x, points_y = \
+            grid['distance_m'], grid['x_m'], grid['y_m']
+        snap_to_distance_grid(target, distances, points_x, points_y,
+                              self.target_source.data,
+                              self.target_reference_source.data['distance_m'])
+        reference_point = np.argmin(np.abs(np.array(distances)
+                                           - target.reference_distance))
+        if target.update_count < 4:
+            target.update_count += 1
+            self.target_source.data.update(dict(
+                distance_m=target.distances, level_db=target.levels_db,
+                x_m=target.points_x, y_m=target.points_y))
             self.target_reference_source.data.update(dict(
-                x_ref=[Opt_w.reference_distance], SPL=[Opt_w.region_levels_db[Opt_w.reference_index]],
-                x_v=[x_v[xv_ind]], y_v=[y_v[xv_ind]]))
+                distance_m=[target.reference_distance],
+                level_db=[target.region_levels_db[target.reference_index]],
+                x_m=[points_x[reference_point]],
+                y_m=[points_y[reference_point]]))
+        first, last = target.distances[0], target.distances[-1]
         self.target_region_source.data.update(dict(
-            x=[Opt_w.distances[0], Opt_w.distances[0], Opt_w.distances[-1], Opt_w.distances[-1]],
-            y=[Opt_w.levels_db[0]+100, Opt_w.levels_db[-1]-100, Opt_w.levels_db[-1]-100,
-               Opt_w.levels_db[0]+100]))
+            x=[first, first, last, last],
+            y=[target.levels_db[0]+100, target.levels_db[-1]-100,
+               target.levels_db[-1]-100, target.levels_db[0]+100]))
 
     def shown_target(self) -> tuple:
-        """The shown target slope: ``(x, SPL, x_ref)`` as lists of float."""
+        """The shown target slope: ``(distances, levels, reference
+        distance)`` as lists of float."""
         target = self.target_source.data
-        return ([float(x) for x in target['x']],
-                [float(spl) for spl in target['SPL']],
-                [float(x) for x in self.target_reference_source.data['x_ref']])
+        reference = self.target_reference_source.data
+        return ([float(x) for x in target['distance_m']],
+                [float(level) for level in target['level_db']],
+                [float(x) for x in reference['distance_m']])
 
     def drag_target(self, points: Sequence[TargetPoint],
                     reference_distance: float) -> None:
@@ -627,14 +644,15 @@ class AlgorithmPage:
         data = self.target_source.data
         self.target_selected('indices', [], [0])
         self.target_source.data = dict(
-            x=[float(p.distance) for p in points],
-            SPL=[float(p.level_db) for p in points],
-            x_v=list(data['x_v']), y_v=list(data['y_v']))
+            distance_m=[float(p.distance) for p in points],
+            level_db=[float(p.level_db) for p in points],
+            x_m=list(data['x_m']), y_m=list(data['y_m']))
         data = self.target_reference_source.data
         self.target_selected('indices', [], [0])
         self.target_reference_source.data = dict(
-            x_ref=[float(reference_distance)], SPL=list(data['SPL']),
-            x_v=list(data['x_v']), y_v=list(data['y_v']))
+            distance_m=[float(reference_distance)],
+            level_db=list(data['level_db']),
+            x_m=list(data['x_m']), y_m=list(data['y_m']))
 
     # ------------------------------------------------------------------
     # Setup files

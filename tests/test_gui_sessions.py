@@ -63,10 +63,10 @@ def test_run_calculation_matches_pipeline():
     assert a.config_error_info.text == ''
     data = a.pages[4].results_source.data
     with np.load(ROOT / 'tests' / 'baseline' / 'simple.npz') as baseline:
-        np.testing.assert_array_equal(np.array(data['b_gamma_tilt_deg'],
+        np.testing.assert_array_equal(np.array(data['tilt_angle_deg'],
                                                dtype=float),
                                       baseline['tilt_angles_deg'])
-        np.testing.assert_array_equal(np.array(data['c_gamma_tilt_deg_diff'],
+        np.testing.assert_array_equal(np.array(data['inter_cabinet_angle_deg'],
                                                dtype=float),
                                       baseline['inter_cabinet_angles_deg'])
 

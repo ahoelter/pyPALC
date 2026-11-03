@@ -365,7 +365,7 @@ def test_saved_setup_runs_headless(case, tmp_path):
         rows = list(csv.reader(handle))
     angles = [float(row[1]) for row in rows[1:]]
     assert angles == list(app.pages[4].results_source.data[
-        'b_gamma_tilt_deg'])
+        'tilt_angle_deg'])
 
 
 def test_target_slope_restored():
@@ -377,10 +377,10 @@ def test_target_slope_restored():
     assert algorithm.hinges_select.visible
     assert app.state.result.setup.target_slope == setup.target_slope
     # shown on the distance grid of the run, levels as in the file
-    grid = np.array(algorithm.spl_over_distance_source.data['x'])
+    grid = np.array(algorithm.spl_over_distance_source.data['distance_m'])
     shown = algorithm.target_source.data
-    assert list(shown['SPL']) == [p.level_db for p in points]
-    assert list(shown['x']) == [
+    assert list(shown['level_db']) == [p.level_db for p in points]
+    assert list(shown['distance_m']) == [
         grid[np.argmin(np.abs(grid - p.distance))] for p in points]
 
 
@@ -461,7 +461,7 @@ def test_save_after_dragging_writes_dragged_points():
     load(app, case_text("target_slope"))
     algorithm = app.pages[4]
     ts = app.state.result.setup.target_slope
-    grid = list(algorithm.spl_over_distance_source.data['x'])
+    grid = list(algorithm.spl_over_distance_source.data['distance_m'])
     moved = (ts.points[0], dataclasses.replace(ts.points[1],
                                                distance=grid[20],
                                                level_db=-2.0),

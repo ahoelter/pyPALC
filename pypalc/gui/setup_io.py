@@ -141,8 +141,10 @@ def _target_slope(app: PalcApp) -> Optional[TargetSlopeSettings]:
     target = page.target_source.data
     try:
         points = tuple(TargetPoint(float(x), float(spl))
-                       for x, spl in zip(target['x'], target['SPL']))
-        reference = float(page.target_reference_source.data['x_ref'][0])
+                       for x, spl in zip(target['distance_m'],
+                                         target['level_db']))
+        reference = float(
+            page.target_reference_source.data['distance_m'][0])
     except (TypeError, ValueError, IndexError):
         raise SetupError("target_slope", "no target slope shown") from None
     return TargetSlopeSettings(points=points, reference_distance=reference)

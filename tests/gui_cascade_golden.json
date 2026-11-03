@@ -243,7 +243,7 @@
 "4.palc_variant_select.value": "PALC 2",
 "4.palc_variant_select.visible": true,
 "4.reference_spl_over_distance_source.data": {
-"SPL": [
+"distance_m": [
 [
 0
 ],
@@ -251,7 +251,7 @@
 0
 ]
 ],
-"x": [
+"reference_spl_db": [
 [
 0
 ],
@@ -259,7 +259,7 @@
 0
 ]
 ],
-"x_v": [
+"x_m": [
 [
 0
 ],
@@ -267,7 +267,7 @@
 0
 ]
 ],
-"y_v": [
+"y_m": [
 [
 0
 ],
@@ -278,9 +278,9 @@
 },
 "4.reference_spl_over_distance_source.selected": [],
 "4.results_source.data": {
-"a_num_LS": [],
-"b_gamma_tilt_deg": [],
-"c_gamma_tilt_deg_diff": []
+"cabinet": [],
+"inter_cabinet_angle_deg": [],
+"tilt_angle_deg": []
 },
 "4.results_source.selected": [],
 "4.soft_margin_slider.disabled": true,
@@ -306,7 +306,7 @@ null
 0.3
 ],
 "4.spl_over_distance_source.data": {
-"SPL": [
+"distance_m": [
 [
 0
 ],
@@ -314,7 +314,7 @@ null
 0
 ]
 ],
-"x": [
+"spl_db": [
 [
 0
 ],
@@ -322,7 +322,7 @@ null
 0
 ]
 ],
-"x_v": [
+"x_m": [
 [
 0
 ],
@@ -330,7 +330,7 @@ null
 0
 ]
 ],
-"y_v": [
+"y_m": [
 [
 0
 ],
@@ -346,16 +346,16 @@ null
 "4.start_toggle.label": "26. PALC Run",
 "4.start_toggle.visible": true,
 "4.target_reference_source.data": {
-"SPL": [
-0
-],
-"x_ref": [
+"distance_m": [
 10
 ],
-"x_v": [
+"level_db": [
 0
 ],
-"y_v": [
+"x_m": [
+0
+],
+"y_m": [
 0
 ]
 },
@@ -376,7 +376,7 @@ null
 },
 "4.target_region_source.selected": [],
 "4.target_source.data": {
-"SPL": [
+"distance_m": [
 [
 0
 ],
@@ -384,7 +384,7 @@ null
 0
 ]
 ],
-"x": [
+"level_db": [
 [
 0
 ],
@@ -392,11 +392,11 @@ null
 0
 ]
 ],
-"x_v": [
+"x_m": [
 0,
 0
 ],
-"y_v": [
+"y_m": [
 0,
 0
 ]
@@ -1867,11 +1867,11 @@ null
 "run",
 {
 "4.reference_spl_over_distance_source.data": {
-"sha1": "259e9131b500137453cff5afa13c77a4fbb5adc2",
-"size": 3179
+"sha1": "55284d1516ee2d267ea3303cf809234b3eaf83e9",
+"size": 3201
 },
 "4.results_source.data": {
-"a_num_LS": [
+"cabinet": [
 1.0,
 2.0,
 3.0,
@@ -1883,19 +1883,7 @@ null
 9.0,
 10.0
 ],
-"b_gamma_tilt_deg": [
--2.63,
--0.04,
-3.06,
-6.71,
-10.95,
-15.85,
-21.55,
-28.48,
-37.12,
-47.66
-],
-"c_gamma_tilt_deg_diff": [
+"inter_cabinet_angle_deg": [
 -2.63,
 2.59,
 3.1,
@@ -1906,6 +1894,18 @@ null
 6.94,
 8.64,
 10.53
+],
+"tilt_angle_deg": [
+-2.63,
+-0.04,
+3.06,
+6.71,
+10.95,
+15.85,
+21.55,
+28.48,
+37.12,
+47.66
 ]
 },
 "4.spl_over_distance_figure.y_range": [
@@ -1914,20 +1914,20 @@ null
 10.342028757
 ],
 "4.spl_over_distance_source.data": {
-"sha1": "83025dc871aa83fe815e75c41ca4605827c1fcef",
-"size": 3183
+"sha1": "57f4de92576b3c7ee740f354080fd6f06cca92db",
+"size": 3195
 },
 "4.target_reference_source.data": {
-"SPL": [
--1.592143834
-],
-"x_ref": [
+"distance_m": [
 24.621100384
 ],
-"x_v": [
+"level_db": [
+-1.592143834
+],
+"x_m": [
 24.31372549
 ],
-"y_v": [
+"y_m": [
 6.294117647
 ]
 },
@@ -1946,19 +1946,19 @@ null
 ]
 },
 "4.target_source.data": {
-"SPL": [
-5.257413325,
--3.67586646
-],
-"x": [
+"distance_m": [
 5.565793639,
 30.417967668
 ],
-"x_v": [
+"level_db": [
+5.257413325,
+-3.67586646
+],
+"x_m": [
 2.0,
 30.0
 ],
-"y_v": [
+"y_m": [
 0.0,
 8.0
 ]
@@ -2205,25 +2205,25 @@ null
 {
 "4.hinges_select.value": "2",
 "4.target_source.data": {
-"SPL": [
-5.257413325,
-1.66234413,
--1.208363649,
--3.67586646
-],
-"x": [
+"distance_m": [
 5.565793639,
 22.441414787,
 26.413484128,
 30.417967668
 ],
-"x_v": [
+"level_db": [
+5.257413325,
+1.66234413,
+-1.208363649,
+-3.67586646
+],
+"x_m": [
 2.0,
 22.156862745,
 26.078431373,
 30.0
 ],
-"y_v": [
+"y_m": [
 0.0,
 5.647058824,
 6.823529412,
@@ -2240,16 +2240,16 @@ null
 "drag",
 {
 "4.target_reference_source.data": {
-"SPL": [
--7.66449596
-],
-"x_ref": [
+"distance_m": [
 24.621100384
 ],
-"x_v": [
+"level_db": [
+-7.66449596
+],
+"x_m": [
 24.31372549
 ],
-"y_v": [
+"y_m": [
 6.294117647
 ]
 },
@@ -2268,25 +2268,25 @@ null
 ]
 },
 "4.target_source.data": {
-"SPL": [
-0.0,
--2.0,
--4.0,
--8.0
-],
-"x": [
+"distance_m": [
 5.565793639,
 11.057058666,
 20.277502194,
 25.018779834
 ],
-"x_v": [
+"level_db": [
+0.0,
+-2.0,
+-4.0,
+-8.0
+],
+"x_m": [
 2.0,
 10.0,
 20.0,
 24.705882353
 ],
-"y_v": [
+"y_m": [
 0.0,
 1.0,
 5.0,
