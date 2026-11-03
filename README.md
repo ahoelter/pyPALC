@@ -20,6 +20,34 @@ changing them, regenerate `theme.yaml` and `templates/index.html` with
 
 More info soon!
 
+### Structure
+
+| path | content |
+|---|---|
+| `main.py` | entry point of `bokeh serve`: builds one `PalcApp` per browser session |
+| `pypalc/core/` | the calculation without Bokeh: settings and setup files, venue, PALC, sound field prediction, target slope, pipeline, CSV export |
+| `pypalc/gui/` | the Bokeh GUI: `PalcApp`, one module per page, plot ranges, setup save/load, theme |
+| `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
+| `examples/` | example setup files |
+| `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_cascade_golden.json` holds the recorded widget states of the GUI |
+| `templates/`, `static/`, `theme.yaml` | page template, logos and Bokeh theme of the GUI |
+| `ext/` | JavaScript of the CSV downloads |
+
+### Running the tests
+
+In the conda environment from above, run from this folder:
+
+`python -m pytest`
+
+The full suite takes several minutes. `tests/test_pipeline_regression.py`
+and `tests/test_gui_equivalence.py` compare the results of every case in
+`tests/cases` with `tests/baseline`; a change of these numbers is a bug fix
+and comes with new baseline files. The GUI and CLI tests compare exactly,
+so they need numpy and scipy built with OpenBLAS (`nomkl` in
+`requirements.txt`, or the pip wheels); MKL differs in the last digits.
+Packages in `~/.local` override those of the environment; set
+`PYTHONNOUSERSITE=1` to keep them out.
+
 ### Run without the GUI
 
 Run a setup file headless and write the results as CSV:
