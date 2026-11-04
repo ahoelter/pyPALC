@@ -180,7 +180,7 @@ running server in a headless Firefox. Its checks, in this order:
 | `load` | loads a setup through the "Load Setup" file input (default `tests/cases/gap_soft_margin_target_slope.yaml`); the app must switch to page 5, and page 4 must show the setup's gap handling, weighting and hinges |
 | `screenshots_loaded` | screenshot of every page after loading |
 | `download_angles` | "Download PALC Angles" saves `tilt_angles.csv` with the header of the headless export |
-| `download_setup` | "Save Setup" saves `pypalc_setup.yaml`, a valid setup with the loaded weighting, gap handling, number of lines and of target points |
+| `download_setup` | "Save Setup" saves `pypalc_setup.yaml` once (not a second copy `pypalc_setup(1).yaml`), a valid setup with the loaded weighting, gap handling, number of lines and of target points |
 | `running_indicator` | "PALC Run" is dark red and reads "Running..." while the calculation runs |
 | `drag` | moves a target point as the PointDrawTool does; the server snaps it to the distance grid and moves the optimization region |
 | `rays_cleared` | page 4 shows the rays of the result, page 1 afterwards shows none |
