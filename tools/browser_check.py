@@ -3,8 +3,8 @@
 Drives a headless Firefox (selenium, geckodriver) against a running pyPALC
 server, takes a full-page screenshot of every page in several states and
 checks the functions that only a browser exercises: loading a setup through
-the file input, the running indicator of "PALC Run", the downloads and
-dragging the target slope.
+the file input, the running indicator of "PALC Run", the downloads,
+dragging the target slope and that the toolbars show all their tools.
 
 Works against a Bokeh 2.2 and a Bokeh 3.10 server. In Bokeh 3 the widgets
 live in shadow DOM, so every DOM query descends into the shadow roots, and
@@ -151,6 +151,9 @@ class BrowserCheck:
         self.settle = settle
         self.timeout = timeout
         self.results: List[dict] = []
+        #: Screenshots in which a toolbar had moved tools into its overflow
+        #: menu (Bokeh 3), with the number of such toolbars.
+        self.toolbar_overflows: List[str] = []
 
     # ------------------------------------------------------------------
     # Helpers
@@ -308,6 +311,11 @@ class BrowserCheck:
             The PNG file.
         """
         path = self.out / ('%s_%s.png' % (PAGES[index][2], state))
+        overflows = self.js("""
+            return deep('.bk-tool-overflow').filter(
+                e => e.getBoundingClientRect().height > 0).length;""")
+        if overflows:
+            self.toolbar_overflows.append('%s: %d' % (path.name, overflows))
         self.driver.save_full_page_screenshot(str(path))
         return path
 
@@ -602,6 +610,35 @@ class BrowserCheck:
             detail += '; ' + '; '.join(problems)
         return not problems, detail
 
+    def check_toolbars(self) -> tuple:
+        """Show page 1 with the venue axes "Equal (variable figure height)",
+        which makes the venue figure short, take its screenshot (state
+        ``equal_axes``) and check that no toolbar of any screenshot so far
+        moved tools into an overflow menu (Bokeh 3 does that when the tools
+        do not fit beside the frame; Bokeh 2 showed all tools). The venue
+        axes are set back to "Stretched" afterwards.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        self.show_page(1)
+        set_axes = """
+            const rg = models('RadioGroup').find(
+                m => m.labels[0].startsWith('Equal (variable'));
+            const old = rg.active; rg.active = arguments[0]; return old;"""
+        old = self.js(set_axes, 0)
+        time.sleep(self.settle)
+        self.wait_settled()
+        self.screenshot(1, 'equal_axes')
+        self.js(set_axes, old)
+        self.wait_settled()
+        if self.toolbar_overflows:
+            return False, ('toolbars with an overflow menu in ' +
+                           ', '.join(self.toolbar_overflows))
+        return True, 'every tool shown in all screenshots'
+
     def run(self) -> List[dict]:
         """Open the app and run all checks.
 
@@ -625,9 +662,11 @@ class BrowserCheck:
             self.run_check('download_setup', self.check_download_setup)
             self.run_check('running_indicator', self.check_running_indicator)
             self.run_check('drag', self.check_drag)
+            self.run_check('toolbars', self.check_toolbars)
         else:
             for name in ('screenshots_loaded', 'download_angles',
-                         'download_setup', 'running_indicator', 'drag'):
+                         'download_setup', 'running_indicator', 'drag',
+                         'toolbars'):
                 self.add(name, False, 'skipped: the setup did not load')
         return self.results
 
