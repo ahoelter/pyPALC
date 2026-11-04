@@ -14,7 +14,9 @@ The golden state is the state of the legacy GUI (the original ``main.py``
 before the split into :mod:`pypalc.gui`), recorded by driving the legacy
 module-level callbacks through the same steps. Only the accepted
 differences listed below replace legacy values; every other value is the
-legacy one.
+legacy one. After the Bokeh 3 upgrade the golden file was recorded again
+from the current GUI, once every difference to the Bokeh 2 recording was
+explained (see "Accepted differences after the Bokeh 3 upgrade").
 
 Accepted differences to the legacy GUI
 --------------------------------------
@@ -38,7 +40,9 @@ Accepted differences to the legacy GUI
 * The rewording of the "more than 2000 points" text is not reached by
   these steps.
 * ``document.model_count`` on page 4 (steps ``page4`` and ``page4b`` and
-  the steps up to the next page change) is 8 higher: the "Save Setup"
+  the steps up to the next page change) was 8 higher than in the legacy
+  GUI under Bokeh 2 (the counts are now those of Bokeh 3, see below): the
+  "Save Setup"
   button, the "Load Setup" title and file input, the source of the setup
   file download and their JavaScript callbacks (Task 7). Nothing else of
   the golden file changed; the new widgets are not among :data:`MODELS`
@@ -58,7 +62,59 @@ sources. The golden file got a mechanical key rename only: a script mapped
 the old keys and column names to the new ones and left every value as it
 was (hashed values were re-hashed from the recorded full values, which
 hash to the old golden entries). The golden file was not recorded again
-from the renamed app.
+from the renamed app before the Bokeh 3 upgrade.
+
+Accepted differences after the Bokeh 3 upgrade
+----------------------------------------------
+Before the golden file was recorded again under Bokeh 3.10,
+``tools/cascade_full_states.py`` recorded the full, unhashed states of all
+100 steps under Bokeh 2.2 (``master``, Python 3.8; these states hash to
+the Bokeh 2 golden file) and under Bokeh 3.10 (``bokeh3``, Python 3.12),
+and ``tools/compare_cascade_states.py`` compared them. Every difference
+is caused by Bokeh:
+
+* missing/renamed property (139 values, 2 keys):
+  ``2.directivity_upload.title`` is new in all 100 steps (Bokeh 3's
+  FileInput is an input widget with a title).
+  ``2.directivity_upload.value`` is not recorded in the 39 steps before
+  ``upload``: Bokeh 3's FileInput has no value before an upload (Bokeh 2:
+  ``''``) and reading it raises ``UnsetValueError``. From ``upload`` on
+  the values are equal. Since ``FileInput.value`` is read-only in Bokeh 3's
+  Python, the ``upload`` step sets it through ``set_from_json``, the way
+  the server receives a browser upload.
+* model count (100 values, 1 key): ``document.model_count`` is higher on
+  every page (page 0: 95 -> 108, page 1: 183 -> 222, page 2: 217 -> 266,
+  page 3: 194 -> 234, page 4: 297 -> 353, page 5: 363 -> 440). The model
+  types of the page differ only by these Bokeh 3 changes:
+
+  - every glyph renderer has a muted glyph besides its glyph and
+    nonselection glyph (the beam images each with their own color
+    mapper);
+  - every ``CDSView`` has an ``AllIndices`` filter, every figure two
+    ``AllLabels`` label policies, every box zoom overlay
+    ``BoxInteractionHandles`` with ``AreaVisuals``;
+  - the color bars have a ``NoOverlap`` label policy and an ``'auto'``
+    ticker and formatter instead of ``BasicTicker`` and
+    ``BasicTickFormatter`` models;
+  - the page is a ``GridPlot`` with its own (hidden) ``Toolbar`` instead of
+    a ``GridBox``;
+  - renamed types: ``Figure`` -> ``figure``, ``Panel`` -> ``TabPanel``,
+    ``FuncTickFormatter`` -> ``CustomJSTickFormatter``, and the ``X`` and
+    ``Circle`` markers are ``Scatter`` glyphs.
+* model type name: none (no recorded value names a renamed type).
+* new default (45 values, 9 keys): in the steps ``page1`` to ``ey`` the
+  figures that start with a DataRange1d (``x_range`` and ``y_range`` of
+  ``app.venue_figure``, ``5.beam_figure``, ``5.reference_beam_figure``
+  and ``5.venue_points_figure``, ``4.spl_over_distance_figure.x_range``)
+  have NaN as start and end, where Bokeh 2 had ``None``. They are
+  recorded as ``'NaN'`` (:func:`_norm`), since NaN never equals the NaN
+  read back from the golden file.
+* numeric drift within rtol 1e-9: none; all numbers (rounded to 9
+  decimals) are equal.
+* size changes: none recorded. The help tabs are as wide as their widest
+  panel (50030d4), but no width of them is recorded. Clearing the rays
+  before the page is rebuilt (ea30381) and the Bokeh 2 dash patterns
+  (4e4cfba) change no recorded value.
 
 The values are rounded to 9 decimals. Besides the widgets, the values of
 the PALC configuration that the configuration widgets store
@@ -76,11 +132,13 @@ import functools
 import hashlib
 import io
 import json
+import math
 import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
+from bokeh.core.property.descriptors import UnsetValueError
 from bokeh.document import Document
 
 from pypalc.gui.app import PalcApp
@@ -155,7 +213,12 @@ def _norm(v):
         return round(v, 9)
     if hasattr(v, 'start') and hasattr(v, 'end') and \
             type(v).__name__.endswith('Range1d'):
-        return [type(v).__name__, _norm(v.start), _norm(v.end)]
+        # Bokeh 3 starts a DataRange1d at NaN (Bokeh 2: None); it is
+        # recorded as 'NaN', since NaN never equals the NaN read back from
+        # the golden file
+        return [type(v).__name__] + [
+            'NaN' if isinstance(x, float) and math.isnan(x) else _norm(x)
+            for x in (v.start, v.end)]
     if hasattr(v, 'properties'):
         return type(v).__name__
     if isinstance(v, np.integer):
@@ -181,7 +244,12 @@ def snapshot(app, error):
         model = _model(app, path)
         for prop in PROPS:
             if prop in model.properties():
-                state[path + '.' + prop] = _norm(getattr(model, prop))
+                try:
+                    value = getattr(model, prop)
+                except UnsetValueError:
+                    # Bokeh 3: a FileInput without upload has no value
+                    continue
+                state[path + '.' + prop] = _norm(value)
         if 'selected' in model.properties():
             state[path + '.selected'] = _norm(model.selected.indices)
     roots = app.doc.roots
@@ -203,6 +271,11 @@ def _steps(app):
 
     def setv(path, value, attr='value'):
         return lambda: setattr(_model(app, path), attr, value)
+
+    def upload(path, value):
+        # Bokeh 3: FileInput.value is read-only in Python; the browser's
+        # upload arrives through set_from_json
+        return lambda: _model(app, path).set_from_json('value', value)
 
     def select(source, indices):
         return lambda: setattr(source.selected, 'indices', indices)
@@ -255,7 +328,7 @@ def _steps(app):
         ('dir_line', setv('2.directivity_select', 'Line Piston')),
         ('dir_meas', setv('2.directivity_select',
                           'Measured Loudspeaker Data')),
-        ('upload', setv('2.directivity_upload', csv)),
+        ('upload', upload('2.directivity_upload', csv)),
         ('dir_circ', setv('2.directivity_select', 'Circular Piston')),
         ('page3', setv('app.page_select', 3, 'active')),
         ('N', setv('3.cabinet_count_input', '8')),

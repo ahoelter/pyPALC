@@ -97,7 +97,7 @@
 },
 "2.directivity_source.selected": [],
 "2.directivity_upload.disabled": false,
-"2.directivity_upload.value": "",
+"2.directivity_upload.title": "",
 "2.directivity_upload.visible": false,
 "3.cabinet_count_input.disabled": false,
 "3.cabinet_count_input.title": "12. Number of Loudspeaker Cabinets",
@@ -297,8 +297,8 @@
 "4.spl_over_distance_figure.visible": true,
 "4.spl_over_distance_figure.x_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "4.spl_over_distance_figure.y_range": [
 "Range1d",
@@ -444,13 +444,13 @@ null
 "5.beam_figure.visible": false,
 "5.beam_figure.x_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "5.beam_figure.y_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "5.beam_frequency_select.disabled": false,
 "5.beam_frequency_select.options": [
@@ -541,13 +541,13 @@ null
 "5.reference_beam_figure.visible": false,
 "5.reference_beam_figure.x_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "5.reference_beam_figure.y_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "5.sound_field_source.data": {
 "frequencies_hz": [
@@ -587,13 +587,13 @@ null
 "5.venue_points_figure.visible": true,
 "5.venue_points_figure.x_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "5.venue_points_figure.y_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "5.venue_points_source.data": {
 "point_index": [
@@ -668,13 +668,13 @@ null
 "app.venue_figure.visible": true,
 "app.venue_figure.x_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "app.venue_figure.y_range": [
 "DataRange1d",
-null,
-null
+"NaN",
+"NaN"
 ],
 "config.aperture_angles": [
 0.052359878,
@@ -702,7 +702,7 @@ null
 "config.use_fixed_angle": false,
 "config.use_weighting": "Without",
 "config.weighting_nu": 1,
-"document.model_count": 183,
+"document.model_count": 222,
 "error": null
 }
 ],
@@ -1199,7 +1199,7 @@ null
 "page2",
 {
 "app.page_select.active": 2,
-"document.model_count": 217
+"document.model_count": 266
 }
 ],
 [
@@ -1297,7 +1297,7 @@ null
 "page3",
 {
 "app.page_select.active": 3,
-"document.model_count": 194
+"document.model_count": 234
 }
 ],
 [
@@ -1699,7 +1699,7 @@ null
 "page4",
 {
 "app.page_select.active": 4,
-"document.model_count": 297
+"document.model_count": 353
 }
 ],
 [
@@ -2100,7 +2100,7 @@ null
 "page5",
 {
 "app.page_select.active": 5,
-"document.model_count": 363
+"document.model_count": 440
 }
 ],
 [
@@ -2176,7 +2176,7 @@ null
 "page4b",
 {
 "app.page_select.active": 4,
-"document.model_count": 297
+"document.model_count": 353
 }
 ],
 [
@@ -2334,7 +2334,7 @@ null
 "page1b",
 {
 "app.page_select.active": 1,
-"document.model_count": 183
+"document.model_count": 222
 }
 ],
 [
@@ -2358,7 +2358,7 @@ null
 },
 "4.spl_over_distance_figure.x_range": [
 "Range1d",
--2.0,
+-2,
 12.0
 ],
 "4.start_toggle.disabled": true,
@@ -2366,7 +2366,7 @@ null
 "5.beam_figure.frame_height": 792,
 "5.beam_figure.x_range": [
 "Range1d",
--2.0,
+-2,
 12.0
 ],
 "5.beam_figure.y_range": [
@@ -2377,7 +2377,7 @@ null
 "5.reference_beam_figure.frame_height": 792,
 "5.reference_beam_figure.x_range": [
 "Range1d",
--2.0,
+-2,
 12.0
 ],
 "5.reference_beam_figure.y_range": [
@@ -2387,7 +2387,7 @@ null
 ],
 "5.venue_points_figure.x_range": [
 "Range1d",
--2.0,
+-2,
 12.0
 ],
 "5.venue_points_figure.y_range": [
@@ -2398,7 +2398,7 @@ null
 "app.venue_figure.frame_height": 455,
 "app.venue_figure.x_range": [
 "Range1d",
--2.0,
+-2,
 12.0
 ],
 "app.venue_figure.y_range": [
@@ -2439,7 +2439,7 @@ null
 "page0",
 {
 "app.page_select.active": 0,
-"document.model_count": 95
+"document.model_count": 108
 }
 ]
 ]
