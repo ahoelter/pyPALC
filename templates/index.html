@@ -1,6 +1,6 @@
 {% extends base %}
 {% block title %}PALC{% endblock %}
-{% block preamble %}
+{% block postamble %}
 <style>
   a:link {
     color: green;
@@ -14,54 +14,11 @@
   a:active {
     color: green;
     }
-  .slick-header-columns, .slick-headerrow-columns, .slick-footerrow-columns {
-    overflow: visible !important;
-    border-left: 0px solid #323030 !important;
-    border-top: 2px solid white !important;
-    border-bottom: 0px solid #323030 !important;
-    border-right: 0px solid #323030 !important;
-    }
-  .bk-root .slick-header-column.ui-state-default {
-    border-left: 0px solid #323030 !important;
-    border-top: 0px solid white !important;
-    border-bottom: 1px solid white !important;
-    border-right: 0px solid #323030 !important;
-    }
-  .bk-root .bk-btn-success.bk-active {
-    background-color: darkred !important;
-    border-color: #403030;
-    }
-  .bk-root .bk-btn-success.bk-active:after {
-    content: "ning...";
-    }
-  .bk {
-    font-size: 10pt !important;
-    font-family: Helvetica !important;
-    }
-  .slick-cell, .slick-headerrow-column, .slick-footerrow-column {
-    border-right: 0px solid white !important;
-    border-left: 0px solid white !important;
-    }
-  .slick-header-column {
-    background-color: #323030 !important;
-    background-image: none !important;
-    }
-  .slick-row {
-    background-color: #323030 !important;
-    background-image: none !important;
-    color: white !important;
-    overflow: hidden;
-    }
-  .bk-cell-index {
-    background-color: #323030 !important;
-    background-image: none !important;
-    color: white !important;
-    }
-  .slick-cell.selected {
-    background-color: darkred !important;
-    }
   ::-webkit-scrollbar {
     width: 8px;
+    }
+  html {
+    height: auto;
     }
   body {
     -webkit-font-smoothing: antialiased;
@@ -69,9 +26,14 @@
     color: white;
     font-size: 10pt;
     background: #323030;
+    height: auto;
+    margin: 8px;
+    --bokeh-font-size: 10pt;
+    --bokeh-base-font: Helvetica;
+    --bokeh-icon-color: #a4a9ac;
     }
   ::-webkit-scrollbar-track {
-    background: #323030
+    background: #323030;
     }
   ::-webkit-scrollbar-thumb {
     background-color: white;
