@@ -124,8 +124,8 @@ class BrowserCheck:
 
     Parameters
     ----------
-    driver : selenium.webdriver.Firefox
-        The browser.
+    driver : selenium.webdriver.Firefox or None
+        The browser; may be set after construction (``None`` until then).
     url : str
         URL of the pyPALC app.
     out : Path
@@ -255,7 +255,17 @@ class BrowserCheck:
 
     def wait_settled(self) -> None:
         """Wait until the roots of the document stay the same and BokehJS
-        is idle for :attr:`settle` seconds."""
+        is idle for :attr:`settle` seconds.
+
+        Returns
+        -------
+        None.
+
+        Raises
+        ------
+        TimeoutError
+            If the page does not settle within the timeout.
+        """
         last, since = None, time.time()
         end = time.time() + self.timeout
         while time.time() < end:
@@ -268,7 +278,13 @@ class BrowserCheck:
         raise TimeoutError('the page did not settle')
 
     def active_page(self) -> int:
-        """Index of the page the page selection shows."""
+        """Index of the page the page selection shows.
+
+        Returns
+        -------
+        int
+            Index of the active page (0: Help).
+        """
         return self.js('return pageSelect().active;')
 
     def show_page(self, index: int) -> None:
@@ -321,7 +337,14 @@ class BrowserCheck:
         return path
 
     def selects(self) -> dict:
-        """Shown selects: title -> [value, visible]."""
+        """The selects of the page.
+
+        Returns
+        -------
+        dict
+            Title of each select (without a trailing colon) -> ``[value,
+            visible]``.
+        """
         return self.js("""
             const out = {};
             for (const s of deep('select')) {
@@ -344,14 +367,20 @@ class BrowserCheck:
         Returns
         -------
         Path
-            The downloaded file.
+            The downloaded file, once it exists without a ``.part`` file
+            and its size stayed the same over two polls.
         """
         path = self.download_dir / name
         part = self.download_dir / (name + '.part')
-        self.wait_for(lambda: path.exists() and not part.exists()
-                      and path.stat().st_size > 0,
-                      'download ' + name, timeout=30)
-        time.sleep(0.5)
+        sizes = []
+
+        def complete():
+            if not path.exists() or part.exists():
+                sizes.clear()
+                return False
+            sizes.append(path.stat().st_size)
+            return len(sizes) >= 2 and sizes[-1] == sizes[-2] > 0
+        self.wait_for(complete, 'download ' + name, timeout=30)
         return path
 
     # ------------------------------------------------------------------
@@ -359,7 +388,13 @@ class BrowserCheck:
     # ------------------------------------------------------------------
 
     def check_fresh_screenshots(self) -> tuple:
-        """Screenshot of every page of a new session (state ``fresh``)."""
+        """Screenshot of every page of a new session (state ``fresh``).
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
         files = []
         for index, _, _ in PAGES:
             self.show_page(index)
@@ -373,6 +408,11 @@ class BrowserCheck:
         FileInput model, as the browser does after a file was chosen. The
         app must switch to page 5; page 4 must then show the gap handling,
         the weighting and the number of hinges of the setup.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
         """
         setup = load_setup(self.setup)
         expected = {
@@ -427,7 +467,13 @@ class BrowserCheck:
 
     def check_loaded_screenshots(self) -> tuple:
         """Screenshots of the other pages after loading (state
-        ``loaded``); pages 5 and 4 were taken by the load check."""
+        ``loaded``); pages 5 and 4 were taken by the load check.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
         files = []
         for index in LOADED_ORDER[2:]:
             self.show_page(index)
@@ -436,7 +482,13 @@ class BrowserCheck:
 
     def check_download_angles(self) -> tuple:
         """"Download PALC Angles" saves ``tilt_angles.csv`` with the header
-        of the headless export."""
+        of the headless export.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
         self.show_page(4)
         if not self.js("""const b = button(arguments[0]);
                           if (b) b.click(); return !!b;""",
@@ -450,7 +502,15 @@ class BrowserCheck:
         return lines[0] == header and len(lines) > 1, detail
 
     def check_download_setup(self) -> tuple:
-        """"Save Setup" saves ``pypalc_setup.yaml``, a valid setup."""
+        """"Save Setup" saves ``pypalc_setup.yaml``, a valid setup with
+        the weighting, the gap handling, the number of audience lines and
+        the number of target slope points of the loaded setup.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
         self.show_page(4)
         if not self.js("""const b = button(arguments[0]);
                           if (b) b.click(); return !!b;""",
@@ -459,12 +519,18 @@ class BrowserCheck:
         path = self.wait_download(SETUP_FILE)
         saved = load_setup_text(path.read_text(encoding='utf-8'))
         loaded = load_setup(self.setup)
-        same = (saved.algorithm.weighting == loaded.algorithm.weighting and
-                saved.algorithm.gap_handling ==
-                loaded.algorithm.gap_handling)
-        return same, '%s: valid setup, weighting %s, gap handling %s' % (
-            path.name, saved.algorithm.weighting,
-            saved.algorithm.gap_handling)
+
+        def summary(setup):
+            return (setup.algorithm.weighting, setup.algorithm.gap_handling,
+                    len(setup.venue.audience_lines),
+                    None if setup.target_slope is None
+                    else len(setup.target_slope.points))
+        got, expected = summary(saved), summary(loaded)
+        detail = '%s: valid setup, weighting %s, gap handling %s, %d ' \
+            'audience lines, target slope points %s' % ((path.name,) + got)
+        if got != expected:
+            detail += '; expected %s, %s, %d, %s' % expected
+        return got == expected, detail
 
     def check_running_indicator(self) -> tuple:
         """Click "PALC Run" and read the look of the toggle while the
@@ -472,6 +538,11 @@ class BrowserCheck:
 
         In Bokeh 2 the template's CSS turns the active toggle dark red and
         extends its label to "Running..." with an ``:after`` content.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
         """
         self.show_page(4)
         read = """
@@ -522,6 +593,11 @@ class BrowserCheck:
         over distance (distance and venue position of the grid point) and
         update the optimization region; both are read back from the models
         in the browser after the round trip.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
         """
         self.show_page(4)
         state = self.js("""
@@ -664,6 +740,21 @@ class BrowserCheck:
                            ', '.join(self.toolbar_overflows))
         return True, 'every tool shown in all screenshots'
 
+    def open_app(self) -> str:
+        """Load the app in the current window and wait until it is drawn.
+
+        Returns
+        -------
+        str
+            The version of BokehJS.
+        """
+        self.driver.get(self.url)
+        self.wait_for(lambda: self.driver.execute_script(
+            "return !!(window.Bokeh && Bokeh.documents && "
+            "Bokeh.documents.length);"), 'BokehJS', timeout=60)
+        self.wait_settled()
+        return self.driver.execute_script('return Bokeh.version;')
+
     def run(self) -> List[dict]:
         """Open the app and run all checks.
 
@@ -672,12 +763,7 @@ class BrowserCheck:
         list of dict
             One entry ``{"name", "ok", "detail"}`` per check.
         """
-        self.driver.get(self.url)
-        self.wait_for(lambda: self.driver.execute_script(
-            "return !!(window.Bokeh && Bokeh.documents && "
-            "Bokeh.documents.length);"), 'BokehJS', timeout=60)
-        self.wait_settled()
-        version = self.driver.execute_script('return Bokeh.version;')
+        version = self.open_app()
         print('BokehJS %s at %s' % (version, self.url), flush=True)
         self.run_check('screenshots_fresh', self.check_fresh_screenshots)
         if self.run_check('load', self.check_load):
@@ -780,19 +866,29 @@ def main(argv: Optional[List[str]] = None) -> int:
     download_dir.mkdir(parents=True, exist_ok=True)
     for name in (ANGLES_FILE, SETUP_FILE):
         (download_dir / name).unlink(missing_ok=True)
-    driver = make_driver(download_dir, args.geckodriver)
-    check = BrowserCheck(driver, args.url, out, download_dir,
+    check = BrowserCheck(None, args.url, out, download_dir,
                          args.setup.resolve(), settle=args.settle,
                          timeout=args.timeout)
     try:
+        # inside the try: the download folder is removed and a report is
+        # written also if Firefox or geckodriver do not start
+        check.driver = make_driver(download_dir, args.geckodriver)
         check.run()
     except Exception as exc:  # report what ran so far
         check.add('session', False, '%s: %s' % (type(exc).__name__, exc))
     finally:
-        driver.quit()
-        downloads = out / 'downloads'
-        shutil.rmtree(downloads, ignore_errors=True)
-        shutil.copytree(download_dir, downloads)
+        if check.driver is not None:
+            try:
+                check.driver.quit()
+            except Exception as exc:
+                print('could not quit the browser: %s' % exc, flush=True)
+        try:
+            downloads = out / 'downloads'
+            shutil.rmtree(downloads, ignore_errors=True)
+            shutil.copytree(download_dir, downloads)
+        except Exception as exc:  # report.json is still written
+            check.add('copy_downloads', False,
+                      '%s: %s' % (type(exc).__name__, exc))
         if remove:
             shutil.rmtree(download_dir, ignore_errors=True)
     (out / 'report.json').write_text(json.dumps(check.results, indent=2)
