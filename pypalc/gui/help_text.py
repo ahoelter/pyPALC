@@ -110,8 +110,11 @@ def help_tabs() -> Tabs:
     help_tab3  = TabPanel(child=row([page3_col0, page3_col1]), title='Array')
     help_tab4  = TabPanel(child=row([page4_col0, page4_col1, page4_col2]), title='Algorithm and Calculation')
     help_tab5  = TabPanel(child=row([page5_col0, page5_col1]), title='Visualization of the Sound Field Prediction')
-    # Put the Panels in the Tabs
-    help_tabs  = Tabs(tabs=[help_tab0, help_tab1, help_tab2, help_tab3, help_tab4, help_tab5])
+    # Put the Panels in the Tabs; as wide as the widest panel (three Divs of
+    # 350 px with their margins), as Bokeh 2 sized them, so that the line
+    # below the tab headers keeps its length
+    help_tabs  = Tabs(tabs=[help_tab0, help_tab1, help_tab2, help_tab3, help_tab4, help_tab5],
+                      width=1080)
    
     return help_tabs
 
