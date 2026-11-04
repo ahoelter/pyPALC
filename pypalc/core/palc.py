@@ -266,7 +266,8 @@ class ArrayGeometry():
         self.hit_points, self.hit_points_start, self.hit_points_stop = [], [], []
         # fixed first angle (max, mid, min)
         self.fixed_angle = [0,0,0]
-        if self.tilt_angles_deg != [] : self.tilt_angles = self.tilt_angles_deg*np.pi/180
+        if len(self.tilt_angles_deg) > 0:
+            self.tilt_angles = self.tilt_angles_deg*np.pi/180
 
 
     def update_opt_array(self, cabinet_centers_x=None, cabinet_centers_y=None, **new_input):
