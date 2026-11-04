@@ -66,17 +66,23 @@ Firefox and geckodriver (the default geckodriver path is
 `/snap/bin/geckodriver`, which matches snap Firefox; pass `--geckodriver`
 for another one). Run the tools from this folder:
 
-- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--setup FILE] [--two-tabs]`:
+- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--setup FILE] [--two-tabs] [--download-dir DIR] [--clean]`:
   checks a running app (`bokeh serve pyPALC` from the parent folder) in a
   headless Firefox: screenshots of every page before and after loading a
-  setup, loading through the file input, the downloads (file names and
-  CSV headers), the running indicator of "PALC Run", dragging a target
-  point, the rays on page 1, the toolbars and, with `--two-tabs`, that two
-  browser windows do not share a session. Writes `shots/*.png`, `shots/report.json` and the downloaded
-  files to `shots/downloads`; exits with 1 if a check failed. The column
-  order of the "Download SPL" files once depended on the server's string
-  hash seed; to check it, run the tool against servers started with
-  different `PYTHONHASHSEED` values.
+  setup, loading through the file input, the downloads (file names and CSV
+  headers), the running indicator of "PALC Run", dragging a target point,
+  the rays on page 1, the toolbars and, with `--two-tabs`, that two browser
+  windows do not share a session. Writes `shots/*.png`, `shots/report.json`
+  and the downloaded files to `shots/downloads`; exits with 1 if a check
+  failed. The column order of the "Download SPL" files once depended on the
+  server's string hash seed; to check it, run the tool against servers
+  started with different `PYTHONHASHSEED` values. `shots` and a given
+  download folder (`--download-dir`; by default the browser downloads into a
+  new temporary folder in the home folder, which is removed afterwards) must
+  be empty or new; the tool refuses to run otherwise. `--clean` first
+  removes the files of an earlier run of the tool (the screenshots,
+  `report.json` and the download files with their numbered copies such as
+  `pypalc_setup(1).yaml`) from them and leaves every other file alone.
 - `python tools/compare_screenshots.py OLD_DIR NEW_DIR compare.html`: puts
   two folders of screenshots side by side in one HTML page.
 - `python tools/cascade_full_states.py REPO_DIR OUT.json` and

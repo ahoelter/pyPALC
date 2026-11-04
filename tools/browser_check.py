@@ -17,12 +17,17 @@ Usage (from the repository root, with selenium installed)::
 
     python tools/browser_check.py --url http://localhost:5006/pyPALC \\
         --out shots [--setup tests/cases/gap_soft_margin_target_slope.yaml] \\
-        [--two-tabs]
+        [--two-tabs] [--download-dir DIR] [--clean]
 
 Writes ``OUT/<page>_<state>.png`` and ``OUT/report.json`` (a list of
 ``{"name": str, "ok": bool, "detail": str}``, one entry per check) and the
-downloaded files to ``OUT/downloads``; screenshots of an earlier run in OUT
-are removed first. Exits with 1 if any check failed.
+downloaded files to ``OUT/downloads``. Exits with 1 if any check failed.
+
+OUT and a given ``--download-dir`` must be empty or new, so that no file of
+an earlier run is taken for a result of this one. With ``--clean`` the tool
+first removes the files it writes itself (:func:`tool_files`: the
+screenshots, ``report.json`` and the download files with their numbered
+copies) from them, and never touches any other file.
 
 author: Arne Hoelter
 """
@@ -32,6 +37,7 @@ import argparse
 import base64
 import json
 import math
+import re
 import shutil
 import sys
 import tempfile
@@ -92,6 +98,13 @@ SPL_FILES = {
     'target_reference.csv': TARGET_REFERENCE_HEADER,
     'homogeneity.csv': HOMOGENEITY_HEADER,
 }
+#: All files the downloads create.
+DOWNLOAD_FILES = (ANGLES_FILE, SETUP_FILE) + tuple(SPL_FILES)
+#: States of the screenshots (``OUT/<page>_<state>.png``).
+SCREENSHOT_STATES = ('fresh', 'loaded', 'running', 'dragged', 'equal_axes')
+#: Name of the report in OUT and of the copy of the downloads in OUT.
+REPORT_FILE = 'report.json'
+DOWNLOADS_COPY = 'downloads'
 #: Look of the running toggle in Bokeh 2 (templates/index.html): dark red
 #: background and the label extended to "Running...".
 RUNNING_BACKGROUND = 'rgb(139, 0, 0)'
@@ -352,6 +365,8 @@ class BrowserCheck:
         Path
             The PNG file.
         """
+        if state not in SCREENSHOT_STATES:  # --clean must know the file
+            raise ValueError('unknown screenshot state %r' % state)
         path = self.out / ('%s_%s.png' % (PAGES[index][2], state))
         overflows = self.js("""
             return deep('.bk-tool-overflow').filter(
@@ -555,9 +570,8 @@ class BrowserCheck:
                                 % (name, ','.join(header)))
             if len(lines) < 2:
                 problems.append('%s: no rows' % name)
-            stem, suffix = name.rsplit('.', 1)
-            copies = sorted(p.name for p in self.download_dir.glob(
-                '%s(*).%s' % (stem, suffix)))
+            copies = sorted(p.name for p in downloaded_files(
+                self.download_dir, name) if p.name != name)
             if copies:
                 problems.append('%s downloaded more than once: %s'
                                 % (name, ', '.join(copies)))
@@ -589,9 +603,8 @@ class BrowserCheck:
                     None if setup.target_slope is None
                     else len(setup.target_slope.points))
         got, expected = summary(saved), summary(loaded)
-        stem, suffix = SETUP_FILE.rsplit('.', 1)
-        files = sorted(p.name for p in self.download_dir.glob(
-            '%s*.%s' % (stem, suffix)))
+        files = sorted(p.name for p in downloaded_files(self.download_dir,
+                                                        SETUP_FILE))
         detail = '%s: valid setup, weighting %s, gap handling %s, %d ' \
             'audience lines, target slope points %s' % ((path.name,) + got)
         detail += '; downloaded files: %s' % ', '.join(files)
@@ -953,6 +966,62 @@ class BrowserCheck:
         return self.results
 
 
+def downloaded_files(folder: Path, name: str) -> List[Path]:
+    """A download file and the numbered copies Firefox saves when the file
+    exists already (``name(1).ext``, ...) in a folder.
+
+    Parameters
+    ----------
+    folder : Path
+        Download folder.
+    name : str
+        File name of the download.
+
+    Returns
+    -------
+    list of Path
+        The files that exist.
+    """
+    stem, suffix = name.rsplit('.', 1)
+    copy = re.compile(r'%s\(\d+\)\.%s\Z' % (re.escape(stem),
+                                              re.escape(suffix)))
+    return [path for path in sorted(folder.glob('%s*' % stem))
+            if path.is_file() and (path.name == name
+                                   or copy.match(path.name))]
+
+
+def tool_files(out: Path, download_dir: Optional[Path]) -> List[Path]:
+    """The files of an earlier run that exist in OUT and the download
+    folder: the files this tool writes, nothing else.
+
+    Parameters
+    ----------
+    out : Path
+        Folder of the screenshots and the report.
+    download_dir : Path or None
+        Download folder given by the user (None: a new temporary one).
+
+    Returns
+    -------
+    list of Path
+        Screenshots ``OUT/<page>_<state>.png``, ``OUT/report.json``, and
+        the download files (with their numbered copies and ``.part``
+        files) in ``OUT/downloads`` and in the download folder.
+    """
+    files = [out / ('%s_%s.png' % (page, state))
+             for _, _, page in PAGES for state in SCREENSHOT_STATES]
+    files.append(out / REPORT_FILE)
+    files = [path for path in files if path.is_file()]
+    for folder in (out / DOWNLOADS_COPY, download_dir):
+        if folder is not None and folder.is_dir():
+            for name in DOWNLOAD_FILES:
+                files.extend(downloaded_files(folder, name))
+                part = folder / (name + '.part')  # an unfinished download
+                if part.is_file():
+                    files.append(part)
+    return files
+
+
 def make_driver(download_dir: Path, geckodriver: str):
     """Start headless Firefox with downloads saved to ``download_dir``.
 
@@ -1008,14 +1077,20 @@ def main(argv: Optional[List[str]] = None) -> int:
                         help='URL of the app, '
                         'e.g. http://localhost:5006/pyPALC')
     parser.add_argument('--out', required=True, type=Path,
-                        help='folder of the screenshots and report.json')
+                        help='folder of the screenshots and report.json, '
+                        'empty or new (see --clean)')
     parser.add_argument('--setup', type=Path, default=DEFAULT_SETUP,
                         help='setup file of the load check (default: %s)'
                         % DEFAULT_SETUP.relative_to(REPO))
     parser.add_argument('--download-dir', type=Path, default=None,
-                        help='download folder of the browser (default: a '
-                        'new folder in the home folder, removed afterwards; '
-                        'snap Firefox cannot write to /tmp)')
+                        help='download folder of the browser, empty or new '
+                        '(default: a new folder in the home folder, removed '
+                        'afterwards; snap Firefox cannot write to /tmp)')
+    parser.add_argument('--clean', action='store_true',
+                        help='first remove the files of an earlier run of '
+                        'this tool (screenshots, report.json, download files) '
+                        'from OUT and the download folder; other files stay, '
+                        'and without --clean both must be empty')
     parser.add_argument('--geckodriver', default=GECKODRIVER,
                         help='path of geckodriver (default: %(default)s)')
     parser.add_argument('--settle', type=float, default=1.5,
@@ -1029,19 +1104,26 @@ def main(argv: Optional[List[str]] = None) -> int:
                         'server do not share a session (check two_tabs)')
     args = parser.parse_args(argv)
     out = args.out.resolve()
+    given_dir = None if args.download_dir is None \
+        else args.download_dir.resolve()
+    if args.clean:
+        # only the files this tool writes, never anything else
+        for old in tool_files(out, given_dir):
+            print('removing %s' % old, flush=True)
+            old.unlink()
+    else:
+        for folder, option in ((out, '--out'), (given_dir, '--download-dir')):
+            if folder is not None and folder.is_dir() and \
+                    any(folder.iterdir()):
+                parser.error('%s %s is not empty; use a new folder, or pass '
+                             '--clean to remove the files of an earlier run '
+                             'of this tool from it' % (option, folder))
     out.mkdir(parents=True, exist_ok=True)
-    for old in out.glob('*.png'):
-        old.unlink()
-    remove = args.download_dir is None
+    remove = given_dir is None
     download_dir = Path(tempfile.mkdtemp(prefix='pypalc_browser_check_',
                                          dir=Path.home())) \
-        if remove else args.download_dir.resolve()
+        if remove else given_dir
     download_dir.mkdir(parents=True, exist_ok=True)
-    for name in (ANGLES_FILE, SETUP_FILE) + tuple(SPL_FILES):
-        # also the numbered copies of earlier runs, e.g. pypalc_setup(1).yaml
-        stem, suffix = name.rsplit('.', 1)
-        for old in download_dir.glob('%s*.%s' % (stem, suffix)):
-            old.unlink()
     check = BrowserCheck(None, args.url, out, download_dir,
                          args.setup.resolve(), settle=args.settle,
                          timeout=args.timeout)
@@ -1059,16 +1141,20 @@ def main(argv: Optional[List[str]] = None) -> int:
             except Exception as exc:
                 print('could not quit the browser: %s' % exc, flush=True)
         try:
-            downloads = out / 'downloads'
-            shutil.rmtree(downloads, ignore_errors=True)
-            shutil.copytree(download_dir, downloads)
+            # only the download files: a given download folder may hold
+            # other files
+            downloads = out / DOWNLOADS_COPY
+            downloads.mkdir(exist_ok=True)
+            for name in DOWNLOAD_FILES:
+                for path in downloaded_files(download_dir, name):
+                    shutil.copy2(path, downloads / path.name)
         except Exception as exc:  # report.json is still written
             check.add('copy_downloads', False,
                       '%s: %s' % (type(exc).__name__, exc))
-        if remove:
+        if remove:  # the temporary folder this run created
             shutil.rmtree(download_dir, ignore_errors=True)
-    (out / 'report.json').write_text(json.dumps(check.results, indent=2)
-                                     + '\n', encoding='utf-8')
+    (out / REPORT_FILE).write_text(json.dumps(check.results, indent=2)
+                                   + '\n', encoding='utf-8')
     failed = [r['name'] for r in check.results if not r['ok']]
     print('%d of %d checks ok%s' % (len(check.results) - len(failed),
                                      len(check.results),
