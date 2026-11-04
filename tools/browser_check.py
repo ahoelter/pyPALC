@@ -5,7 +5,8 @@ server, takes a full-page screenshot of every page in several states and
 checks the functions that only a browser exercises: loading a setup through
 the file input, the running indicator of "PALC Run", the downloads,
 dragging the target slope, that page 1 removes the rays of a result and
-that the toolbars show all their tools.
+that the toolbars show all their tools. With ``--two-tabs`` it also checks
+that two browser windows on one server do not share a session.
 
 Works against a Bokeh 2.2 and a Bokeh 3.10 server. In Bokeh 3 the widgets
 live in shadow DOM, so every DOM query descends into the shadow roots, and
@@ -14,7 +15,8 @@ models are read through ``Bokeh.documents[0]``.
 Usage (from the repository root, with selenium installed)::
 
     python tools/browser_check.py --url http://localhost:5006/pyPALC \\
-        --out shots [--setup tests/cases/gap_soft_margin_target_slope.yaml]
+        --out shots [--setup tests/cases/gap_soft_margin_target_slope.yaml] \\
+        [--two-tabs]
 
 Writes ``OUT/<page>_<state>.png`` and ``OUT/report.json`` (a list of
 ``{"name": str, "ok": bool, "detail": str}``, one entry per check) and the
@@ -64,6 +66,12 @@ LOADED_ORDER = [5, 4, 3, 2, 0, 1]
 RUN_LABEL = '26. PALC Run'
 DOWNLOAD_ANGLES_LABEL = 'Download PALC Angles'
 SAVE_SETUP_LABEL = 'Save Setup'
+SAVE_LINE_LABEL = '6. Save Current Audience Line'
+#: Venue inputs of page 1 (title prefix -> value) and the audience line
+#: they draw in the two-tab check.
+TWO_TABS_LINE = {'1. Start Position (x)': '2', '4. Start Position (y)': '0',
+                 '2. End Position (x)': '10', '5. End Position (y)': '1',
+                 '3. Discretization': '5'}
 #: Files the downloads create (pypalc.gui.page_algorithm).
 ANGLES_FILE = 'tilt_angles.csv'
 SETUP_FILE = 'pypalc_setup.yaml'
@@ -740,6 +748,99 @@ class BrowserCheck:
                            ', '.join(self.toolbar_overflows))
         return True, 'every tool shown in all screenshots'
 
+    def line_counts(self) -> List[int]:
+        """Number of lines in each venue line source of the page shown.
+
+        Returns
+        -------
+        list of int
+            One count per source with the columns ``lines_x`` and
+            ``lines_y`` (drawn audience lines, non-audience lines, lines of
+            the sound field only), sorted.
+        """
+        return sorted(self.js("""
+            return models('ColumnDataSource').filter(m =>
+                Object.keys(m.data).sort().join() === 'lines_x,lines_y')
+                .map(m => Array.from(m.data.lines_x).length);"""))
+
+    def open_window(self) -> str:
+        """Open the app in a new browser window (a new session) and show
+        page 1.
+
+        Returns
+        -------
+        str
+            Handle of the window, which stays the current one.
+        """
+        self.driver.switch_to.new_window('window')
+        self.open_app()
+        self.show_page(1)
+        return self.driver.current_window_handle
+
+    def check_two_tabs(self) -> tuple:
+        """Two browser windows on one server have their own sessions.
+
+        Opens the app in two new windows, enters an audience line on page 1
+        of the first one (the venue inputs and "Save Current Audience
+        Line") and waits until its line source shows the line. The second
+        window must still show no line and the default inputs, and a third
+        window opened afterwards must start without a line. The windows are
+        closed afterwards.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        main_window = self.driver.current_window_handle
+        windows = []
+        try:
+            windows.append(self.open_window())
+            windows.append(self.open_window())
+            self.driver.switch_to.window(windows[0])
+            entered = self.js("""
+                let n = 0;
+                for (const m of models('TextInput'))
+                    for (const [prefix, v] of Object.entries(arguments[0]))
+                        if (m.title.startsWith(prefix)) { m.value = v; n++; }
+                return n;""", TWO_TABS_LINE)
+            if entered != len(TWO_TABS_LINE):
+                return False, '%d of %d venue inputs found' % (
+                    entered, len(TWO_TABS_LINE))
+            if not self.js("""const b = button(arguments[0]);
+                              if (b) b.click(); return !!b;""",
+                           SAVE_LINE_LABEL):
+                return False, 'no button %r' % SAVE_LINE_LABEL
+            self.wait_for(lambda: sum(self.line_counts()) > 0,
+                          'the line in window 1', timeout=30)
+            self.wait_settled()
+            first = self.line_counts()
+            line_x = self.js("""
+                const s = models('ColumnDataSource').find(m =>
+                    Object.keys(m.data).sort().join() === 'lines_x,lines_y'
+                    && Array.from(m.data.lines_x).length > 0);
+                const x = Array.from(s.data.lines_x[0]);
+                return [x[0], x[x.length - 1]];""")
+            self.driver.switch_to.window(windows[1])
+            self.wait_settled()
+            second = self.line_counts()
+            start_x = self.js("""
+                return models('TextInput').find(m => m.title.startsWith(
+                    arguments[0])).value;""", '1. Start Position (x)')
+            windows.append(self.open_window())
+            third = self.line_counts()
+        finally:
+            for handle in windows:
+                self.driver.switch_to.window(handle)
+                self.driver.close()
+            self.driver.switch_to.window(main_window)
+        detail = 'lines per venue source: window 1 %s (line x %s..%s), ' \
+            'window 2 %s (start x input %r), new window 3 %s' % (
+                first, line_x[0], line_x[1], second, start_x, third)
+        ok = (first == [0, 0, 1] and line_x == [2, 10] and
+              second == [0, 0, 0] and start_x == '0' and third == [0, 0, 0])
+        return ok, detail
+
     def open_app(self) -> str:
         """Load the app in the current window and wait until it is drawn.
 
@@ -755,8 +856,13 @@ class BrowserCheck:
         self.wait_settled()
         return self.driver.execute_script('return Bokeh.version;')
 
-    def run(self) -> List[dict]:
+    def run(self, two_tabs: bool = False) -> List[dict]:
         """Open the app and run all checks.
+
+        Parameters
+        ----------
+        two_tabs : bool, optional
+            Also run :meth:`check_two_tabs` (check ``two_tabs``, last).
 
         Returns
         -------
@@ -780,6 +886,8 @@ class BrowserCheck:
                          'download_setup', 'running_indicator', 'drag',
                          'rays_cleared', 'toolbars'):
                 self.add(name, False, 'skipped: the setup did not load')
+        if two_tabs:
+            self.run_check('two_tabs', self.check_two_tabs)
         return self.results
 
 
@@ -854,6 +962,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument('--timeout', type=float, default=180.0,
                         help='seconds to wait for a calculation '
                         '(default: %(default)s)')
+    parser.add_argument('--two-tabs', action='store_true',
+                        help='also check that two browser windows on one '
+                        'server do not share a session (check two_tabs)')
     args = parser.parse_args(argv)
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -873,7 +984,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         # inside the try: the download folder is removed and a report is
         # written also if Firefox or geckodriver do not start
         check.driver = make_driver(download_dir, args.geckodriver)
-        check.run()
+        check.run(two_tabs=args.two_tabs)
     except Exception as exc:  # report what ran so far
         check.add('session', False, '%s: %s' % (type(exc).__name__, exc))
     finally:
