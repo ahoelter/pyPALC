@@ -7,6 +7,10 @@ group comes from the anti-goals of the code cleanup design
 
 Status legend: `[x]` checked in the browser, `[ ]` not yet checked.
 "needs browser" marks items that were only verified programmatically.
+"browser_check: `name`" marks items that `tools/browser_check.py` checks
+automatically in a headless Firefox (check `name` of its `report.json`;
+see "Automated browser check" below); "partly" says what is left for a
+walk by hand.
 
 ## Known before the split (pre-existing, from reading the code)
 
@@ -56,22 +60,29 @@ These were not walked in a browser; they are noted from the legacy
 - [ ] Hinge count select appears only for target slope weighting — needs
   browser
 - [ ] Running indicator on the start toggle ("Running..." while the
-  calculation runs) — needs browser
+  calculation runs) — browser_check: `running_indicator`
 - [ ] Dragging the target slope points and the reference point snaps them
-  to the distance grid and moves the optimization region — needs browser
-- [ ] CSV download buttons work — needs browser
+  to the distance grid and moves the optimization region — partly
+  browser_check: `drag` (a target point; the reference point needs
+  browser)
+- [ ] CSV download buttons work — partly browser_check:
+  `download_angles` ("Download SPL" needs browser)
 - [ ] The numbers equal the headless runner (`python -m pypalc run`) for
   the same setup — verified by `tests/test_gui_equivalence.py` (13 cases)
 - [ ] Two browser tabs do not share state: a line drawn in one tab does not
-  appear in the other, a new tab starts clean — needs browser (pinned by
+  appear in the other, a new tab starts clean — browser_check:
+  `two_tabs` (run with `--two-tabs`; also pinned by
   `tests/test_gui_sessions.py`)
 
 ## GUI behaviors
 
 - [ ] Page switching (Help, 1 to 5) shows the same layouts as before —
-  needs browser
+  partly browser_check: `screenshots_fresh`, `screenshots_loaded` take
+  the screenshots; comparing them with the Bokeh 2 ones
+  (`tools/compare_screenshots.py`) is by eye
 - [ ] Equal-axis radio of the venue figure (variable height, constant
-  height, stretched) — needs browser
+  height, stretched) — partly browser_check: `toolbars` (screenshot
+  with "Equal (variable figure height)"; the other settings need browser)
 - [ ] The directivity plot updates on directivity change; "Measured
   Loudspeaker Data" shows the upload — needs browser
 - [ ] Reference array widgets show and hide per type (Straight,
@@ -80,9 +91,10 @@ These were not walked in a browser; they are noted from the legacy
 - [ ] ν slider with + / − and step size — needs browser
 - [ ] Fixed angle enabled after the venue check, and its Max/Min text —
   needs browser
-- [ ] Running indicator on the start toggle — needs browser
+- [ ] Running indicator on the start toggle — browser_check:
+  `running_indicator`
 - [ ] Every download button ("Download PALC Angles", "Download SPL") —
-  needs browser
+  partly browser_check: `download_angles` ("Download SPL" needs browser)
 - [ ] Beam plot checkboxes and frequency select — needs browser
 - [ ] SFP venue tap highlights the responses of the tapped points — needs
   browser
@@ -96,7 +108,12 @@ These were not walked in a browser; they are noted from the legacy
   Slope", 1 hinge, drag the points), run, click "Save Setup": the browser
   downloads `pypalc_setup.yaml`. Reload the page and load the file with
   "Load Setup": the session lands on page 5 with the same tilt angles as
-  before — needs browser
+  before — partly browser_check: `load` (loads
+  `tests/cases/gap_soft_margin_target_slope.yaml` through the file input:
+  lands on page 5, page 4 shows its gap handling, weighting and hinges)
+  and `download_setup` ("Save Setup" downloads `pypalc_setup.yaml`, a
+  valid setup with the loaded weighting, gap handling, lines and target
+  points); setting up by hand and comparing the tilt angles need browser
 - [ ] "Save Setup" clicked twice without a change downloads twice — needs
   browser
 - [ ] Load an invalid file (e.g. `algorithm: {variant: palc9}`): page 4
@@ -123,13 +140,17 @@ browser side of these columns is only seen in a browser.
   cabinets, rays and hit points (pages 1 to 4), directivity (page 2), SPL
   over distance with target slope and reference point (page 4), frequency
   responses, venue points, homogeneity, bar charts and beam plots
-  (page 5) — needs browser
+  (page 5) — partly browser_check: `screenshots_fresh`,
+  `screenshots_loaded` (looked at by eye)
 - [ ] Hover tooltips show values (SPL over distance "(x,y) of Venue Slice",
   venue points "(x,y)", beam plots "SPL in dB") — needs browser
 - [ ] Dragging the target points and the reference point still snaps them
-  to the SPL over distance — needs browser
+  to the SPL over distance — partly browser_check: `drag` (a target
+  point; the reference point needs browser)
 - [ ] "Download PALC Angles" saves `tilt_angles.csv` with the header
-  `cabinet,tilt_angle_deg,inter_cabinet_angle_deg` — needs browser
+  `cabinet,tilt_angle_deg,inter_cabinet_angle_deg` — browser_check:
+  `download_angles` (fails on Bokeh 2: Bokeh 2.2 sorts the columns of the
+  download alphabetically; the Bokeh 3 upgrade fixes that)
 - [ ] "Download SPL" saves five files: `spl_over_distance.csv`,
   `target_slope.csv`, `target_reference.csv`,
   `reference_spl_over_distance.csv` and `homogeneity.csv`, each with the
@@ -148,6 +169,24 @@ after every step all widget properties, source data, figure ranges and
 renderer counts, the calculation objects and the layout tree of the
 document. The only differences were the two error texts listed above.
 
+## Automated browser check (Bokeh 3 upgrade)
+
+`tools/browser_check.py` (usage in `README.md`, "Browser tools") checks a
+running server in a headless Firefox. Its checks, in this order:
+
+| check | what it does |
+|---|---|
+| `screenshots_fresh` | screenshot of every page of a new session |
+| `load` | loads a setup through the "Load Setup" file input (default `tests/cases/gap_soft_margin_target_slope.yaml`); the app must switch to page 5, and page 4 must show the setup's gap handling, weighting and hinges |
+| `screenshots_loaded` | screenshot of every page after loading |
+| `download_angles` | "Download PALC Angles" saves `tilt_angles.csv` with the header of the headless export |
+| `download_setup` | "Save Setup" saves `pypalc_setup.yaml`, a valid setup with the loaded weighting, gap handling, number of lines and of target points |
+| `running_indicator` | "PALC Run" is dark red and reads "Running..." while the calculation runs |
+| `drag` | moves a target point as the PointDrawTool does; the server snaps it to the distance grid and moves the optimization region |
+| `rays_cleared` | page 4 shows the rays of the result, page 1 afterwards shows none |
+| `toolbars` | no toolbar of any screenshot hides tools in an overflow menu (screenshot of page 1 with "Equal (variable figure height)") |
+| `two_tabs` | with `--two-tabs`: a line drawn in one window (venue inputs and "Save Current Audience Line") does not appear in a second window, and a new window starts without lines |
+
 ## Walkthrough log
 
 | date | by | result |
@@ -155,3 +194,4 @@ document. The only differences were the two error texts listed above.
 | 2026-11-02 | Task 5 implementer | no browser available; headless server smoke check only (page served to two sessions, no errors in the server log) |
 | 2026-11-03 | Task 7 implementer | no browser available; server smoke check (session pulled with bokeh.client, 183 models, no errors in the log); save/load checks above need a browser |
 | 2026-11-03 | Task 8 implementer | no browser available; server smoke check only (see the Task 8 report); the re-check after the rename needs a browser |
+| 2026-11-04 | Bokeh 3 upgrade, Task 6 | `tools/browser_check.py --two-tabs` in headless Firefox (automated, not a walk by hand): `bokeh3` (Bokeh 3.10) 10 of 10 checks ok; `master` (Bokeh 2.2) 9 of 10, `download_angles` fails there because Bokeh 2.2 sorts the columns of the download |

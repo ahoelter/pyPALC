@@ -4,14 +4,19 @@ The application is based on different scientific publication, which can be found
 
 ### Try it!
 
-Install dependencies in a conda environment:
-`conda create -n pyPALC --file requirements.txt`
+pyPALC runs on Python 3.12 with Bokeh 3.10. Install the dependencies in a
+conda environment from the conda-forge channel:
+`conda create -n pyPALC3 -c conda-forge --file requirements.txt`
 
-Or install depencencies with pip, in a Python 3.8 environment (the pinned
-versions need Python 3.8):
+Or install the dependencies with pip, in a Python 3.12 environment (the
+pinned versions are the same as in `requirements.txt`):
 `pip install -r requirements_pip.txt`
 
-Run the app locally:
+If you have pip packages in `~/.local`, they shadow those of the
+environment; set `PYTHONNOUSERSITE=1` for every command, e.g.
+`PYTHONNOUSERSITE=1 conda run -n pyPALC3 bokeh serve --show pyPALC`.
+
+Run the app locally, from the folder that contains this folder:
 `bokeh serve --show pyPALC`
 "pyPALC" is the folder that contains the app.
 
@@ -31,6 +36,7 @@ More info soon!
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
 | `examples/` | example setup files |
 | `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_cascade_golden.json` holds the recorded widget states of the GUI |
+| `tools/` | development tools: browser check and screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
 | `templates/`, `static/`, `theme.yaml` | page template, logos and Bokeh theme of the GUI |
 | `ext/` | JavaScript of the CSV downloads |
 
@@ -38,13 +44,40 @@ More info soon!
 
 In the conda environment from above, run from this folder:
 
-`python -m pytest`
+`PYTHONNOUSERSITE=1 conda run -n pyPALC3 python -m pytest`
 
 The full suite takes several minutes. `tests/test_pipeline_regression.py`
 and `tests/test_gui_equivalence.py` compare the results of every case in
 `tests/cases` with `tests/baseline`; a change of these numbers is a bug fix
-and comes with new baseline files. Set `PYTHONNOUSERSITE=1` if pip packages
-in `~/.local` would shadow those of the environment.
+and comes with new baseline files. `PYTHONNOUSERSITE=1` keeps pip packages
+in `~/.local` from shadowing those of the environment.
+
+### Browser tools
+
+The tests drive the GUI on the server. What only a browser does (the page
+layout, the file input, the downloads, dragging, several tabs) is checked
+by the tools in `tools/`. They are optional and not in the requirements:
+install selenium into the environment
+(`PYTHONNOUSERSITE=1 conda run -n pyPALC3 pip install selenium`), and
+Firefox and geckodriver (the default geckodriver path is
+`/snap/bin/geckodriver`, which matches snap Firefox; pass `--geckodriver`
+for another one). Run the tools from this folder:
+
+- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--setup FILE] [--two-tabs]`:
+  checks a running app (`bokeh serve pyPALC` from the parent folder) in a
+  headless Firefox: screenshots of every page before and after loading a
+  setup, loading through the file input, the downloads, the running
+  indicator of "PALC Run", dragging a target point, the rays on page 1, the
+  toolbars and, with `--two-tabs`, that two browser windows do not share a
+  session. Writes `shots/*.png`, `shots/report.json` and the downloaded
+  files to `shots/downloads`; exits with 1 if a check failed.
+- `python tools/compare_screenshots.py OLD_DIR NEW_DIR compare.html`: puts
+  two folders of screenshots side by side in one HTML page.
+- `python tools/cascade_full_states.py REPO_DIR OUT.json` and
+  `python tools/compare_cascade_states.py OLD.json NEW.json`: dump the
+  full GUI states of the cascade replay of `tests/test_gui_cascade.py` for
+  a checkout and compare two dumps by category of difference (used before
+  re-recording `tests/gui_cascade_golden.json`).
 
 ### Run without the GUI
 
