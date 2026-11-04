@@ -14,7 +14,10 @@ pinned versions are the same as in `requirements.txt`):
 
 If you have pip packages in `~/.local`, they shadow those of the
 environment; set `PYTHONNOUSERSITE=1` for every command, e.g.
-`PYTHONNOUSERSITE=1 conda run -n pyPALC3 bokeh serve --show pyPALC`.
+`PYTHONNOUSERSITE=1 conda run --no-capture-output -n pyPALC3 bokeh serve --show pyPALC`
+(without `--no-capture-output`, `conda run` holds back the server log until
+the server stops), or activate the environment first:
+`conda activate pyPALC3` and `PYTHONNOUSERSITE=1 bokeh serve --show pyPALC`.
 
 Run the app locally, from the folder that contains this folder:
 `bokeh serve --show pyPALC`
@@ -44,7 +47,7 @@ More info soon!
 
 In the conda environment from above, run from this folder:
 
-`PYTHONNOUSERSITE=1 conda run -n pyPALC3 python -m pytest`
+`PYTHONNOUSERSITE=1 conda run --no-capture-output -n pyPALC3 python -m pytest`
 
 The full suite takes several minutes. `tests/test_pipeline_regression.py`
 and `tests/test_gui_equivalence.py` compare the results of every case in
@@ -58,7 +61,7 @@ The tests drive the GUI on the server. What only a browser does (the page
 layout, the file input, the downloads, dragging, several tabs) is checked
 by the tools in `tools/`. They are optional and not in the requirements:
 install selenium into the environment
-(`PYTHONNOUSERSITE=1 conda run -n pyPALC3 pip install selenium`), and
+(`PYTHONNOUSERSITE=1 conda run --no-capture-output -n pyPALC3 pip install selenium`), and
 Firefox and geckodriver (the default geckodriver path is
 `/snap/bin/geckodriver`, which matches snap Firefox; pass `--geckodriver`
 for another one). Run the tools from this folder:
