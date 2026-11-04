@@ -253,7 +253,7 @@ class PalcVenue(AudienceLines):
             non_audience_indices = []
             for m in range(len(self.segments)):
                 for n in range(len(non_audience_segments)):
-                    if np.all(self.segments[m] == non_audience_segments[n]):
+                    if np.array_equal(self.segments[m], non_audience_segments[n]):
                         non_audience_indices.append(m)
                 if m not in non_audience_indices:
                     self.audience_segments.append(self.segments[m])
