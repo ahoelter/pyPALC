@@ -830,9 +830,11 @@ class BrowserCheck:
             windows.append(self.open_window())
             third = self.line_counts()
         finally:
-            for handle in windows:
-                self.driver.switch_to.window(handle)
-                self.driver.close()
+            # also a window whose app did not load (not yet in windows)
+            for handle in self.driver.window_handles:
+                if handle != main_window:
+                    self.driver.switch_to.window(handle)
+                    self.driver.close()
             self.driver.switch_to.window(main_window)
         detail = 'lines per venue source: window 1 %s (line x %s..%s), ' \
             'window 2 %s (start x input %r), new window 3 %s' % (
