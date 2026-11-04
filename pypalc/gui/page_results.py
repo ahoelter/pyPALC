@@ -17,6 +17,7 @@ from bokeh.plotting import figure
 
 from pypalc.core.sound_field import beam_plot_spl
 from pypalc.gui import CALLBACK_ERRORS
+from pypalc.gui.theme import DASHED
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -111,10 +112,10 @@ class ResultsPage:
                                 color="lightskyblue", legend_label="PALC")
         homogeneity_figure.line('frequency_hz', 'homogeneity_high_db',
                                 source=self.homogeneity_source,
-                                color="navajowhite", line_dash="dashed")
+                                color="navajowhite", line_dash=DASHED)
         homogeneity_figure.line('frequency_hz', 'homogeneity_low_db',
                                 source=self.homogeneity_source,
-                                color="navajowhite", line_dash="dashed")
+                                color="navajowhite", line_dash=DASHED)
         homogeneity_figure.line('frequency_hz', 'reference_homogeneity_db',
                                 source=self.homogeneity_source,
                                 color="orange", legend_label="Reference Array")

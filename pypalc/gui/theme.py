@@ -39,6 +39,10 @@ FONT = 'Helvetica'
 FONT_STYLE = 'normal'
 #: Color of the toolbar icons (the grey of the Bokeh 2 icons).
 ICON_COLOR = '#a4a9ac'
+#: Dash pattern of dashed lines: Bokeh 2's ``'dashed'``. Bokeh 3 draws the
+#: name ``'dashed'`` as ``[3, 2]`` (its Python side still documents
+#: ``[6]``, but sends the name), so glyphs use this pattern instead.
+DASHED = [6]
 
 
 def _theme_attrs() -> Dict[str, List[str]]:

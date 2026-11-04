@@ -17,6 +17,7 @@ from pypalc.core.pipeline import check_line
 from pypalc.core.settings import AudienceLine
 from pypalc.core.venue import slope_and_intercept
 from pypalc.gui import skipped_while_applying_setup
+from pypalc.gui.theme import DASHED
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -132,7 +133,7 @@ class VenuePage:
         venue_figure.multi_line('lines_x', 'lines_y',
                                 source=self.non_audience_source,
                                 legend_label='PALC (non-audience line)',
-                                line_dash='dashed', line_color="lime",
+                                line_dash=DASHED, line_color="lime",
                                 line_width=2, nonselection_line_alpha=0.5)
         venue_figure.multi_line('lines_x', 'lines_y',
                                 source=self.sound_field_only_source,
@@ -147,10 +148,10 @@ class VenuePage:
                                 line_dash="solid")
         venue_figure.multi_line('start_rays_x', 'start_rays_y',
                                 source=app.rays_source, color="red",
-                                line_dash="dashed")
+                                line_dash=DASHED)
         venue_figure.multi_line('stop_rays_x', 'stop_rays_y',
                                 source=app.rays_source, color="green",
-                                line_dash="dashed")
+                                line_dash=DASHED)
         venue_figure.scatter('hit_points_x', 'hit_points_y', marker='x',
                              source=app.hit_points_source, color="white")
         venue_figure.scatter('hit_points_start_x', 'hit_points_start_y',
