@@ -797,12 +797,12 @@ def run_palc(ray_plot, palc_venue, config, optimized_array):
                 continuous_segments[m].append(segments[n+m])
         # check which loudspeaker cabinets belong to which continuous audience line
         cabinet_to_group = np.empty(cabinet_count).astype(int)
-        group_distances_high = np.empty(np.shape(continuous_segments)[0])
-        group_distances_low = np.empty(np.shape(continuous_segments)[0])
-        group_distances = np.empty(np.shape(continuous_segments)[0])
+        group_distances_high = np.empty(len(continuous_segments))
+        group_distances_low = np.empty(len(continuous_segments))
+        group_distances = np.empty(len(continuous_segments))
         for m in range(cabinet_count):
             # go from the highest audience line to the lowest
-            for n in range(np.shape(continuous_segments)[0]-1,-1,-1):
+            for n in range(len(continuous_segments)-1,-1,-1):
                 group_distances_high[n] = np.abs(np.sqrt((continuous_segments[n][-1][-1,0]-optimized_array.hit_points[m,0])**2 \
                               + (continuous_segments[n][-1][-1,1]-optimized_array.hit_points[m,1])**2))
                 group_distances_low[n] = np.abs(np.sqrt((continuous_segments[n][0][0,0]-optimized_array.hit_points[m,0])**2 \
@@ -813,13 +813,13 @@ def run_palc(ray_plot, palc_venue, config, optimized_array):
             cabinet_to_group[m] = int(np.argmin(group_distances))
 
         # Run the calculation for each continuous audience line
-        for n in range(np.shape(continuous_segments)[0]-1,-1,-1):
+        for n in range(len(continuous_segments)-1,-1,-1):
             margin_cabinet_count = 0
             for m in range(cabinet_count):
                 if n == cabinet_to_group[m]:
                     margin_cabinet_count += 1
 
-            if n == np.shape(continuous_segments)[0]-1:
+            if n == len(continuous_segments)-1:
                 tilt_angles = np.linspace(-0.0428, 0.7147, num=margin_cabinet_count)
                 aperture_angles = np.linspace(0.00524, 0.00524, num=margin_cabinet_count)
                 compute_tilt_angles(ray_plot, continuous_segments[n], aperture_angles, tilt_angles, margin_cabinet_count, config, audience_segments, optimized_array)
