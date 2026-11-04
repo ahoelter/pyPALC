@@ -510,9 +510,10 @@ class BrowserCheck:
         return lines[0] == header and len(lines) > 1, detail
 
     def check_download_setup(self) -> tuple:
-        """"Save Setup" saves ``pypalc_setup.yaml``, a valid setup with
-        the weighting, the gap handling, the number of audience lines and
-        the number of target slope points of the loaded setup.
+        """"Save Setup" saves ``pypalc_setup.yaml`` once (Firefox would
+        save a second download as ``pypalc_setup(1).yaml``), a valid setup
+        with the weighting, the gap handling, the number of audience lines
+        and the number of target slope points of the loaded setup.
 
         Returns
         -------
@@ -534,11 +535,15 @@ class BrowserCheck:
                     None if setup.target_slope is None
                     else len(setup.target_slope.points))
         got, expected = summary(saved), summary(loaded)
+        stem, suffix = SETUP_FILE.rsplit('.', 1)
+        files = sorted(p.name for p in self.download_dir.glob(
+            '%s*.%s' % (stem, suffix)))
         detail = '%s: valid setup, weighting %s, gap handling %s, %d ' \
             'audience lines, target slope points %s' % ((path.name,) + got)
+        detail += '; downloaded files: %s' % ', '.join(files)
         if got != expected:
             detail += '; expected %s, %s, %d, %s' % expected
-        return got == expected, detail
+        return got == expected and files == [SETUP_FILE], detail
 
     def check_running_indicator(self) -> tuple:
         """Click "PALC Run" and read the look of the toggle while the
@@ -978,7 +983,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         if remove else args.download_dir.resolve()
     download_dir.mkdir(parents=True, exist_ok=True)
     for name in (ANGLES_FILE, SETUP_FILE):
-        (download_dir / name).unlink(missing_ok=True)
+        # also the numbered copies of earlier runs, e.g. pypalc_setup(1).yaml
+        stem, suffix = name.rsplit('.', 1)
+        for old in download_dir.glob('%s*.%s' % (stem, suffix)):
+            old.unlink()
     check = BrowserCheck(None, args.url, out, download_dir,
                          args.setup.resolve(), settle=args.settle,
                          timeout=args.timeout)
