@@ -1,7 +1,7 @@
 # pyPALC Bokeh 3 upgrade: design
 
 Date: 2026-11-04
-Status: draft, awaiting approval
+Status: approved (2026-11-04)
 
 This is the second of four projects:
 
