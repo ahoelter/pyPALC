@@ -45,6 +45,10 @@ Accepted differences to the legacy GUI
   (``tests/test_apply_setup.py`` covers them). Refreshing the range of a
   fixed angle when the array position changes (Task 7) changes no
   recorded value.
+* ``run`` (``app.rays_source.data``): the rays drawn in the venue figure
+  now end where they cross a venue line (or, if they miss the venue, above
+  or below its farthest point) instead of at the hit points PALC assumes;
+  see ``tests/test_rays.py``. Only the ray ends of this step changed.
 
 Renamed keys (Task 8)
 ---------------------

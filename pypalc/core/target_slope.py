@@ -867,7 +867,7 @@ def optimize_target_slope(config, sound_field_config, palc_venue, ray_plot, \
     while int(loop) < int(max_loops):
         run_palc(ray_plot, palc_venue, config, optimized_array)
         patches_x, patches_y = cabinet_outlines(ray_plot, config, optimized_array.tilt_angles)
-        ray_plot.get_plot_array(optimized_array)
+        ray_plot.get_plot_array(optimized_array, palc_venue.segments)
         array_center_x, array_center_y = predict_sound_field(optimized_array.tilt_angles_deg, drawn_lines, sound_field_config, \
                             evaluation)
         compute_spl_over_distance(ray_plot, drawn_lines, evaluation.spl_db, spl_over_distance, sound_field_config.frequency_range_hz)

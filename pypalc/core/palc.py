@@ -157,27 +157,97 @@ class RayPlotData():
             if hasattr(self, key):
                 setattr(self, key, val)
                 
-    def get_plot_array(self, optimized_array):
+    def get_plot_array(self, optimized_array, segments=None):
         """
         Includes the results of the PALC optimization to plot them in a
         bokeh figure.
+
+        Each ray (start, center, stop) goes from the cabinet center along
+        its direction. PALC computes its end where the ray is assumed to
+        hit the venue (for the start ray: the hit point of the stop ray of
+        the cabinet above). With discrete tilt angles or a soft margin the
+        ray does not pass through that point, so with ``segments`` the ray
+        ends where it first crosses a venue line instead.
 
         Parameters
         ----------
         optimized_array : obj [in]
             Data of the optimized array by PALC.
+        segments : list of ndarray, optional
+            Venue lines the rays end on (audience and non-audience lines,
+            each with its points in the rows). The default is None: the
+            rays end at the points computed by PALC.
 
         Returns
         -------
         None.
 
         """
-        setattr(self, 'center_rays_x', list(zip(self.cabinet_centers_x, self.center_ray_ends_x)))
-        setattr(self, 'center_rays_y', list(zip(self.cabinet_centers_y, self.center_ray_ends_y)))
-        setattr(self, 'start_rays_x', list(zip(self.cabinet_centers_x, optimized_array.start_ray_ends_x)))
-        setattr(self, 'start_rays_y', list(zip(self.cabinet_centers_y, optimized_array.start_ray_ends_y)))
-        setattr(self, 'stop_rays_x', list(zip(self.cabinet_centers_x, optimized_array.stop_ray_ends_x)))
-        setattr(self, 'stop_rays_y', list(zip(self.cabinet_centers_y, optimized_array.stop_ray_ends_y)))
+        ends = {'center': (self.center_ray_ends_x, self.center_ray_ends_y),
+                'start': (optimized_array.start_ray_ends_x,
+                          optimized_array.start_ray_ends_y),
+                'stop': (optimized_array.stop_ray_ends_x,
+                         optimized_array.stop_ray_ends_y)}
+        for name, (ends_x, ends_y) in ends.items():
+            if segments:
+                ends_x, ends_y = zip(*[
+                    ray_end_on_venue(x0, y0, x1, y1, segments)
+                    for x0, y0, x1, y1 in zip(self.cabinet_centers_x,
+                                              self.cabinet_centers_y,
+                                              ends_x, ends_y)])
+            setattr(self, name + '_rays_x',
+                    list(zip(self.cabinet_centers_x, ends_x)))
+            setattr(self, name + '_rays_y',
+                    list(zip(self.cabinet_centers_y, ends_y)))
+
+
+def ray_end_on_venue(x0, y0, x1, y1, segments):
+    """
+    End point of a ray on the venue lines.
+
+    The ray starts at ``(x0, y0)`` and passes through ``(x1, y1)``. Its end
+    is the first point, seen from the start, where it crosses one of the
+    venue lines.
+
+    Parameters
+    ----------
+    x0, y0 : float
+        Start of the ray (cabinet center).
+    x1, y1 : float
+        A point on the ray that gives its direction.
+    segments : list of ndarray
+        Venue lines; each is a straight line from its first to its last
+        point (rows of x, y, ...).
+
+    Returns
+    -------
+    tuple of float
+        End point ``(x, y)``. A ray that crosses no venue line (it passes
+        over or under the venue) ends where it passes the farthest point of
+        the venue in x; ``(x1, y1)`` if it does not get there either.
+
+    """
+    direction = np.array([x1 - x0, y1 - y0], dtype=float)
+    nearest = None
+    for segment in segments:
+        a = np.asarray(segment[0][:2], dtype=float)
+        line = np.asarray(segment[-1][:2], dtype=float) - a
+        denominator = direction[0] * line[1] - direction[1] * line[0]
+        if denominator == 0:
+            continue  # parallel
+        w = a - [x0, y0]
+        along_ray = (w[0] * line[1] - w[1] * line[0]) / denominator
+        along_line = (w[0] * direction[1] - w[1] * direction[0]) / denominator
+        if along_ray > 0 and -1e-9 <= along_line <= 1 + 1e-9 \
+                and (nearest is None or along_ray < nearest):
+            nearest = along_ray
+    if nearest is None:
+        farthest_x = max(max(segment[0][0], segment[-1][0])
+                         for segment in segments)
+        if direction[0] <= 0 or farthest_x <= x0:
+            return x1, y1
+        nearest = (farthest_x - x0) / direction[0]
+    return x0 + nearest * direction[0], y0 + nearest * direction[1]
 
 
 class ArrayGeometry():

@@ -529,7 +529,7 @@ class _Calculation:
             raise ConvergenceError('Error: No convergence reached')
         self.cabinet_patches = cabinet_outlines(self.ray_plot, config,
                                                 optimized_array.tilt_angles)
-        self.ray_plot.get_plot_array(optimized_array)
+        self.ray_plot.get_plot_array(optimized_array, palc_venue.segments)
         inter_cabinet_angles_deg, self.tilt_angles_deg = \
             inter_cabinet_angles(optimized_array.tilt_angles_deg)
         optimized_array.inter_cabinet_angles_deg = inter_cabinet_angles_deg
