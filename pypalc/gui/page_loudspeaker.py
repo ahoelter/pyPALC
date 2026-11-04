@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, LayoutDOM, Range1d
-from bokeh.models.widgets import FileInput, Panel, Select, Tabs, TextInput
+from bokeh.models import (ColumnDataSource, FileInput, LayoutDOM, Range1d,
+                          Select, TabPanel, Tabs, TextInput)
 from bokeh.plotting import figure
 
 from pypalc.core.sound_field import (cabinet_directivity,
@@ -63,7 +63,6 @@ class LoudspeakerPage:
             amplitude_10khz_db=empty, angle_deg=empty))
         self.directivity_figure = figure(
             title="Loudspeaker Directivity for Selected Frequencies",
-            toolbar_sticky=False,
             tools="box_zoom,pan,wheel_zoom,reset,hover,save",
             tooltips=[("Index", "$index"), ("Amplitude in dB", "$y"),
                       ("Angle in deg", "$x")],
@@ -84,10 +83,10 @@ class LoudspeakerPage:
         directivity_figure.legend.location = "bottom_right"
         directivity_figure.legend.background_fill_alpha = 0.5
         directivity_figure.xaxis.ticker = [-90, -60, -30, 0, 30, 60, 90]
-        self.tabs = Tabs(tabs=[Panel(child=app.venue_figure,
-                                     title="Venue Slice"),
-                               Panel(child=directivity_figure,
-                                     title="Loudspeaker Directivity")])
+        self.tabs = Tabs(tabs=[TabPanel(child=app.venue_figure,
+                                        title="Venue Slice"),
+                               TabPanel(child=directivity_figure,
+                                        title="Loudspeaker Directivity")])
         self.compute_modeled_directivity()
         # callbacks
         self.aperture_input.on_change("value", app.store_value)

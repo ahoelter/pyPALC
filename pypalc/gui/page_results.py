@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import (ColorBar, ColumnDataSource, LayoutDOM,
-                          LinearColorMapper)
-from bokeh.models.widgets import CheckboxGroup, Div, Panel, Select, Tabs
+from bokeh.models import (CheckboxGroup, ColorBar, ColumnDataSource, Div,
+                          LayoutDOM, LinearColorMapper, Select, TabPanel,
+                          Tabs)
 from bokeh.palettes import Cividis256
 from bokeh.plotting import figure
 
@@ -49,8 +49,8 @@ class ResultsPage:
                      "8000", "16000"])
         """Frequency of the beam plots."""
         self.beam_checkbox = CheckboxGroup(
-            labels=["PALC", "Reference"], active=[], orientation='horizontal',
-            height=11, inline=True, disabled=True)
+            labels=["PALC", "Reference"], active=[], height=11, inline=True,
+            disabled=True)
         """Whether the PALC and / or the reference beam plot is shown."""
         self.beam_label = Div(text='      <b> Beam Plot of: </b>', height=10,
                               width=120)
@@ -191,19 +191,19 @@ class ResultsPage:
         self.reference_histogram_figure.toolbar.logo = None
         # tabs
         self.tabs = Tabs(tabs=[
-            Panel(child=column([self.venue_points_figure,
-                                row([self.sound_field_figure,
-                                     self.reference_sound_field_figure])]),
-                  title="Frequency Responses at Audience Positions"),
-            Panel(child=homogeneity_figure, title="Homogeneity"),
-            Panel(child=row([self.histogram_figure,
-                             self.reference_histogram_figure]),
-                  title="Bar Chart"),
-            Panel(child=column([row([self.beam_frequency_select,
-                                     column([self.beam_label,
-                                             self.beam_checkbox])]),
-                                beam_figure, reference_beam_figure]),
-                  title="Beam Plots")])
+            TabPanel(child=column([self.venue_points_figure,
+                                   row([self.sound_field_figure,
+                                        self.reference_sound_field_figure])]),
+                     title="Frequency Responses at Audience Positions"),
+            TabPanel(child=homogeneity_figure, title="Homogeneity"),
+            TabPanel(child=row([self.histogram_figure,
+                                self.reference_histogram_figure]),
+                     title="Bar Chart"),
+            TabPanel(child=column([row([self.beam_frequency_select,
+                                        column([self.beam_label,
+                                                self.beam_checkbox])]),
+                                   beam_figure, reference_beam_figure]),
+                     title="Beam Plots")])
         # callbacks
         self.beam_frequency_select.on_change("value", self.update_beam_plot)
         self.beam_checkbox.on_change("active", self.update_beam_plot)
@@ -216,7 +216,6 @@ class ResultsPage:
             y_range=(0, 100), x_axis_label="f in kHz",
             y_axis_label="SPL in dB",
             tools="box_zoom,pan,wheel_zoom,reset,tap,hover,save",
-            toolbar_sticky=False,
             tooltips=[("Index", "$index"), ("Frequency in Hz", "$x"),
                       ("SPL in dB", "$y")], width=610)
         response_figure.toolbar.logo = None

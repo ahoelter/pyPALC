@@ -36,8 +36,8 @@ from typing import Dict, List, Optional, Union
 import numpy as np
 from bokeh.document import Document
 from bokeh.layouts import column, gridplot, row
-from bokeh.models import ColumnDataSource, Model
-from bokeh.models.widgets import Div, Paragraph, RadioButtonGroup, RadioGroup
+from bokeh.models import (ColumnDataSource, Div, Model, Paragraph,
+                          RadioButtonGroup, RadioGroup)
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 from colorcet import rainbow
@@ -162,8 +162,8 @@ def _error_text(exc: PalcError) -> str:
 def _logo_figure(width: int, image: str, x_offset: float):
     """Figure that shows a logo from the app's static directory."""
     x_range, y_range = (10, 30), (10, 30)
-    logo = figure(x_range=x_range, y_range=y_range, plot_width=width,
-                  plot_height=80, min_border=0)
+    logo = figure(x_range=x_range, y_range=y_range, width=width, height=80,
+                  min_border=0)
     logo.toolbar.logo, logo.axis.visible = 'grey', False
     logo.outline_line_color, logo.grid.visible = None, False
     logo.toolbar_location, logo.toolbar.logo = None, 'grey'
@@ -216,7 +216,7 @@ class PalcApp:
         """Rays from the cabinets to the venue."""
         self.venue_figure = figure(
             title="", x_axis_label="x in m", y_axis_label="y in m",
-            toolbar_sticky=False, toolbar_location="right",
+            toolbar_location="right",
             tools="box_zoom,pan,wheel_zoom,reset,tap,hover,save",
             frame_height=478, frame_width=637)
         """Venue slice figure (pages 1 to 4); its glyphs are added by the
@@ -260,8 +260,7 @@ class PalcApp:
         self.venue_axes_select = RadioGroup(
             labels=['Equal (variable figure height)',
                     'Equal (const. figure height)', 'Stretched'],
-            active=2, height=15, margin=5, orientation='horizontal',
-            inline=True)
+            active=2, height=15, margin=5, inline=True)
         """Scaling of the venue figure."""
         self.venue_axes_label = Div(text='      <b> Venue Slice Axes: </b>',
                                     height=15, width=150)

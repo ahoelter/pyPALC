@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, LayoutDOM
-from bokeh.models.widgets import Button, Div, Paragraph, TextInput
+from bokeh.models import (Button, ColumnDataSource, Div, LayoutDOM, Paragraph,
+                          TextInput)
 
 from pypalc.core.errors import VenueError
 from pypalc.core.pipeline import check_line

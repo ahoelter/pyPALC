@@ -7,8 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from bokeh.layouts import row
-from bokeh.models import LayoutDOM
-from bokeh.models.widgets import Div, Panel, Tabs
+from bokeh.models import Div, LayoutDOM, TabPanel, Tabs
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -105,12 +104,12 @@ def help_tabs() -> Tabs:
     page5_col1 = Div(text = empty_head + llspace + page5_4 + lspace + page5_5 + lspace + page5_6 + lspace + page5_7, width=350)
     
     ##### Set up the Text Div Widgets Panels as Rows and Panels in Tabs #######
-    help_tab0  = Panel(child=row([page0_col0, page0_col1]), title='General Information')
-    help_tab1  = Panel(child=row([page1_col0, page1_col1]), title='Venue Slice')
-    help_tab2  = Panel(child=row([page2_col0, page2_col1]), title='Loudspeaker')
-    help_tab3  = Panel(child=row([page3_col0, page3_col1]), title='Array')
-    help_tab4  = Panel(child=row([page4_col0, page4_col1, page4_col2]), title='Algorithm and Calculation')
-    help_tab5  = Panel(child=row([page5_col0, page5_col1]), title='Visualization of the Sound Field Prediction')
+    help_tab0  = TabPanel(child=row([page0_col0, page0_col1]), title='General Information')
+    help_tab1  = TabPanel(child=row([page1_col0, page1_col1]), title='Venue Slice')
+    help_tab2  = TabPanel(child=row([page2_col0, page2_col1]), title='Loudspeaker')
+    help_tab3  = TabPanel(child=row([page3_col0, page3_col1]), title='Array')
+    help_tab4  = TabPanel(child=row([page4_col0, page4_col1, page4_col2]), title='Algorithm and Calculation')
+    help_tab5  = TabPanel(child=row([page5_col0, page5_col1]), title='Visualization of the Sound Field Prediction')
     # Put the Panels in the Tabs
     help_tabs  = Tabs(tabs=[help_tab0, help_tab1, help_tab2, help_tab3, help_tab4, help_tab5])
    

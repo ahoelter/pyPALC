@@ -9,9 +9,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, LayoutDOM
-from bokeh.models.widgets import (DataTable, Paragraph, Select, TableColumn,
-                                  TextAreaInput, TextInput)
+from bokeh.models import (ColumnDataSource, DataTable, LayoutDOM, Paragraph,
+                          Select, TableColumn, TextAreaInput, TextInput)
 
 from pypalc.core.geometry import reference_tilt_angles_deg
 from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup

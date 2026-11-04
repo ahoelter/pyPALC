@@ -11,12 +11,11 @@ from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
 from bokeh.layouts import column, row
-from bokeh.models import (ColumnDataSource, CustomJS, FuncTickFormatter,
-                          LayoutDOM)
-from bokeh.models.tools import PointDrawTool
-from bokeh.models.widgets import (Button, DataTable, Div, FileInput, Panel,
-                                  Paragraph, RangeSlider, Select, Slider,
-                                  TableColumn, Tabs, TextInput, Toggle)
+from bokeh.models import (Button, ColumnDataSource, CustomJS,
+                          CustomJSTickFormatter, DataTable, Div, FileInput,
+                          LayoutDOM, Paragraph, PointDrawTool, RangeSlider,
+                          Select, Slider, TableColumn, TabPanel, Tabs,
+                          TextInput, Toggle)
 from bokeh.plotting import figure
 
 from pypalc.core.errors import SetupError
@@ -108,10 +107,10 @@ class AlgorithmPage:
             index_position=None, width=250, height=700, fit_columns=False)
         self._build_spl_over_distance_figure()
         self.tabs = Tabs(tabs=[
-            Panel(child=app.venue_figure, title="Venue Slice"),
-            Panel(child=column([self.frequency_range_slider,
-                                self.spl_over_distance_figure]),
-                  title="SPL over Distance")])
+            TabPanel(child=app.venue_figure, title="Venue Slice"),
+            TabPanel(child=column([self.frequency_range_slider,
+                                   self.spl_over_distance_figure]),
+                     title="SPL over Distance")])
         self._wire_callbacks()
 
     def _build_widgets(self) -> None:
@@ -140,7 +139,7 @@ class AlgorithmPage:
             title="Weighting Parameter ν", value=np.cbrt(1.00),
             start=np.cbrt(0.01), end=np.cbrt(10.00), step=0.01,
             disabled=True, width=255,
-            format=FuncTickFormatter(
+            format=CustomJSTickFormatter(
                 code="return Math.pow(tick,3).toFixed(2)"))
         self.weighting_title = Paragraph(
             text="22. Adjustment of ν and Step Size", width=255, height=20)
@@ -192,7 +191,7 @@ class AlgorithmPage:
         spl_figure = figure(
             title="SPL over Distance (maximum SPL normalized to 0 dB)",
             x_axis_label="Distance LSA to Receiver in m",
-            y_axis_label="SPL change in dB", toolbar_sticky=False,
+            y_axis_label="SPL change in dB",
             tools="box_zoom,pan,wheel_zoom,reset,hover,save, tap",
             tooltips=[("Title", "$name"), ("Index", "$index"),
                       ("SPL in dB", "$y"), ("Distance", "$x"),
