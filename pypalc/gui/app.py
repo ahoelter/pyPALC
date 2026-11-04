@@ -296,8 +296,11 @@ class PalcApp:
                       column(self.page_select, width=690)])
         headline = row([self.headline], width=1230)
         body = self.pages[active].layout()
+        # no toolbar of the grid: each figure keeps its own (Bokeh 2 returned
+        # a plain GridBox for merge_tools=False; Bokeh 3 would add an empty
+        # toolbar)
         self.doc.add_root(gridplot([[header], [headline], [body]],
-                                   toolbar_location='right',
+                                   toolbar_location=None,
                                    merge_tools=False))
 
     # ------------------------------------------------------------------
