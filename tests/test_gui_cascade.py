@@ -140,6 +140,7 @@ import numpy as np
 import pytest
 from bokeh.core.property.descriptors import UnsetValueError
 from bokeh.document import Document
+from bokeh.models import FileInput
 
 from pypalc.gui.app import PalcApp
 
@@ -248,7 +249,9 @@ def snapshot(app, error):
                     value = getattr(model, prop)
                 except UnsetValueError:
                     # Bokeh 3: a FileInput without upload has no value
-                    continue
+                    if isinstance(model, FileInput) and prop == 'value':
+                        continue
+                    raise
                 state[path + '.' + prop] = _norm(value)
         if 'selected' in model.properties():
             state[path + '.selected'] = _norm(model.selected.indices)
