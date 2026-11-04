@@ -286,10 +286,13 @@ class PalcApp:
         -------
         None.
         """
-        self.doc.clear()
         active = self.page_select.active
+        # before doc.clear(): a change to a model outside the document does
+        # not reach the browser, and Bokeh 3 sends a model that the browser
+        # had before the clear only by reference when it is added again
         if active == 1:
             self.clear_result_figure()
+        self.doc.clear()
         header = row([column(self.ak_logo, width=100),
                       column(self.tu_logo, width=170),
                       column(self.ak_text, width=270),

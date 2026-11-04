@@ -4,7 +4,8 @@ Drives a headless Firefox (selenium, geckodriver) against a running pyPALC
 server, takes a full-page screenshot of every page in several states and
 checks the functions that only a browser exercises: loading a setup through
 the file input, the running indicator of "PALC Run", the downloads,
-dragging the target slope and that the toolbars show all their tools.
+dragging the target slope, that page 1 removes the rays of a result and
+that the toolbars show all their tools.
 
 Works against a Bokeh 2.2 and a Bokeh 3.10 server. In Bokeh 3 the widgets
 live in shadow DOM, so every DOM query descends into the shadow roots, and
@@ -610,6 +611,30 @@ class BrowserCheck:
             detail += '; ' + '; '.join(problems)
         return not problems, detail
 
+    def check_rays_cleared(self) -> tuple:
+        """Show page 4 with the rays of a result, then page 1, which must
+        show no rays (the server clears them when page 1 is shown). Reads
+        the rays source in the browser.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        rays = """
+            const s = models('ColumnDataSource').find(
+                m => 'start_rays_x' in m.data);
+            return Array.from(s.data.start_rays_x).length;"""
+        self.show_page(4)
+        before = self.js(rays)
+        self.show_page(1)
+        after = self.js(rays)
+        detail = ('rays in the browser: %d on page 4, %d on page 1'
+                  % (before, after))
+        if not before:
+            detail += '; no rays on page 4, so nothing was checked'
+        return bool(before) and after == 0, detail
+
     def check_toolbars(self) -> tuple:
         """Show page 1 with the venue axes "Equal (variable figure height)",
         which makes the venue figure short, take its screenshot (state
@@ -662,11 +687,12 @@ class BrowserCheck:
             self.run_check('download_setup', self.check_download_setup)
             self.run_check('running_indicator', self.check_running_indicator)
             self.run_check('drag', self.check_drag)
+            self.run_check('rays_cleared', self.check_rays_cleared)
             self.run_check('toolbars', self.check_toolbars)
         else:
             for name in ('screenshots_loaded', 'download_angles',
                          'download_setup', 'running_indicator', 'drag',
-                         'toolbars'):
+                         'rays_cleared', 'toolbars'):
                 self.add(name, False, 'skipped: the setup did not load')
         return self.results
 
