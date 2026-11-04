@@ -111,7 +111,8 @@ def models_of(app):
 def state_of(app):
     """Widget, source and figure state of the app and session values."""
     state = {}
-    for path, model in sorted(models_of(app).items()):
+    models = models_of(app)
+    for path, model in sorted(models.items()):
         for prop in PROPS + ('width',):
             # (not compared; a FileInput without upload has no value in
             # Bokeh 3)
@@ -134,7 +135,10 @@ def state_of(app):
         state['state.target.' + name] = compact(_norm(getattr(st.target,
                                                               name)))
     for key in NOT_COMPARED:
-        state.pop(key, None)
+        # every key not compared still names a property that is recorded
+        path, prop = key.rsplit('.', 1)
+        assert prop in PROPS + ('width',) and \
+            prop in models[path].properties(), key
     key = '3.reference_angles_source.data'
     state[key] = _flat_reference_table(state[key])
     return state
@@ -148,8 +152,11 @@ def _flat_reference_table(data):
 
 
 def _same(a, b):
-    """``a == b``, but NaN equals NaN: Bokeh 3 starts the start and end of
-    a DataRange1d at NaN (Bokeh 2: None)."""
+    """``a == b``, except that a NaN matches a NaN (and only a NaN).
+
+    Bokeh 3 starts the start and end of a DataRange1d at NaN (Bokeh 2:
+    None); :func:`tests.test_gui_cascade._norm` records them as ``'NaN'``,
+    so this only matters for a NaN in another recorded value."""
     if isinstance(a, float) and isinstance(b, float):
         return a == b or (math.isnan(a) and math.isnan(b))
     if isinstance(a, (list, tuple)) and type(a) is type(b):
