@@ -3,10 +3,11 @@
 Drives a headless Firefox (selenium, geckodriver) against a running pyPALC
 server, takes a full-page screenshot of every page in several states and
 checks the functions that only a browser exercises: loading a setup through
-the file input, the running indicator of "PALC Run", the downloads,
-dragging the target slope, that page 1 removes the rays of a result and
-that the toolbars show all their tools. With ``--two-tabs`` it also checks
-that two browser windows on one server do not share a session.
+the file input, the running indicator of "PALC Run", the downloads (file
+names and CSV headers), dragging the target slope, that page 1 removes the
+rays of a result and that the toolbars show all their tools. With
+``--two-tabs`` it also checks that two browser windows on one server do not
+share a session.
 
 Works against a Bokeh 2.2 and a Bokeh 3.10 server. In Bokeh 3 the widgets
 live in shadow DOM, so every DOM query descends into the shadow roots, and
@@ -42,7 +43,10 @@ REPO = Path(__file__).resolve().parent.parent
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from pypalc.core.export import TILT_ANGLES_HEADER  # noqa: E402
+from pypalc.core.export import (HOMOGENEITY_HEADER,  # noqa: E402
+                                SPL_OVER_DISTANCE_HEADER,
+                                TARGET_REFERENCE_HEADER, TARGET_SLOPE_HEADER,
+                                TILT_ANGLES_HEADER)
 from pypalc.core.settings import load_setup, load_setup_text  # noqa: E402
 from pypalc.gui.setup_io import GAP_HANDLINGS, WEIGHTINGS  # noqa: E402
 
@@ -65,6 +69,7 @@ LOADED_ORDER = [5, 4, 3, 2, 0, 1]
 #: Labels of the start toggle and the buttons the checks click.
 RUN_LABEL = '26. PALC Run'
 DOWNLOAD_ANGLES_LABEL = 'Download PALC Angles'
+DOWNLOAD_SPL_LABEL = 'Download SPL'
 SAVE_SETUP_LABEL = 'Save Setup'
 SAVE_LINE_LABEL = '6. Save Current Audience Line'
 #: Venue inputs of page 1 (title prefix -> value) and the audience line
@@ -75,6 +80,18 @@ TWO_TABS_LINE = {'1. Start Position (x)': '2', '4. Start Position (y)': '0',
 #: Files the downloads create (pypalc.gui.page_algorithm).
 ANGLES_FILE = 'tilt_angles.csv'
 SETUP_FILE = 'pypalc_setup.yaml'
+#: Files "Download SPL" creates and their headers (README "CSV header
+#: changes"): the headless export's, without the other array's column in
+#: the two SPL over distance files.
+SPL_FILES = {
+    'spl_over_distance.csv':
+        [c for c in SPL_OVER_DISTANCE_HEADER if c != 'reference_spl_db'],
+    'reference_spl_over_distance.csv':
+        [c for c in SPL_OVER_DISTANCE_HEADER if c != 'spl_db'],
+    'target_slope.csv': TARGET_SLOPE_HEADER,
+    'target_reference.csv': TARGET_REFERENCE_HEADER,
+    'homogeneity.csv': HOMOGENEITY_HEADER,
+}
 #: Look of the running toggle in Bokeh 2 (templates/index.html): dark red
 #: background and the label extended to "Running...".
 RUNNING_BACKGROUND = 'rgb(139, 0, 0)'
@@ -509,6 +526,43 @@ class BrowserCheck:
                                              len(lines) - 1)
         return lines[0] == header and len(lines) > 1, detail
 
+    def check_download_spl(self) -> tuple:
+        """"Download SPL" saves the five files of :data:`SPL_FILES`, each
+        once, with the documented header in its order and at least one row.
+
+        Under Bokeh 3 the browser's order of the source columns follows the
+        server's string hash seed, so the downloads must not take the order
+        from the sources; run this check against servers started with
+        different ``PYTHONHASHSEED`` values.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        self.show_page(4)
+        if not self.js("""const b = button(arguments[0]);
+                          if (b) b.click(); return !!b;""",
+                       DOWNLOAD_SPL_LABEL):
+            return False, 'no button %r' % DOWNLOAD_SPL_LABEL
+        problems, found = [], []
+        for name, header in SPL_FILES.items():
+            path = self.wait_download(name)
+            lines = path.read_text(encoding='utf-8').splitlines()
+            found.append('%s %r (%d rows)' % (name, lines[0], len(lines) - 1))
+            if lines[0] != ','.join(header):
+                problems.append('%s: expected header %r'
+                                % (name, ','.join(header)))
+            if len(lines) < 2:
+                problems.append('%s: no rows' % name)
+            stem, suffix = name.rsplit('.', 1)
+            copies = sorted(p.name for p in self.download_dir.glob(
+                '%s(*).%s' % (stem, suffix)))
+            if copies:
+                problems.append('%s downloaded more than once: %s'
+                                % (name, ', '.join(copies)))
+        return not problems, '; '.join(found + problems)
+
     def check_download_setup(self) -> tuple:
         """"Save Setup" saves ``pypalc_setup.yaml`` once (Firefox would
         save a second download as ``pypalc_setup(1).yaml``), a valid setup
@@ -883,6 +937,7 @@ class BrowserCheck:
             self.run_check('screenshots_loaded',
                            self.check_loaded_screenshots)
             self.run_check('download_angles', self.check_download_angles)
+            self.run_check('download_spl', self.check_download_spl)
             self.run_check('download_setup', self.check_download_setup)
             self.run_check('running_indicator', self.check_running_indicator)
             self.run_check('drag', self.check_drag)
@@ -890,7 +945,7 @@ class BrowserCheck:
             self.run_check('toolbars', self.check_toolbars)
         else:
             for name in ('screenshots_loaded', 'download_angles',
-                         'download_setup', 'running_indicator', 'drag',
+                         'download_spl', 'download_setup', 'running_indicator', 'drag',
                          'rays_cleared', 'toolbars'):
                 self.add(name, False, 'skipped: the setup did not load')
         if two_tabs:
@@ -982,7 +1037,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                                          dir=Path.home())) \
         if remove else args.download_dir.resolve()
     download_dir.mkdir(parents=True, exist_ok=True)
-    for name in (ANGLES_FILE, SETUP_FILE):
+    for name in (ANGLES_FILE, SETUP_FILE) + tuple(SPL_FILES):
         # also the numbered copies of earlier runs, e.g. pypalc_setup(1).yaml
         stem, suffix = name.rsplit('.', 1)
         for old in download_dir.glob('%s*.%s' % (stem, suffix)):

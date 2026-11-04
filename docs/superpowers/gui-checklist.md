@@ -65,8 +65,8 @@ These were not walked in a browser; they are noted from the legacy
   to the distance grid and moves the optimization region — partly
   browser_check: `drag` (a target point; the reference point needs
   browser)
-- [ ] CSV download buttons work — partly browser_check:
-  `download_angles` ("Download SPL" needs browser)
+- [ ] CSV download buttons work — browser_check: `download_angles`,
+  `download_spl`
 - [ ] The numbers equal the headless runner (`python -m pypalc run`) for
   the same setup — verified by `tests/test_gui_equivalence.py` (13 cases)
 - [ ] Two browser tabs do not share state: a line drawn in one tab does not
@@ -94,7 +94,7 @@ These were not walked in a browser; they are noted from the legacy
 - [ ] Running indicator on the start toggle — browser_check:
   `running_indicator`
 - [ ] Every download button ("Download PALC Angles", "Download SPL") —
-  partly browser_check: `download_angles` ("Download SPL" needs browser)
+  browser_check: `download_angles`, `download_spl`
 - [ ] Beam plot checkboxes and frequency select — needs browser
 - [ ] SFP venue tap highlights the responses of the tapped points — needs
   browser
@@ -155,7 +155,10 @@ browser side of these columns is only seen in a browser.
   `target_slope.csv`, `target_reference.csv`,
   `reference_spl_over_distance.csv` and `homogeneity.csv`, each with the
   headers listed in `README.md` ("CSV header changes"); the browser may
-  ask once to allow several downloads — needs browser
+  ask once to allow several downloads — browser_check: `download_spl`
+  (headless Firefox does not ask; run it against servers with different
+  `PYTHONHASHSEED` values: before 2be5e5d the column order followed the
+  server's hash seed)
 
 ## Programmatic evidence (Task 5)
 
@@ -180,6 +183,7 @@ running server in a headless Firefox. Its checks, in this order:
 | `load` | loads a setup through the "Load Setup" file input (default `tests/cases/gap_soft_margin_target_slope.yaml`); the app must switch to page 5, and page 4 must show the setup's gap handling, weighting and hinges |
 | `screenshots_loaded` | screenshot of every page after loading |
 | `download_angles` | "Download PALC Angles" saves `tilt_angles.csv` with the header of the headless export |
+| `download_spl` | "Download SPL" saves the five files of `SPL_FILES`, each once, with the headers listed in `README.md` ("CSV header changes") and at least one row |
 | `download_setup` | "Save Setup" saves `pypalc_setup.yaml` once (not a second copy `pypalc_setup(1).yaml`), a valid setup with the loaded weighting, gap handling, number of lines and of target points |
 | `running_indicator` | "PALC Run" is dark red and reads "Running..." while the calculation runs |
 | `drag` | moves a target point as the PointDrawTool does; the server snaps it to the distance grid and moves the optimization region |
