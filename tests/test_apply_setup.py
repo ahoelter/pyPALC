@@ -5,7 +5,7 @@ exactly as a user leaves it who enters the setup by hand, page by page, and
 clicks "PALC Run" (the hand path of ``tests/test_gui_equivalence.py``,
 clicked on page 4). Compared are all widgets, sources and figures of the
 pages (:func:`state_of`) and the values the PALC configuration stores, for
-every baseline case. Two differences are accepted (:data:`NOT_COMPARED`):
+every baseline case. Four differences are accepted (:data:`NOT_COMPARED`):
 
 * ``app.page_select.active``: load switches to page 5 (the results).
 * ``2.directivity_upload.value``: a browser file input cannot be filled by
