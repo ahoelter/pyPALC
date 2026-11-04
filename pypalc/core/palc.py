@@ -340,10 +340,10 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
     # segment_angles: epsilon
     # segment_points
     # audience_length: total length of the audience line
-    segment_lengths = np.empty([np.shape(segments)[0]],float)
-    segment_angles = np.empty([np.shape(segments)[0]],float)
-    segment_points = np.empty([np.shape(segments)[0]+1,3],float)
-    for n in range(np.shape(segments)[0]):
+    segment_lengths = np.empty([len(segments)],float)
+    segment_angles = np.empty([len(segments)],float)
+    segment_points = np.empty([len(segments)+1,3],float)
+    for n in range(len(segments)):
         segment_lengths[n] = np.sqrt(np.sum((segments[n][np.shape(segments[n])[0]-1,:]-segments[n][0,:])**2))
         segment_angles[n] = (segments[n][1,1]-segments[n][0,1]) / (segments[n][1,0]-segments[n][0,0])
         segment_points[n,:] = segments[n][0,:]
@@ -454,9 +454,9 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
                     end_x = np.array([xmax + 1])
                     end_y = source_y - direction_y * (end_x - source_x)
                     # find the intersection point if exists
-                    xy_s1 = np.empty([np.shape(segments)[0],2])
-                    point_exists1 = np.empty(np.shape(segments)[0])
-                    for o in range(np.shape(segments)[0]):
+                    xy_s1 = np.empty([len(segments),2])
+                    point_exists1 = np.empty(len(segments))
+                    for o in range(len(segments)):
 
                         xy_s1[o,:], lambda_1, lambda_2, point_exists1[o] = \
                         line_intersection(np.array([source_x[0], source_y[0], 0]), np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
@@ -517,17 +517,17 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
                     xmax = max(o.max() for o in segments)
                     end_x = np.array([xmax + 1]) # max length in x direction
                     end_y = cabinet_centers_y[m] - direction_y * (end_x - cabinet_centers_x[m]) #  max depth of y direction source_y - (end_x - source_x) / np.tan((np.pi/2) - (tilt_angles[m]-aperture_angles[m]))
-                    xy_s1 = np.empty([np.shape(segments)[0],2])
+                    xy_s1 = np.empty([len(segments),2])
                     point_exists2 = False
                     # check in which pal segment is the intersection point
-                    for o in range(np.shape(segments)[0]):
+                    for o in range(len(segments)):
                         xy_s1[0,:], lambda_1, lambda_2, point_exists2 = \
                         line_intersection(np.array([cabinet_centers_x[m], cabinet_centers_y[m], 0]), \
                                               np.array([end_x[0], end_y[0], 0]), segments[o][0,:], segments[o][-1,:])
                         if point_exists2 == True and segments[o][0,0]<=np.round(xy_s1[0,0], decimals=3)<=segments[o][-1,0] and \
                            segments[o][0,1]<=np.round(xy_s1[0,1], decimals=3)<=segments[o][-1,1]:
                             # check if current pal[o] is equal to current k
-                            if o == (np.shape(segments)[0]-1-k):
+                            if o == (len(segments)-1-k):
                                 hit_points_start[m,:] = [xy_s1[0,0], xy_s1[0,1], 0] # new top position on audience line
                                 seg_rem = segment_lengths[k] - np.sqrt(np.sum((segments[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
                                 # calc total overlap on audience line to correct coverage_error
@@ -536,7 +536,7 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
                                 elif np.sum(hit_points_start[m,:]-hit_points_stop[m-1,:]) < 0:
                                     audience_overlap -= np.sqrt(np.sum((hit_points_start[m,:]-hit_points_stop[m-1,:])**2))
                             # case if current pal[o] is on the pal segment above or rather on k-1
-                            elif o == (np.shape(segments)[0]-k):
+                            elif o == (len(segments)-k):
                                 audience_overlap += np.sqrt(np.sum((hit_points_start[m,:]-segments[-1-k][-1,:])**2)) # old k-th segment overlap
                                 k -= 1 # update k
                                 epsilon = -segment_angles[k] - (np.pi / 2) # angle of new pal segment
@@ -544,7 +544,7 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
                                 seg_rem = segment_lengths[k] - np.sqrt(np.sum((segments[-k-1][-1,:-1]-xy_s1[0,:])**2)) # corrected segment remaining
                                 audience_overlap += np.sqrt(np.sum((hit_points_start[m,:]-segments[-1-k][0,:])**2)) # new k-th segment overlap
                             # case if current pal[o] is on the pal segment below or rather on k+1
-                            elif o == (np.shape(segments)[0]-2-k):
+                            elif o == (len(segments)-2-k):
                                 audience_overlap -= np.sqrt(np.sum((hit_points_start[m,:]-segments[-1-k][0,:])**2)) # old k-th segment overlap
                                 k += 1 # update k
                                 epsilon = -segment_angles[k] - (np.pi / 2) # angle of new pal segment
@@ -676,15 +676,15 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
             config.gap_weights = np.ones(config.cabinet_count)
             m = 0
             o = 0
-            for n in range(np.shape(segments)[0]):
-                if config.use_fixed_angle and np.any(point_exists1) == 0 and n == np.shape(segments)[0]-1:
+            for n in range(len(segments)):
+                if config.use_fixed_angle and np.any(point_exists1) == 0 and n == len(segments)-1:
                     o=1
                 if audience_segments[n-m-o][0,0] != segments[n][0,0] or audience_segments[n-m-o][0,1] != segments[n][0,1]:
                     m += 1
                     ind_na_line = np.append(ind_na_line, n)
             # Second step: check which loudspeaker hits which line on which point and 
             #              add the weighting
-            for n in range(np.shape(segments)[0]):
+            for n in range(len(segments)):
                 if np.any(n==ind_na_line):
                     for m in range(cabinet_count):
                         if segments[n][0,0] <= optimized_array.hit_points[m,0] <= segments[n][-1,0] and \
@@ -697,7 +697,7 @@ def compute_tilt_angles(ray_plot, segments, aperture_angles, tilt_angles, cabine
                                                    (segments[n][-1,1]-optimized_array.hit_points[m,1])**2)
                             dist_low = np.sqrt((optimized_array.hit_points[m,0]-segments[n][0,0])**2 + \
                                                   (optimized_array.hit_points[m,1]-segments[n][0,1])**2)
-                            if n == np.shape(segments)[0]-1:
+                            if n == len(segments)-1:
                                 dist_near = dist_low
                             else:
                                 dist_near = np.amin([dist_high, dist_low])
@@ -789,7 +789,7 @@ def run_palc(ray_plot, palc_venue, config, optimized_array):
         continuous_segments = []
         continuous_segments.append([])
         m = 0
-        for n in range(np.shape(audience_segments)[0]):
+        for n in range(len(audience_segments)):
             if audience_segments[n][0,0] != segments[n+m][0,0] or audience_segments[n][0,1] != segments[n+m][0,1]:
                 continuous_segments.append([])
                 m += 1
