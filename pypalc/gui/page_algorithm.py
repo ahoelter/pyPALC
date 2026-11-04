@@ -95,8 +95,10 @@ class AlgorithmPage:
         self.target_region_source = ColumnDataSource(data=dict(
             x=[0, 0, 0, 0], y=[0, 0, 0, 0]))
         """Polygon of the optimization region."""
-        self.setup_file_source = ColumnDataSource(data=dict(text=[]))
-        """Text of the setup file "Save Setup" downloads."""
+        self.setup_file_source = ColumnDataSource(data=dict(text=[],
+                                                            save=[]))
+        """Text of the setup file "Save Setup" downloads, and the number of
+        the save (so that saving the same text again changes the data)."""
         self.results_table = DataTable(
             source=self.results_source,
             columns=[TableColumn(field="cabinet", title="LS", width=20),
@@ -696,9 +698,13 @@ class AlgorithmPage:
                 'Error: setup not saved, invalid input at %s: %s' \
                 % (exc.key, exc.message)
             return
-        # empty first, so that saving the same text again downloads again
-        self.setup_file_source.data = dict(text=[])
-        self.setup_file_source.data = dict(text=[dump_setup(setup)])
+        # one change per save: Bokeh 3 sends a change of the data with the
+        # data at the end of the callback, so emptying the source first
+        # would download the text twice; the number of the save makes the
+        # data differ also when the same text is saved again
+        saves = self.setup_file_source.data['save']
+        self.setup_file_source.data = dict(
+            text=[dump_setup(setup)], save=[saves[0] + 1 if saves else 1])
 
     def load_setup(self, attr, old, new) -> None:
         """Load an uploaded setup file ("Load Setup").

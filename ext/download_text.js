@@ -1,7 +1,7 @@
 // Downloads the text in source.data['text'][0] as a file named `filename`
 // (args: source, filename). An empty source downloads nothing; the server
-// empties it before every new text, so that saving the same text twice
-// downloads twice.
+// counts the saves in source.data['save'], so that saving the same text
+// twice changes the data and downloads twice.
 const texts = source.data['text']
 if (texts.length > 0) {
     const blob = new Blob([texts[0]], { type: 'text/yaml;charset=utf-8;' })

@@ -464,6 +464,24 @@ def test_save_twice_downloads_twice():
     assert [c for c in changes if c] == [[dump_setup(setup_from_app(app))]] * 2
 
 
+def test_save_changes_download_source_once():
+    """One "Save Setup" click changes the download source once.
+
+    Bokeh 3 serializes a change of a source's data when the session sends
+    its patches, after the callback, with the data of that moment: two
+    changes in one callback both reach the browser with the text, and its
+    callback downloads the file twice."""
+    app = new_app()
+    app.page_select.active = 4
+    source = app.pages[4].setup_file_source
+    events = []
+    app.doc.on_change(events.append)
+    saved_text(app)
+    saved_text(app)
+    assert len([e for e in events
+                if getattr(e, 'model', None) is source]) == 2
+
+
 def test_save_shows_error_for_invalid_input():
     app = new_app()
     app.pages[2].directivity_select.value = "Measured Loudspeaker Data"
