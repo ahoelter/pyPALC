@@ -18,6 +18,7 @@ from bokeh.models import (Button, ColumnDataSource, CustomJS,
                           TextInput, Toggle)
 from bokeh.plotting import figure
 
+from pypalc.core import export
 from pypalc.core.errors import SetupError
 from pypalc.core.palc import clamp_fixed_angle, fixed_angle_borders
 from pypalc.core.settings import (TargetPoint, dump_setup, load_setup_text,
@@ -44,6 +45,21 @@ DOWNLOAD_FILE_NAMES = {
     'target_reference': 'target_reference.csv',
     'reference_spl_over_distance': 'reference_spl_over_distance.csv',
     'homogeneity': 'homogeneity.csv',
+}
+#: Columns of the CSV downloads, in the order of the headless export (the
+#: two SPL over distance downloads leave out the other array's column).
+#: The download writes exactly these columns in this order: the browser's
+#: order of the source columns follows the server's string hash seed, since
+#: Bokeh 3 sends the columns of ``data.update`` as a set.
+DOWNLOAD_COLUMNS = {
+    'results': export.TILT_ANGLES_HEADER,
+    'spl_over_distance': [c for c in export.SPL_OVER_DISTANCE_HEADER
+                          if c != 'reference_spl_db'],
+    'target': export.TARGET_SLOPE_HEADER,
+    'target_reference': export.TARGET_REFERENCE_HEADER,
+    'reference_spl_over_distance': [c for c in export.SPL_OVER_DISTANCE_HEADER
+                                    if c != 'spl_db'],
+    'homogeneity': export.HOMOGENEITY_HEADER,
 }
 #: Name of the file "Save Setup" downloads.
 SETUP_FILE_NAME = 'pypalc_setup.yaml'
@@ -264,7 +280,8 @@ class AlgorithmPage:
         download_js = DOWNLOAD_JS.read_text()
         self.download_angles_button.js_on_click(CustomJS(
             args=dict(source=self.results_source,
-                      filename=DOWNLOAD_FILE_NAMES['results']),
+                      filename=DOWNLOAD_FILE_NAMES['results'],
+                      columns=list(DOWNLOAD_COLUMNS['results'])),
             code=download_js))
         self.frequency_range_slider.on_change("value", app.store_value)
         for name, source in (
@@ -275,7 +292,8 @@ class AlgorithmPage:
                  self.reference_spl_over_distance_source),
                 ('homogeneity', app.pages[5].homogeneity_source)):
             self.download_spl_button.js_on_click(CustomJS(
-                args=dict(source=source, filename=DOWNLOAD_FILE_NAMES[name]),
+                args=dict(source=source, filename=DOWNLOAD_FILE_NAMES[name],
+                          columns=list(DOWNLOAD_COLUMNS[name])),
                 code=download_js))
         self.save_setup_button.on_click(self.save_setup)
         # the source must belong to the document so that its JavaScript
