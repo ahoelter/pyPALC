@@ -15,15 +15,24 @@ differs is printed, grouped into these categories:
     ``document.model_count``.
 ``model type name``
     The values differ only in names of Bokeh model types that Bokeh 3
-    renamed or the port replaced (:data:`TYPE_RENAMES`).
+    renamed or the port replaced (:data:`TYPE_RENAMES`), and only where
+    the state records a model by its type name: the whole value of a key
+    (a property that holds a model) or the first item of an ``x_range`` /
+    ``y_range`` value (``[type, start, end]``).
 ``new default``
-    The values differ only where the old value is ``None`` and the new one
-    is NaN or ``'NaN'`` (Bokeh 3 starts a DataRange1d at NaN, Bokeh 2 at
-    ``None``; ``tests/test_gui_cascade.py`` records it as ``'NaN'``).
+    The values differ only in the start or end of an ``x_range`` /
+    ``y_range`` value (``[type, start, end]``), where the old value is
+    ``None`` and the new one is NaN or ``'NaN'`` (Bokeh 3 starts a
+    DataRange1d at NaN, Bokeh 2 at ``None``; ``tests/test_gui_cascade.py``
+    records it as ``'NaN'``).
 ``numeric within rtol 1e-9``
     The values differ only in numbers, each within a relative tolerance of
-    1e-9 (or by at most one unit of the 9th decimal, to which the states
-    are rounded).
+    1e-9, or by at most :data:`ATOL` = 1e-9 absolute. The absolute
+    tolerance is there because the states are rounded to 9 decimals: a
+    drift far below rtol 1e-9 can flip the last rounded decimal, and for a
+    number below 1 that one unit of the 9th decimal is more than 1e-9
+    relative. Each such key is listed with its largest absolute and
+    relative difference, so a difference accepted by ATOL stays visible.
 ``size-derived``
     The key matches one of the ``--size-keys`` patterns (``fnmatch``).
 ``OTHER``
@@ -54,8 +63,11 @@ OTHER = 'OTHER'
 CATEGORIES = (MISSING, MODEL_COUNT, TYPE_NAME, NEW_DEFAULT, NUMERIC, SIZE,
               OTHER)
 RTOL = 1e-9
-#: One unit of the 9th decimal, to which the states are rounded.
+#: One unit of the 9th decimal, to which the states are rounded (see the
+#: module docstring).
 ATOL = 1e-9
+#: Suffixes of the keys whose values are ``[type, start, end]`` of a range.
+RANGE_KEYS = ('x_range', 'y_range')
 #: Bokeh 2 model type name -> Bokeh 3 model type name.
 TYPE_RENAMES = {
     'Figure': 'figure',
@@ -118,11 +130,16 @@ def leaf_differences(old, new, path: str = '') -> List[Tuple[str, object,
     return [(path, old, new)]
 
 
-def leaf_category(old, new) -> str:
+def leaf_category(key: str, path: str, old, new) -> str:
     """The category of one differing leaf (not of a whole key).
 
     Parameters
     ----------
+    key : str
+        Key of the state the leaf belongs to.
+    path : str
+        Location of the leaf within the key's value, as returned by
+        :func:`leaf_differences` (``''`` for the whole value).
     old, new : object
         The differing leaf values.
 
@@ -132,9 +149,13 @@ def leaf_category(old, new) -> str:
         :data:`TYPE_NAME`, :data:`NEW_DEFAULT`, :data:`NUMERIC` or
         :data:`OTHER`.
     """
-    if isinstance(old, str) and TYPE_RENAMES.get(old) == new:
+    is_range = key.endswith(RANGE_KEYS)
+    type_position = path == '' or (is_range and path == '[0]')
+    if type_position and isinstance(old, str) and \
+            TYPE_RENAMES.get(old) == new:
         return TYPE_NAME
-    if old is None and (_is_nan(new) or new == 'NaN'):
+    if is_range and path in ('[1]', '[2]') and old is None and \
+            (_is_nan(new) or new == 'NaN'):
         return NEW_DEFAULT
     if _is_number(old) and _is_number(new) and not _is_nan(old) and \
             not _is_nan(new) and math.isclose(old, new, rel_tol=RTOL,
@@ -190,7 +211,7 @@ def compare(old_states: list, new_states: list,
                 continue
             by_category = {}
             for leaf in leaves:
-                by_category.setdefault(leaf_category(leaf[1], leaf[2]),
+                by_category.setdefault(leaf_category(key, *leaf),
                                        []).append(leaf)
             for category, items in by_category.items():
                 groups[category].append((step, key, old[key], new[key],
