@@ -63,7 +63,6 @@ def _theme_attrs() -> Dict[str, List[str]]:
             f'major_label_text_font: "{ft}"',
             f'major_tick_line_color: "{txt_col}"',
             f'minor_tick_line_color: "{txt_col}"',
-            f'minor_tick_line_color: "{txt_col}"',
             f'axis_label_text_font_size: "{ft_f}"',
             f'axis_label_text_font: "{ft}"',
             f'axis_label_text_font_style: "{ft_stl}"'],
