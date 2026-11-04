@@ -85,7 +85,10 @@ def enter(app, setup):
     _enter_text(loudspeaker.cabinet_height_input, ls.cabinet_height)
     loudspeaker.directivity_select.value = _DIRECTIVITY[ls.directivity]
     if ls.directivity == 'measured':
-        loudspeaker.directivity_upload.value = _measured_csv_base64(setup)
+        # Bokeh 3: FileInput.value is read-only in Python; the browser's
+        # upload arrives through set_from_json
+        loudspeaker.directivity_upload.set_from_json(
+            'value', _measured_csv_base64(setup))
     # page 3
     _enter_text(array.cabinet_count_input, ar.cabinet_count, as_int=True)
     _enter_text(array.top_x_input, ar.top_position[0])

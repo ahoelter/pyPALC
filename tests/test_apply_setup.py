@@ -33,6 +33,7 @@ import dataclasses
 import functools
 import io
 import logging
+import math
 from pathlib import Path
 
 import numpy as np
@@ -91,8 +92,11 @@ def new_app():
 
 
 def load(app, text):
-    """Upload a setup file through the "Load Setup" input."""
-    quiet(setattr, app.pages[4].load_setup_input, "value",
+    """Upload a setup file through the "Load Setup" input.
+
+    Bokeh 3: ``FileInput.value`` is read-only in Python; the browser's
+    upload arrives through ``set_from_json``."""
+    quiet(app.pages[4].load_setup_input.set_from_json, "value",
           base64.b64encode(text.encode("utf-8")).decode("ascii"))
 
 
@@ -109,6 +113,10 @@ def state_of(app):
     state = {}
     for path, model in sorted(models_of(app).items()):
         for prop in PROPS + ('width',):
+            # (not compared; a FileInput without upload has no value in
+            # Bokeh 3)
+            if path + '.' + prop in NOT_COMPARED:
+                continue
             if prop in model.properties():
                 state[path + '.' + prop] = compact(_norm(getattr(model,
                                                                  prop)))
@@ -126,7 +134,7 @@ def state_of(app):
         state['state.target.' + name] = compact(_norm(getattr(st.target,
                                                               name)))
     for key in NOT_COMPARED:
-        state.pop(key)
+        state.pop(key, None)
     key = '3.reference_angles_source.data'
     state[key] = _flat_reference_table(state[key])
     return state
@@ -139,8 +147,20 @@ def _flat_reference_table(data):
             for name, column in data.items()}
 
 
+def _same(a, b):
+    """``a == b``, but NaN equals NaN: Bokeh 3 starts the start and end of
+    a DataRange1d at NaN (Bokeh 2: None)."""
+    if isinstance(a, float) and isinstance(b, float):
+        return a == b or (math.isnan(a) and math.isnan(b))
+    if isinstance(a, (list, tuple)) and type(a) is type(b):
+        return len(a) == len(b) and all(map(_same, a, b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(_same(a[k], b[k]) for k in a)
+    return a == b
+
+
 def differences(a, b):
-    keys = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+    keys = sorted(k for k in set(a) | set(b) if not _same(a.get(k), b.get(k)))
     return {k: (a.get(k), b.get(k)) for k in keys[:8]}
 
 
@@ -205,8 +225,8 @@ def dirty_app():
     quiet(drive, app, case_setup("gap_soft_margin_target_slope"))
     loudspeaker, array = app.pages[2], app.pages[3]
     loudspeaker.directivity_select.value = "Measured Loudspeaker Data"
-    loudspeaker.directivity_upload.value = base64.b64encode(
-        (ROOT / "tests" / "cases" / "measured.csv").read_bytes()).decode()
+    loudspeaker.directivity_upload.set_from_json('value', base64.b64encode(
+        (ROOT / "tests" / "cases" / "measured.csv").read_bytes()).decode())
     array.use_discrete_angles_select.value = 'Yes'
     array.reference_type_select.value = 'Arc'
     array.reference_step_stop_input.value = '2'
@@ -334,7 +354,7 @@ def test_load_rejects_frequency_range_outside_slider():
 def test_load_rejects_non_utf8_file():
     app = new_app()
     before = state_of(app)
-    quiet(setattr, app.pages[4].load_setup_input, "value",
+    quiet(app.pages[4].load_setup_input.set_from_json, "value",
           base64.b64encode(b"\xff\xfe\x00bad").decode("ascii"))
     assert app.config_error_info.text.startswith(
         "Error: setup file invalid at file: ")

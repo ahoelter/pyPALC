@@ -37,8 +37,8 @@ def test_setup_from_app_measured():
     app = PalcApp(Document())
     loudspeaker = app.pages[2]
     loudspeaker.directivity_select.value = "Measured Loudspeaker Data"
-    loudspeaker.directivity_upload.value = base64.b64encode(
-        csv_path.read_bytes()).decode("ascii")
+    loudspeaker.directivity_upload.set_from_json('value', base64.b64encode(
+        csv_path.read_bytes()).decode("ascii"))
     setup = setup_from_app(app)
     assert setup.loudspeaker.directivity == "measured"
     assert setup.loudspeaker.measured_directivity.csv == \
