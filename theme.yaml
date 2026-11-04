@@ -26,8 +26,6 @@ attrs:
         text_color: "white"
         text_font_size: "10pt"
         text_font: "Helvetica"
-    Widget:
-        background: "#323030"
     Label:
         background_fill_color: "#323030"
         text_color: "white"

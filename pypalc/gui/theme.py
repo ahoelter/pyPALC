@@ -65,8 +65,6 @@ def _theme_yaml_lines() -> List[str]:
             f'        text_color: "{txt_col}"',
             f'        text_font_size: "{ft_f}"',
             f'        text_font: "{ft}"',
-            '    Widget:',
-            f'        background: "{bg_col}"',
             '    Label:',
             f'        background_fill_color: "{bg_col}"',
             f'        text_color: "{txt_col}"',
