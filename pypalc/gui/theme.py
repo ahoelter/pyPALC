@@ -228,6 +228,18 @@ def _stylesheets() -> Dict[str, List[str]]:
                     'background-color: white',
                     'border-color: #e6e6e6')),
         'Paragraph': _rule(':host', whole_pixel_line),
+        # toolbars of Bokeh 2: all tools shown, also beside a short frame.
+        # Bokeh 3 makes a toolbar as high as the frame (inline style) and
+        # moves the tools that do not fit into its height minus 15 px into
+        # an overflow menu. A toolbar as high as its tools plus that reserve
+        # keeps them all, reaching below a short frame as in Bokeh 2. The
+        # tool buttons (outer rules win over their own :host rules) get
+        # Bokeh 2's mark of the active tool.
+        'Toolbar': (
+            _rule(':host(.bk-left), :host(.bk-right)',
+                  'height: auto !important',
+                  'padding-bottom: 16px')
+            + _rule(':host > *', '--active-border: #26aae1')),
         # figures keep their size, as in Bokeh 2: Bokeh 3 shrinks a figure
         # with a fixed frame (the venue figure) to the width of its column
         'Plot': _rule(':host', 'max-width: none'),

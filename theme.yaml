@@ -162,6 +162,16 @@ attrs:
                 :host {
                   line-height: round(up, var(--line-height-computed), 1px);
                   }
+    Toolbar:
+        stylesheets:
+            - |
+                :host(.bk-left), :host(.bk-right) {
+                  height: auto !important;
+                  padding-bottom: 16px;
+                  }
+                :host > * {
+                  --active-border: #26aae1;
+                  }
     InputWidget:
         stylesheets:
             - |
