@@ -732,8 +732,8 @@ class PalcApp:
         results.venue_points_source.data = dict(
             x_m=drawn_lines.points_x, y_m=drawn_lines.points_y,
             point_index=list(np.arange(np.shape(drawn_lines.points_x)[0])))
-        results.venue_points_figure.x(
-            'x_m', 'y_m', source=results.venue_points_source,
+        results.venue_points_figure.scatter(
+            'x_m', 'y_m', source=results.venue_points_source, marker='x',
             color=linear_cmap('point_index', rainbow[::-1], 0,
                               np.shape(evaluation.spl_db)[0]-1))
         results.sound_field_source.data = dict(

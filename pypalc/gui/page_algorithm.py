@@ -210,13 +210,13 @@ class AlgorithmPage:
                                       source=self.target_source,
                                       color="lime", name="Reference",
                                       legend_label='Target Slope')
-        target_points = spl_figure.circle('distance_m', 'level_db',
-                                          source=self.target_source,
-                                          line_color="yellow",
-                                          fill_color="black", line_width=2,
-                                          name="Reference",
-                                          legend_label='Target Slope')
-        reference_point = spl_figure.circle(
+        target_points = spl_figure.scatter('distance_m', 'level_db',
+                                           source=self.target_source,
+                                           line_color="yellow",
+                                           fill_color="black", line_width=2,
+                                           name="Reference",
+                                           legend_label='Target Slope')
+        reference_point = spl_figure.scatter(
             'distance_m', 'level_db', source=self.target_reference_source,
             color="darkred", fill_color="red", size=10,
             name="Reference Point", legend_label="Reference Point")

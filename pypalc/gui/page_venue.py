@@ -122,8 +122,8 @@ class VenuePage:
         venue_figure = app.venue_figure
         venue_figure.xaxis.axis_label_text_font_style = "normal"
         venue_figure.yaxis.axis_label_text_font_style = "normal"
-        venue_figure.x('x', 'y', source=self.point_source,
-                       line_color="lightskyblue")
+        venue_figure.scatter('x', 'y', source=self.point_source, marker='x',
+                             line_color="lightskyblue")
         venue_figure.multi_line('lines_x', 'lines_y', source=self.lines_source,
                                 legend_label='PALC and SFP', line_dash='solid',
                                 line_color="lightskyblue", line_width=2,
@@ -151,12 +151,14 @@ class VenuePage:
         venue_figure.multi_line('stop_rays_x', 'stop_rays_y',
                                 source=app.rays_source, color="green",
                                 line_dash="dashed")
-        venue_figure.x('hit_points_x', 'hit_points_y',
-                       source=app.hit_points_source, color="white")
-        venue_figure.x('hit_points_start_x', 'hit_points_start_y',
-                       source=app.hit_points_source, color="red")
-        venue_figure.x('hit_points_stop_x', 'hit_points_stop_y',
-                       source=app.hit_points_source, color="green")
+        venue_figure.scatter('hit_points_x', 'hit_points_y', marker='x',
+                             source=app.hit_points_source, color="white")
+        venue_figure.scatter('hit_points_start_x', 'hit_points_start_y',
+                             marker='x', source=app.hit_points_source,
+                             color="red")
+        venue_figure.scatter('hit_points_stop_x', 'hit_points_stop_y',
+                             marker='x', source=app.hit_points_source,
+                             color="green")
         # tap on a line to insert a line before it or to delete it
         self.lines_source.selected.on_change('indices', self.line_tapped)
         legend = venue_figure.legend
