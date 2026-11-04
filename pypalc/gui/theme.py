@@ -12,6 +12,18 @@ page does not reach. So ``templates/index.html`` styles the page
 attributes of the figures (:func:`_theme_attrs`), the style sheets of the
 widgets by model type (:func:`_stylesheets`).
 
+The style sheets rely on class names and CSS variables that are internal
+to Bokeh and may change in any Bokeh release: the classes ``.bk-btn``,
+``.bk-btn-success``, ``.bk-active``, ``.bk-tab``, ``.bk-input``,
+``.bk-cell-index``, ``:host(.bk-left)``/``:host(.bk-right)`` and the
+SlickGrid classes ``.slick-*`` of the tables, and the variables
+``--bokeh-base-font``, ``--bokeh-font-size``, ``--bokeh-icon-color``,
+``--border-color``, ``--divider-color``, ``--input-*``,
+``--disabled-background-color``, ``--placeholder-color``,
+``--active-border`` and ``--line-height-computed``. After any Bokeh
+upgrade, run ``tools/browser_check.py`` again and compare its screenshots
+with those of the previous version (``tools/compare_screenshots.py``).
+
 author: Arne Hoelter
 """
 from __future__ import annotations
