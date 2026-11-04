@@ -325,10 +325,10 @@ class AlgorithmPage:
                        self.use_fixed_angle_select, self.fixed_angle_input,
                        self.fixed_angle_text], width=270)
         col1 = column([app.pages[1].check_venue_button, self.start_toggle,
-                       self.clear_results_button, self.download_angles_button,
-                       app.config_error_info, self.results_table,
-                       self.download_spl_button, self.save_setup_button,
-                       self.load_setup_title, self.load_setup_input],
+                       self.clear_results_button, app.config_error_info,
+                       self.download_angles_button, self.download_spl_button,
+                       self.save_setup_button, self.load_setup_title,
+                       self.load_setup_input, self.results_table],
                       width=270)
         col2 = column([app.venue_axes_row(), self.tabs], width=690)
         return row([col0, col1, col2])
