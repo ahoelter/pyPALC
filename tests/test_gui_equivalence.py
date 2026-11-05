@@ -26,6 +26,7 @@ from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
 from tests.baseline_cases import (CASES, assert_matches_baseline,
                                    baseline_path, case_path)
+from tests.test_shell import rendered
 
 _VARIANTS = {"palc1": "PALC 1", "palc2": "PALC 2", "palc3": "PALC 3"}
 _GAP_HANDLING = {"without": "Without", "hard_margin": "Hard Margin",
@@ -198,8 +199,7 @@ def drive(app, setup):
 @pytest.mark.parametrize("case", CASES)
 def test_gui_matches_baseline(case):
     setup = load_setup(case_path(case))
-    app = PalcApp(Document())
-    app.show()
+    app = rendered(PalcApp(Document()))
     with contextlib.redirect_stdout(io.StringIO()):
         gui = drive(app, setup)
     with np.load(baseline_path(case)) as baseline:

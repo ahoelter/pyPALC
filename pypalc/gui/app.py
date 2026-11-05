@@ -1,8 +1,8 @@
 """The pyPALC GUI of one browser session.
 
-``main.py`` builds one :class:`PalcApp` per session::
+``main.py`` builds one :class:`PalcApp` per session and serves its view::
 
-    PalcApp(curdoc()).show()
+    PalcApp().view().servable(title="pyPALC")
 
 The app holds everything that belongs to a session: the calculation objects
 (:class:`SessionState`), the ColumnDataSources, widgets and figures, and
@@ -16,10 +16,13 @@ creates its widgets, figures and sources and wires their callbacks:
 * page 4, algorithm: :class:`~.page_algorithm.AlgorithmPage`
 * page 5, results: :class:`~.page_results.ResultsPage`
 
-Widgets shown on several pages (header, page selection, venue axes
-scaling, the configuration error text and the venue figure) and the
-callbacks that read widgets of several pages live on :class:`PalcApp`.
-No module of this package holds per-session state.
+The view (:meth:`PalcApp.view`) is a Material page whose header holds the
+page tabs (:attr:`PalcApp.page_select`) and whose content area shows the
+selected page only (:meth:`PalcApp.show_page`). Widgets shown on several
+pages (page selection, venue axes scaling, the configuration error text
+and the venue figure) and the callbacks that read widgets of several pages
+live on :class:`PalcApp`. No module of this package holds per-session
+state.
 
 A calculation reads the entered setup (:func:`~.setup_io.setup_from_app`)
 and computes it with :func:`pypalc.core.pipeline.run`, like the headless
@@ -29,18 +32,22 @@ author: Arne Hoelter
 """
 from __future__ import annotations
 
+import base64
+import copy
 import logging
 from dataclasses import dataclass, field, replace
-from typing import Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import numpy as np
+import panel as pn
+import panel_material_ui as pmui
 from bokeh.document import Document
-from bokeh.layouts import column, gridplot, row
-from bokeh.models import (ColumnDataSource, Div, Model, Paragraph,
-                          RadioButtonGroup, RadioGroup)
+from bokeh.layouts import row
+from bokeh.models import ColumnDataSource, Div, Model, Paragraph, RadioGroup
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 from colorcet import rainbow
+from panel.viewable import Viewable
 
 from pypalc.core import pipeline
 from pypalc.core.errors import PalcError, SetupError
@@ -51,8 +58,7 @@ from pypalc.core.sound_field import SoundFieldConfig
 from pypalc.core.target_slope import TargetSlopeState
 from pypalc.core.venue import (AudienceLines, PalcVenue,
                                fill_palc_venue, suggest_venue)
-from pypalc.gui import (APP_NAME, CALLBACK_ERRORS,
-                        skipped_while_applying_setup)
+from pypalc.gui import APP_DIR, CALLBACK_ERRORS, skipped_while_applying_setup
 from pypalc.gui.help_text import HelpPage
 from pypalc.gui.page_algorithm import AlgorithmPage
 from pypalc.gui.page_array import ArrayPage
@@ -62,6 +68,7 @@ from pypalc.gui.page_venue import VenuePage
 from pypalc.gui.setup_io import setup_from_app
 from pypalc.gui.ranges import (PlotRanges, scale_venue_figure, set_figure_ranges,
                                show_rays)
+from pypalc.gui.style import LINK, MATERIAL_THEME, TEXT, TEXT_MUTED
 
 logger = logging.getLogger(__name__)
 
@@ -159,19 +166,17 @@ def _error_text(exc: PalcError) -> str:
     return str(exc)
 
 
-def _logo_figure(width: int, image: str, x_offset: float):
-    """Figure that shows a logo from the app's static directory."""
-    x_range, y_range = (10, 30), (10, 30)
-    logo = figure(x_range=x_range, y_range=y_range, width=width, height=80,
-                  min_border=0)
-    logo.toolbar.logo, logo.axis.visible = 'grey', False
-    logo.outline_line_color, logo.grid.visible = None, False
-    logo.toolbar_location, logo.toolbar.logo = None, 'grey'
-    logo.image_url(url=[f"{APP_NAME}/static/{image}"],
-                   x=x_range[0] + x_offset, y=y_range[1] - 0.3,
-                   w=x_range[1] - (x_range[0] + 1),
-                   h=y_range[1] - (y_range[0] + 0.6))
-    return logo
+#: Labels of the page tabs, in the order of the page indices.
+PAGE_LABELS = ('Help', '1 · Venue', '2 · Loudspeaker', '3 · Array',
+               '4 · Algorithm', '5 · Sound Field')
+#: Delay of :meth:`PalcApp.later` in ms.
+LATER_DELAY_MS = 120
+
+
+def _data_uri(name: str) -> str:
+    """A PNG of the app's ``static`` folder as a data URI."""
+    data = (APP_DIR / 'static' / name).read_bytes()
+    return 'data:image/png;base64,' + base64.b64encode(data).decode('ascii')
 
 
 class PalcApp:
@@ -180,20 +185,25 @@ class PalcApp:
     Parameters
     ----------
     doc : Document, optional
-        The Bokeh document of the session (``curdoc()`` in ``main.py``); a
-        new document if None.
+        The Bokeh document of the session. If None, the document of the
+        session that is being served (``pn.state.curdoc``), or a new
+        document if none is served (tests).
 
     Attributes
     ----------
     doc : Document
-        The document the pages are shown in.
+        The document the view is shown in.
     state : SessionState
         Calculation objects of the session.
     pages : dict of int to page
         The pages, keyed by their index in the page selection.
+    content : panel.Column
+        The content area of the view; holds the view of the shown page.
     """
 
     def __init__(self, doc: Optional[Document] = None) -> None:
+        if doc is None:
+            doc = pn.state.curdoc
         self.doc = doc if doc is not None else Document()
         self.state = SessionState()
         self._build_shared_widgets()
@@ -231,8 +241,9 @@ class PalcApp:
                                   (5, ResultsPage), (4, AlgorithmPage)):
             self.pages[index] = page_class(self)
         self.pages = {key: self.pages[key] for key in sorted(self.pages)}
-        self.page_select.on_change('active',
-                                   lambda attr, old, new: self.show())
+        self.content = pn.Column(sizing_mode='stretch_width', margin=(8, 0))
+        self.page_select.param.watch(
+            lambda event: self.show_page(event.new), 'active')
         self.venue_axes_select.on_change(
             'active', lambda attr, old, new: self.scale_venue_axes())
         # values the legacy GUI stores at start-up
@@ -246,17 +257,18 @@ class PalcApp:
             for model, name in self._result_properties()]
 
     def _build_shared_widgets(self) -> None:
-        """Header, page selection and the widgets shown on several pages."""
-        self.ak_logo = _logo_figure(80, "logo_grau-schwarz.png", 0)
-        self.tu_logo = _logo_figure(int(80*1.786), "TUB.png", 0.5)
-        self.ak_text = Div(text='<b>A Software Tool by the <br><big><a href="https://www.ak.tu-berlin.de" target="_blank">Audio Communication Group</a></big></b>', width=270, height=60)
-        self.page_select = RadioButtonGroup(
-            labels=["Help", "1. PAL", "2. Loudspeaker Configuration",
-                    "3. Array Configuration", "4. Algorithm",
-                    "5. Sound Field Prediction"],
-            active=1, button_type="primary", width=680)
-        """Switches between the pages."""
-        self.headline = Paragraph(text="_____________________________________________________________________________________________________________________________________________________________________________")
+        """Page selection and the widgets shown on several pages."""
+        self.page_select = pmui.TabMenu(
+            items=list(PAGE_LABELS), active=1, color='primary',
+            margin=(0, 0, 0, 24), sx={
+                'minHeight': '56px',
+                '& .MuiTab-root': {'minHeight': '56px', 'color': TEXT_MUTED,
+                                   'fontSize': '14px'},
+                '& .MuiTab-root.Mui-selected': {'color': TEXT},
+                '& .MuiTabs-indicator': {'height': '3px',
+                                         'borderRadius': '3px 3px 0 0'}})
+        """Page tabs in the header; ``active`` is the index of the shown
+        page."""
         self.venue_axes_select = RadioGroup(
             labels=['Equal (variable figure height)',
                     'Equal (const. figure height)', 'Stretched'],
@@ -275,36 +287,88 @@ class PalcApp:
         """Row with the scaling selection of the venue figure."""
         return row([self.venue_axes_label, self.venue_axes_select])
 
-    def show(self) -> None:
-        """Show the page selected in the header (legacy ``steps``).
+    def view(self) -> pmui.Page:
+        """The Material page of the session.
 
-        Clears the document and adds the header and the layout of the
-        selected page. Showing page 1 clears the result visualization in
-        the venue figure.
+        The header holds the app name with its subtitle, the page tabs
+        (:attr:`page_select`) and the logos with the link to the Audio
+        Communication Group; the main area is :attr:`content`, which shows
+        the selected page.
+
+        Returns
+        -------
+        panel_material_ui.Page
+        """
+        subtitle = pn.pane.HTML(
+            f'<div style="color:{TEXT_MUTED};font-size:12px;'
+            f'line-height:1.2;white-space:nowrap">Polygonal Audience<br>'
+            f'Line Curving</div>', margin=(0, 0, 0, 10), align='center')
+        logos = pn.pane.HTML(
+            f"""<div style="display:flex;align-items:center;gap:18px">
+              <a href="https://www.ak.tu-berlin.de" target="_blank"
+                 style="color:{LINK};text-decoration:none;font-size:12px;
+                        line-height:1.3;text-align:right">
+                 <span style="color:{TEXT_MUTED}">A software tool by the</span>
+                 <br>Audio Communication Group</a>
+              <img src="{_data_uri('ak_logo_light.png')}" style="height:40px">
+              <img src="{_data_uri('tu_logo.png')}" style="height:34px">
+            </div>""", margin=0, align='center',
+            styles={'margin-left': 'auto'})
+        self.show_page(self.page_select.active)
+        return pmui.Page(
+            title='pyPALC', header=[subtitle, self.page_select, logos],
+            main=[self.content], dark_theme=True, theme_toggle=False,
+            theme_config=copy.deepcopy(MATERIAL_THEME),
+            busy_indicator='linear')
+
+    def show_page(self, index: int) -> None:
+        """Show a page in the content area (legacy ``steps``).
+
+        Called when the page tab changes and to show the current page
+        again after a change of its layout. Showing page 1 clears the
+        result visualization in the venue figure. A page whose ``layout()``
+        is a Bokeh layout is shown in a Bokeh pane with the theme of the
+        document.
+
+        Parameters
+        ----------
+        index : int
+            Index of the page (0: help, 1 to 5).
 
         Returns
         -------
         None.
         """
-        active = self.page_select.active
-        # before doc.clear(): a change to a model outside the document does
-        # not reach the browser, and Bokeh 3 sends a model that the browser
-        # had before the clear only by reference when it is added again
-        if active == 1:
+        if index == 1:
             self.clear_result_figure()
-        self.doc.clear()
-        header = row([column(self.ak_logo, width=100),
-                      column(self.tu_logo, width=170),
-                      column(self.ak_text, width=270),
-                      column(self.page_select, width=690)])
-        headline = row([self.headline], width=1230)
-        body = self.pages[active].layout()
-        # no toolbar of the grid: each figure keeps its own (Bokeh 2 returned
-        # a plain GridBox for merge_tools=False; Bokeh 3 would add an empty
-        # toolbar)
-        self.doc.add_root(gridplot([[header], [headline], [body]],
-                                   toolbar_location=None,
-                                   merge_tools=False))
+        view = self.pages[index].layout()
+        if not isinstance(view, Viewable):
+            # the theme of the document (main.py), not the one of Panel's
+            # design, which the pane would apply otherwise
+            view = pn.pane.Bokeh(view, theme=self.doc.theme)
+        self.content.objects = [view]
+
+    def later(self, func: Callable[[], None]) -> None:
+        """Run a function after the browser has shown the changes so far.
+
+        Served, ``func`` runs in a timeout callback of the document
+        (:data:`LATER_DELAY_MS`), so that the browser first shows what was
+        changed before (for example the running look of "PALC Run").
+        Not served (tests), it runs at once.
+
+        Parameters
+        ----------
+        func : callable
+            Function without arguments.
+
+        Returns
+        -------
+        None.
+        """
+        if self.doc.session_context is None:
+            func()
+        else:
+            self.doc.add_timeout_callback(func, LATER_DELAY_MS)
 
     # ------------------------------------------------------------------
     # Venue
@@ -350,7 +414,7 @@ class PalcApp:
                                    sound_field_only_lines=sound_field_only_lines)
             self.set_venue_checked(True)
             self.config_error_info.text = ''
-            self.show()
+            self.show_page(self.page_select.active)
             if algorithm.weighting_select.value in ['Target Slope']:
                 algorithm.weighting_select.value = 'Without'
                 st.target.initialized = False
@@ -436,7 +500,7 @@ class PalcApp:
         scale_venue_figure(self.venue_figure, self.state.ranges,
                        self.venue_axes_select)
         if call:
-            self.show()
+            self.show_page(self.page_select.active)
 
     def _result_properties(self) -> list:
         """(model, property) pairs that showing a result writes
@@ -695,7 +759,7 @@ class PalcApp:
             st.result = result
             st.target_of_result = self.pages[4].shown_target()
             self.pages[4].start_toggle.active = False
-            self.show()
+            self.show_page(self.page_select.active)
             return True
         except Exception:
             logger.exception('PALC calculation failed unexpectedly')

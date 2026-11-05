@@ -17,7 +17,7 @@ from bokeh.plotting import figure
 
 from pypalc.core.sound_field import beam_plot_spl
 from pypalc.gui import CALLBACK_ERRORS
-from pypalc.gui.theme import DASHED
+from pypalc.gui.style import DASHED
 
 if TYPE_CHECKING:
     from .app import PalcApp

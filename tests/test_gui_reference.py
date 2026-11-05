@@ -25,10 +25,20 @@ from tools.record_gui_reference import read_states, replay
 REFERENCE = ROOT / 'tests' / 'gui_reference.json'
 
 #: Old text -> new text of renamed labels and options.
-RENAMED_LABELS: Dict[str, str] = {}
+RENAMED_LABELS: Dict[str, str] = {
+    # page tabs
+    '1. PAL': '1 · Venue',
+    '2. Loudspeaker Configuration': '2 · Loudspeaker',
+    '3. Array Configuration': '3 · Array',
+    '4. Algorithm': '4 · Algorithm',
+    '5. Sound Field Prediction': '5 · Sound Field',
+}
 
 #: (key pattern, reason) of keys whose value changes on purpose.
-INTENDED: List[Tuple[str, str]] = []
+INTENDED: List[Tuple[str, str]] = [
+    ('app.page_select.button_type',
+     'the page tabs are a Material tab menu, which has no button type'),
+]
 
 
 def _renamed(key: str, value: Any) -> Any:

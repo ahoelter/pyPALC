@@ -17,7 +17,8 @@ names (those of the Bokeh GUI) for both kinds of models:
 * ``value`` of a file input: the base64 text of the file (``''`` before
   an upload);
 * ``options``: the list of option labels (also for Bokeh button and
-  checkbox groups, whose labels are ``labels``);
+  checkbox groups, whose labels are ``labels``, and for Panel menus such
+  as the page tabs, whose labels are their ``items``);
 * ``selected`` of a data source: its selected indices.
 
 author: Arne Hoelter
@@ -56,6 +57,8 @@ def _name(model: Any, prop: str) -> Optional[str]:
                                 or 'active' in model.param):
             return None
         name = {'title': 'label'}.get(prop, prop)
+        if prop == 'options' and 'options' not in model.param:
+            name = 'items'
         if prop == 'active' and isinstance(model, _TOGGLES):
             name = 'value'
         elif prop == 'text' and isinstance(model, _TEXT_PANES):
@@ -70,6 +73,16 @@ def _name(model: Any, prop: str) -> Optional[str]:
 def _label(option: Any) -> Any:
     """Label of a Bokeh option: ``(value, label)`` or the value itself."""
     return option[1] if isinstance(option, (tuple, list)) else option
+
+
+def _item_label(item: Any) -> Any:
+    """Label of a Panel menu item: ``(label, value)``, a dict with a
+    ``label`` or the label itself."""
+    if isinstance(item, (tuple, list)):
+        return item[0]
+    if isinstance(item, dict):
+        return item['label']
+    return item
 
 
 def has(model: Any, prop: str) -> bool:
@@ -124,6 +137,8 @@ def read(model: Any, prop: str) -> Any:
         value = getattr(model, name)
         if prop == 'options' and isinstance(value, dict):
             return list(value)
+        if prop == 'options' and name == 'items':
+            return [_item_label(item) for item in value]
         if prop == 'value' and isinstance(model, pn.widgets.FileInput):
             return base64.b64encode(value).decode() if value else ''
         return value

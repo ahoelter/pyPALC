@@ -6,9 +6,11 @@ import pkgutil
 from pathlib import Path
 
 import numpy as np
+import panel as pn
 import pytest
 from bokeh.document import Document
 from bokeh.model import Model
+from panel.viewable import Viewable
 
 import pypalc.gui
 from pypalc.core import pipeline
@@ -43,14 +45,18 @@ def test_sessions_do_not_share_state():
     assert a.venue_figure is not b.venue_figure
 
 
-def test_no_module_level_bokeh_models():
+def test_no_module_level_panel_objects():
     modules = [pypalc.gui] + [
         importlib.import_module('pypalc.gui.' + info.name)
         for info in pkgutil.iter_modules(pypalc.gui.__path__)]
     assert len(modules) > 5
     for module in modules:
         for name, value in vars(module).items():
-            assert not isinstance(value, Model), (module.__name__, name)
+            assert not isinstance(value, (Model, Viewable)), (
+                module.__name__, name)
+    for _ in range(2):
+        PalcApp(Document()).view()
+    assert pn.state.cache == {}
 
 
 def test_run_calculation_matches_pipeline():

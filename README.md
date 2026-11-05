@@ -1,5 +1,5 @@
 # pyPALC
-A [bokeh](https://bokeh.org) application for the geometrical optimization of Line Source Arrays.
+A [Panel](https://panel.holoviz.org) application (with [Bokeh](https://bokeh.org) figures) for the geometrical optimization of Line Source Arrays.
 The application is based on different scientific publication, which can be found in the help page when running the application.
 
 ### Try it!
@@ -14,18 +14,16 @@ pinned versions are the same as in `requirements.txt`):
 
 If you have pip packages in `~/.local`, they shadow those of the
 environment; set `PYTHONNOUSERSITE=1` for every command, e.g.
-`PYTHONNOUSERSITE=1 conda run --no-capture-output -n pyPALC3 bokeh serve --show pyPALC`
+`PYTHONNOUSERSITE=1 conda run --no-capture-output -n pyPALC3 panel serve pyPALC --show`
 (without `--no-capture-output`, `conda run` holds back the server log until
 the server stops), or activate the environment first:
-`conda activate pyPALC3` and `PYTHONNOUSERSITE=1 bokeh serve --show pyPALC`.
+`conda activate pyPALC3` and `PYTHONNOUSERSITE=1 panel serve pyPALC --show`.
 
 Run the app locally, from the folder that contains this folder:
-`bokeh serve --show pyPALC`
+`panel serve pyPALC --show`
 "pyPALC" is the folder that contains the app.
 
-The colors and fonts of the app are set in `pypalc/gui/theme.py`. After
-changing them, regenerate `theme.yaml` and `templates/index.html` with
-`python -m pypalc.gui.theme`.
+The colors and themes of the app are set in `pypalc/gui/style.py`.
 
 More info soon!
 
@@ -33,14 +31,14 @@ More info soon!
 
 | path | content |
 |---|---|
-| `main.py` | entry point of `bokeh serve`: builds one `PalcApp` per browser session |
+| `main.py` | entry point of `panel serve`: builds one `PalcApp` per browser session and serves its view |
 | `pypalc/core/` | the calculation without Bokeh: settings and setup files, venue, PALC, sound field prediction, target slope, pipeline, CSV export |
-| `pypalc/gui/` | the Bokeh GUI: `PalcApp`, one module per page, plot ranges, setup save/load, theme |
+| `pypalc/gui/` | the GUI: `PalcApp` (page frame and switching), one module per page, plot ranges, setup save/load, style |
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
 | `examples/` | example setup files |
-| `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_cascade_golden.json` holds the recorded widget states of the GUI |
+| `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_reference.json` holds the application data of the former Bokeh GUI after each scripted GUI step (`tests/gui_steps.py`) |
 | `tools/` | development tools: browser check and screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
-| `templates/`, `static/`, `theme.yaml` | page template, logos and Bokeh theme of the GUI |
+| `static/` | logos |
 | `ext/` | JavaScript of the CSV downloads |
 
 ### Running the tests
@@ -67,7 +65,8 @@ Firefox and geckodriver (the default geckodriver path is
 for another one). Run the tools from this folder:
 
 - `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--setup FILE] [--two-tabs] [--download-dir DIR] [--clean]`:
-  checks a running app (`bokeh serve pyPALC` from the parent folder) in a
+  (still written for the former Bokeh GUI, not yet for the Panel GUI)
+  checks a running app (`panel serve pyPALC` from the parent folder) in a
   headless Firefox: screenshots of every page before and after loading a
   setup, loading through the file input, the downloads (file names and CSV
   headers), the running indicator of "PALC Run", dragging a target point,
@@ -83,13 +82,15 @@ for another one). Run the tools from this folder:
   removes the files of an earlier run of the tool (the screenshots,
   `report.json` and the download files with their numbered copies such as
   `pypalc_setup(1).yaml`) from them and leaves every other file alone.
+- `python tools/page_screenshots.py --url http://localhost:5006/pyPALC --out shots --width 1280 [--height H]`:
+  opens a running app (`panel serve pyPALC` from the parent folder) in a
+  headless Firefox, clicks each page tab, saves a screenshot of each page
+  (`shots/<index>_<name>.png`) and reports for each page whether it scrolls
+  horizontally at that window width.
 - `python tools/compare_screenshots.py OLD_DIR NEW_DIR compare.html`: puts
   two folders of screenshots side by side in one HTML page.
-- `python tools/cascade_full_states.py REPO_DIR OUT.json` and
-  `python tools/compare_cascade_states.py OLD.json NEW.json`: dump the
-  full GUI states of the cascade replay of `tests/test_gui_cascade.py` for
-  a checkout and compare two dumps by category of difference (used before
-  re-recording `tests/gui_cascade_golden.json`).
+- `python tools/record_gui_reference.py OUT.json`: records the application
+  data after each scripted GUI step (as `tests/gui_reference.json`).
 
 ### Run without the GUI
 

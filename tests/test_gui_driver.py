@@ -71,6 +71,12 @@ def test_panel_widgets():
     assert [read(slider, p) for p in ('start', 'end', 'step', 'value')] == \
         [0, 10, 0.5, (1, 2)]
     assert read(pmui.Tabs(('a', 'x'), ('b', 'y'), active=1), 'active') == 1
+    menu = pmui.TabMenu(items=['Help', ('1 · Venue', 'venue'),
+                               {'label': '2 · Array'}], active=0)
+    assert read(menu, 'options') == ['Help', '1 · Venue', '2 · Array']
+    write(menu, 'active', 2)
+    assert menu.active == 2 and read(menu, 'active') == 2
+    assert not has(menu, 'value') and not has(menu, 'label')
     assert read(pmui.FileDownload(label='Save'), 'label') == 'Save'
     with pytest.raises(AttributeError):
         read(text, 'selected')

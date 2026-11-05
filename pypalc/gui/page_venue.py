@@ -17,7 +17,7 @@ from pypalc.core.pipeline import check_line
 from pypalc.core.settings import AudienceLine
 from pypalc.core.venue import slope_and_intercept
 from pypalc.gui import skipped_while_applying_setup
-from pypalc.gui.theme import DASHED
+from pypalc.gui.style import DASHED
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -286,7 +286,7 @@ class VenuePage:
         self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
                                       lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
-        self.app.show()
+        self.app.show_page(self.app.page_select.active)
 
     def draw_lines(self, lines: Sequence[AudienceLine]) -> None:
         """Draw audience lines into the empty venue of a new session state.
@@ -375,7 +375,7 @@ class VenuePage:
         self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
                                       lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
-        self.app.show()
+        self.app.show_page(self.app.page_select.active)
 
     def remove_selected_line(self) -> None:
         """Remove the selected line ("Remove Selected Audience Line").
@@ -391,7 +391,7 @@ class VenuePage:
         self.lines_source.data = dict(lines_x=drawn_lines.plot_x,
                                       lines_y=drawn_lines.plot_y)
         self.app.set_venue_checked(False)
-        self.app.show()
+        self.app.show_page(self.app.page_select.active)
 
     def line_tapped(self, attr, old, new) -> None:
         """Switch the line buttons when a line is (de)selected.

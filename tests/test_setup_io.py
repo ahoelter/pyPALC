@@ -13,6 +13,7 @@ from pypalc.core.errors import SetupError
 from pypalc.gui.setup_io import _number, _numbers, setup_from_app
 from tests.baseline_cases import CASES
 from tests.test_gui_equivalence import enter
+from tests.test_shell import rendered
 
 ROOT = Path(__file__).resolve().parent.parent
 NOT_MEASURED = tuple(case for case in CASES if case != "measured")
@@ -25,8 +26,7 @@ def test_setup_from_app_defaults():
 @pytest.mark.parametrize("case", NOT_MEASURED)
 def test_setup_from_app_case(case):
     setup = load_setup(ROOT / "tests" / "cases" / ("%s.yaml" % case))
-    app = PalcApp(Document())
-    app.show()
+    app = rendered(PalcApp(Document()))
     with contextlib.redirect_stdout(io.StringIO()):
         enter(app, setup)
     assert setup_from_app(app) == setup

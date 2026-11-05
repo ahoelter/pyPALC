@@ -41,6 +41,8 @@ import pytest
 from bokeh.document import Document
 from bokeh.events import ButtonClick
 from bokeh.model import Model
+from bokeh.models import DataRange1d, Range1d
+from panel.viewable import Viewable
 
 from pypalc.cli import main
 from pypalc.core import pipeline
@@ -52,8 +54,12 @@ from pypalc.core.settings import (AudienceLine, MeasuredDirectivity,
 from pypalc.gui.app import PalcApp
 from pypalc.gui.setup_io import apply_setup, setup_from_app
 from tests.baseline_cases import CASES
-from tests.test_gui_cascade import CONFIG_KEYS, PROPS, _norm, compact
+from tests.gui_driver import has, read
+from tests.gui_steps import CONFIG_KEYS
 from tests.test_gui_equivalence import drive, enter
+from tests.test_shell import rendered
+from tools.record_gui_reference import PROPS as REFERENCE_PROPS
+from tools.record_gui_reference import compact, norm
 
 ROOT = Path(__file__).resolve().parent.parent
 TARGET_SLOPE_CASES = ("target_slope", "gap_soft_margin_target_slope")
@@ -61,6 +67,11 @@ TARGET_SLOPE_CASES = ("target_slope", "gap_soft_margin_target_slope")
 NOT_COMPARED = ("app.page_select.active", "2.directivity_upload.value",
                 "4.load_setup_input.value", "4.setup_file_source.data")
 PATH_KEY = "loudspeaker.measured_directivity.path"
+#: Compared properties (Bokeh-era names, read through
+#: ``tests/gui_driver.py``): those of the GUI reference and the titles,
+#: sizes and ranges, which load and the hand path must leave alike too.
+PROPS = REFERENCE_PROPS + ('title', 'frame_height', 'x_range', 'y_range',
+                           'min_border', 'width')
 
 
 def case_setup(case):
@@ -86,9 +97,7 @@ def quiet(function, *args):
 
 
 def new_app():
-    app = PalcApp(Document())
-    app.show()
-    return app
+    return rendered(PalcApp(Document()))
 
 
 def load(app, text):
@@ -101,11 +110,26 @@ def load(app, text):
 
 
 def models_of(app):
-    """Bokeh models of the app and its pages: name -> model."""
+    """Bokeh models and Panel objects of the app and its pages:
+    name -> model."""
     owners = [("app", app)] + [(str(i), p) for i, p in app.pages.items()]
     return {"%s.%s" % (owner, name): value
             for owner, obj in owners for name, value in vars(obj).items()
-            if isinstance(value, Model)}
+            if isinstance(value, (Model, Viewable))}
+
+
+def _norm(value):
+    """:func:`tools.record_gui_reference.norm`, with a range as
+    ``[type, start, end]`` (a NaN as ``'NaN'``) and another model as its
+    type name."""
+    if isinstance(value, (Range1d, DataRange1d)):
+        # Bokeh 3 starts a DataRange1d at NaN, and NaN != NaN
+        return [type(value).__name__] + [
+            'NaN' if isinstance(x, float) and math.isnan(x) else norm(x)
+            for x in (value.start, value.end)]
+    if isinstance(value, Model):
+        return type(value).__name__
+    return norm(value)
 
 
 def state_of(app):
@@ -113,16 +137,9 @@ def state_of(app):
     state = {}
     models = models_of(app)
     for path, model in sorted(models.items()):
-        for prop in PROPS + ('width',):
-            # (not compared; a FileInput without upload has no value in
-            # Bokeh 3)
-            if path + '.' + prop in NOT_COMPARED:
-                continue
-            if prop in model.properties():
-                state[path + '.' + prop] = compact(_norm(getattr(model,
-                                                                 prop)))
-        if 'selected' in model.properties():
-            state[path + '.selected'] = _norm(model.selected.indices)
+        for prop in PROPS:
+            if path + '.' + prop not in NOT_COMPARED and has(model, prop):
+                state[path + '.' + prop] = compact(_norm(read(model, prop)))
     st = app.state
     for key in CONFIG_KEYS:
         state['config.' + key] = _norm(getattr(st.config, key))
@@ -137,8 +154,7 @@ def state_of(app):
     for key in NOT_COMPARED:
         # every key not compared still names a property that is recorded
         path, prop = key.rsplit('.', 1)
-        assert prop in PROPS + ('width',) and \
-            prop in models[path].properties(), key
+        assert prop in PROPS and has(models[path], prop), key
     key = '3.reference_angles_source.data'
     state[key] = _flat_reference_table(state[key])
     return state
@@ -155,7 +171,7 @@ def _same(a, b):
     """``a == b``, except that a NaN matches a NaN (and only a NaN).
 
     Bokeh 3 starts the start and end of a DataRange1d at NaN (Bokeh 2:
-    None); :func:`tests.test_gui_cascade._norm` records them as ``'NaN'``,
+    None); :func:`_norm` records them as ``'NaN'``,
     so this only matters for a NaN in another recorded value."""
     if isinstance(a, float) and isinstance(b, float):
         return a == b or (math.isnan(a) and math.isnan(b))
