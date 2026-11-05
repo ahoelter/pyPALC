@@ -145,3 +145,20 @@ def test_showing_a_page_keeps_stretched_ranges(app):
     for page in (4, 2, 3, 5, 0, 1):
         write(app.page_select, 'active', page)
         assert app.venue_figure.x_range is x_range, page
+
+
+@pytest.mark.parametrize('mode', [0, 1])
+def test_new_equal_ranges_are_laid_out(app, mode):
+    """BokehJS lays out a shown figure with new ranges only if a layout
+    property changes (else its axes lose their labels): every renewal of
+    the equal ranges changes the left border, between None and the same
+    border."""
+    figure = app.venue_figure
+    write(app.venue_axes_select, 'active', mode)
+    borders = []
+    for _ in range(3):
+        before = figure.min_border_left
+        app.scale_venue_axes()
+        assert figure.min_border_left != before
+        borders.append(figure.min_border_left)
+    assert set(borders) == {None, figure.min_border}

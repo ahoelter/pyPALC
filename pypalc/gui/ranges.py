@@ -150,7 +150,9 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
     Equal scaling is done by the browser for the actual size of the figure:
     both ranges are ``DataRange1d`` over the bounds renderer, and the
     figure matches the aspect (``match_aspect``), so Bokeh widens one range
-    until one meter has the same length on both axes.
+    until one meter has the same length on both axes. The left border
+    alternates between None and ``min_border`` (the same border), so that
+    the browser lays out a shown figure with its new ranges.
 
     Parameters
     ----------
@@ -196,6 +198,13 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
         x_range=DataRange1d(renderers=[bounds], range_padding=0),
         y_range=DataRange1d(renderers=[bounds], range_padding=0),
         match_aspect=True, aspect_scale=1, **sizes)
+    # BokehJS does not lay out a shown figure again when it gets new ranges;
+    # its axes keep the size they had without ticks (the new ranges start
+    # at NaN) and lose their labels, unless the size of the figure changes.
+    # A changed border is laid out: the left border alternates between None
+    # and min_border, which is the same border.
+    venue_figure.min_border_left = venue_figure.min_border \
+        if venue_figure.min_border_left is None else None
 
 
 def set_figure_ranges(ranges, figures, sizes, x_range, y_range):
