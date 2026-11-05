@@ -2,8 +2,9 @@
 
 The figures of the steps 28 to 34 are in the tabs "Frequency responses",
 "Homogeneity", "Bar charts" and "Beam plots" of one card. The beam plots
-show the venue with equal scaling (:func:`~.ranges.set_figure_ranges`);
-the other figures fill the width of the window.
+show the venue with equal scaling (:func:`~.ranges.set_figure_ranges`)
+and zoom together (:func:`link_ranges`); the other figures fill the width
+of the window.
 
 author: Arne Hoelter
 """
@@ -15,7 +16,8 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 import panel as pn
 import panel_material_ui as pmui
-from bokeh.models import ColorBar, ColumnDataSource, LinearColorMapper
+from bokeh.models import (BoxZoomTool, ColorBar, ColumnDataSource,
+                          CustomJS, LinearColorMapper)
 from bokeh.palettes import Cividis256
 from bokeh.plotting import figure
 
@@ -45,6 +47,48 @@ PAIR_HEIGHT = 400
 #: Preferred width in px of a figure shown beside another one; below two
 #: of them the second moves below the first.
 PAIR_WIDTH = 420
+
+
+#: Copies the ranges of the figure ``source`` to the figure ``target`` in
+#: the browser. ``have_updated_interactively`` comes along: after a zoom or
+#: pan both keep the ranges (Bokeh does not compute them again), after a
+#: reset both compute them again for their size.
+_LINK_RANGES_JS = """
+for (const name of ['x_range', 'y_range']) {
+    const from = source[name], to = target[name];
+    to.have_updated_interactively = from.have_updated_interactively;
+    if (to.start !== from.start || to.end !== from.end)
+        to.setv({start: from.start, end: from.end});
+}
+"""
+
+
+def link_ranges(source, target) -> None:
+    """Zoom, pan and reset ``target`` with ``source``, in the browser.
+
+    The tools and the reset of ``source`` fire ``rangesupdate`` (a pan
+    only when it ends; ``pan``, fired after each step of the pan tool,
+    moves ``target`` along while panning); the callback copies the ranges
+    to ``target``. The automatic computation of the ranges fires neither
+    event, so each figure keeps its own equal scaling. The callback reads
+    the ranges the figures have when it runs: renewed ranges
+    (:meth:`ResultsPage.scale_beam_figures`) stay linked. Shared range
+    objects would not do: BokehJS computes a ``DataRange1d`` over all
+    figures that share it, also a hidden one.
+
+    Parameters
+    ----------
+    source, target : figure
+        Two figures of the same size.
+
+    Returns
+    -------
+    None.
+    """
+    callback = CustomJS(args=dict(source=source, target=target),
+                        code=_LINK_RANGES_JS)
+    source.js_on_event('rangesupdate', callback)
+    source.js_on_event('pan', callback)
 
 
 class ResultsPage:
@@ -150,6 +194,8 @@ class ResultsPage:
             "34. Beam plot: Reference array (SPL in dB)", 'reference_spl_db',
             self.reference_beam_mapper, lines_source,
             ('reference_patches_x', 'reference_patches_y'))
+        link_ranges(self.beam_figure, self.reference_beam_figure)
+        link_ranges(self.reference_beam_figure, self.beam_figure)
         # bar charts
         self.histogram_figure = self._histogram_figure(
             "32. Bar chart: PALC", self.histogram_source)
@@ -229,6 +275,10 @@ class ResultsPage:
             tooltips=[("SPL in dB", "@" + image),
                       ("(x in m, y in m)", "($x, $y)")])
         beam_figure.toolbar.logo = None
+        # a box zoom keeps the equal scaling too
+        for tool in beam_figure.tools:
+            if isinstance(tool, BoxZoomTool):
+                tool.match_aspect = True
         beam_figure.add_layout(ColorBar(color_mapper=mapper, location=(0, 0),
                                         title="",
                                         title_text_font_style="normal"),

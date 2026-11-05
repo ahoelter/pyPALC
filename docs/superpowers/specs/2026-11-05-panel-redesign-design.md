@@ -221,3 +221,25 @@ The user chose A.
 - The widget for the tilt angle table (Tabulator or Bokeh DataTable).
 - The form of the rewritten tests and of the browser check.
 - The order of commits.
+
+## Decisions during implementation
+
+- Venue figure, "Equal" axis modes: the figure gets new ranges whenever a
+  page that shows it is opened, so a zoom is reset by a page switch
+  ("Stretched" keeps the zoom). BokehJS keeps the bounds of every view a
+  `DataRange1d` was used in, so without new ranges the scaling of one page
+  would be computed with the figure size of another and would not be
+  equal.
+- Beam plots (page 5): a zoom, pan or reset in one beam plot moves the
+  other one too, as before. They are linked in the browser (each copies its
+  ranges to the other after a tool action) instead of sharing range
+  objects, because a `DataRange1d` shared with a hidden, zero-size figure
+  would join its bounds and break the equal scaling. Their box zoom keeps
+  the aspect of the figure, so a zoom keeps the equal scaling.
+- The venue points figure (step 28) is no longer zoomed with the beam
+  plots. It is stretched (300 px high, a different aspect), so sharing its
+  ranges would break the equal scaling of the beam plots; the shared
+  `Range1d` of the old GUI already distorted them on a box zoom.
+- The beam plots get new ranges whenever page 5 is opened, so their zoom
+  is reset by a page switch, for the same reason as the venue figure in
+  the "Equal" modes.

@@ -9,11 +9,11 @@ import panel as pn
 import panel_material_ui as pmui
 import pytest
 from bokeh.document import Document
-from bokeh.models import DataRange1d, Range1d
+from bokeh.models import BoxZoomTool, CustomJS, DataRange1d, Range1d
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-from pypalc.gui.ranges import VENUE_BOUNDS, VENUE_MAX_HEIGHT
+from pypalc.gui.ranges import VENUE_MAX_HEIGHT, venue_bounds
 from tests.baseline_cases import case_path
 from tests.gui_driver import read, write
 from tests.test_gui_equivalence import drive
@@ -90,7 +90,7 @@ def test_beam_figures_are_equally_scaled(ran):
     width = ranges.venue_x[1] - ranges.venue_x[0]
     height = ranges.venue_y[1] - ranges.venue_y[0]
     for figure in _beam_figures(page):
-        bounds = figure.select_one({'name': VENUE_BOUNDS})
+        bounds = venue_bounds(figure)
         assert bounds is not None and not bounds.visible
         assert list(bounds.data_source.data['x']) == list(ranges.venue_x)
         assert list(bounds.data_source.data['y']) == list(ranges.venue_y)
@@ -162,3 +162,26 @@ def test_a_new_result_resets_the_beam_selection(ran):
     assert read(page.beam_checkbox, 'active') == []
     assert not page.beam_figure.visible
     assert not page.reference_beam_figure.visible
+
+
+def test_beam_plots_zoom_together():
+    """A zoom, pan or reset in one beam plot is copied to the other in the
+    browser (``rangesupdate``, which the tools and the reset fire, and
+    ``pan`` while panning; not the automatic computation of the ranges);
+    the code reads the ranges the figures have when it runs, so renewed
+    ranges stay linked."""
+    page = PalcApp(Document()).pages[5]
+    beam, reference = _beam_figures(page)
+    for source, target in ((beam, reference), (reference, beam)):
+        (callback,) = source.js_event_callbacks['rangesupdate']
+        assert source.js_event_callbacks['pan'] == [callback]
+        assert isinstance(callback, CustomJS)
+        assert callback.args == {'source': source, 'target': target}
+        assert 'have_updated_interactively' in callback.code
+        assert 'x_range' in callback.code and 'y_range' in callback.code
+        # a box zoom keeps the equal scaling
+        (box_zoom,) = [tool for tool in source.tools
+                       if isinstance(tool, BoxZoomTool)]
+        assert box_zoom.match_aspect
+    # the venue points figure is not linked (it is stretched)
+    assert 'rangesupdate' not in page.venue_points_figure.js_event_callbacks

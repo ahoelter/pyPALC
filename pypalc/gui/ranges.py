@@ -151,6 +151,29 @@ def add_venue_bounds(figure):
                           name=VENUE_BOUNDS, visible=False)
 
 
+def venue_bounds(figure):
+    """
+    The renderer :data:`VENUE_BOUNDS` of a figure (:func:`add_venue_bounds`).
+
+    Searched among the figure's own renderers: ``select_one`` would also
+    search the figures that callbacks of the figure refer to (the linked
+    beam plots).
+
+    Parameters
+    ----------
+    figure : figure [in]
+        A figure with the renderer.
+
+    Returns
+    -------
+    GlyphRenderer
+
+    """
+    (bounds,) = [renderer for renderer in figure.renderers
+                 if renderer.name == VENUE_BOUNDS]
+    return bounds
+
+
 def scale_equally(figure, ranges, variable_height):
     """
     Shows the venue ranges in a figure with equal scaling: one meter has
@@ -183,7 +206,7 @@ def scale_equally(figure, ranges, variable_height):
     None.
 
     """
-    bounds = figure.select_one({'name': VENUE_BOUNDS})
+    bounds = venue_bounds(figure)
     bounds.data_source.data = dict(x=list(ranges.venue_x),
                                    y=list(ranges.venue_y))
     sizes = dict(sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT,
@@ -253,7 +276,7 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
 
     """
     if axes_select.active == 2:  # stretched
-        bounds = venue_figure.select_one({'name': VENUE_BOUNDS})
+        bounds = venue_bounds(venue_figure)
         bounds.data_source.data = dict(x=list(ranges.venue_x),
                                        y=list(ranges.venue_y))
         venue_figure.update(
