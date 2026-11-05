@@ -95,6 +95,13 @@ for another one). Run the tools from this folder:
 - `python tools/record_gui_reference.py OUT.json`: records the application
   data after each scripted GUI step (as `tests/gui_reference.json`).
 
+After an upgrade of panel, panel-material-ui or bokeh, run
+`tools/browser_check.py` (at 1280 and 1920 px): the GUI relies on some
+private or internal APIs that the tests on the server cannot check
+(`FileDownload._sync_data`, `have_updated_interactively` of BokehJS
+ranges, the relayout through `min_border_left`, CSS on MUI, Bokeh and
+Tabulator class names).
+
 ### Run without the GUI
 
 Run a setup file headless and write the results as CSV:
