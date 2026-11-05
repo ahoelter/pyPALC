@@ -197,9 +197,10 @@ def scale_equally(figure, ranges, variable_height):
         Contains the venue ranges.
     variable_height : bool
         If True, the height follows the width with the aspect ratio of the
-        venue ranges, up to :data:`VENUE_MAX_HEIGHT`; at that height the x
-        range follows the width. If False, the height is
-        :data:`VENUE_MAX_HEIGHT` and the x range follows the width.
+        venue ranges, up to :data:`VENUE_MAX_HEIGHT`; at that height it
+        behaves as with False. If False, the height is
+        :data:`VENUE_MAX_HEIGHT`; the whole venue stays visible and one
+        range widens to fill the figure.
 
     Returns
     -------
@@ -252,10 +253,10 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
 
     * 0, "Equal, variable height": equal scaling; the height follows the
       width with the aspect ratio of the venue ranges, up to
-      :data:`VENUE_MAX_HEIGHT`; at that height the x range follows the
-      width (as in mode 1).
+      :data:`VENUE_MAX_HEIGHT`; at that height it behaves as mode 1.
     * 1, "Equal, fixed height": equal scaling at the height
-      :data:`VENUE_MAX_HEIGHT`; the x range follows the width.
+      :data:`VENUE_MAX_HEIGHT`; the whole venue stays visible and one
+      range widens to fill the figure.
     * 2, "Stretched": the venue ranges fill the figure (height
       :data:`VENUE_MAX_HEIGHT`).
 

@@ -62,8 +62,8 @@ show the final GUI.
     1 m on y); the figure height follows the width, but only up to a
     maximum height so the figure never runs below the window. Above that,
     it behaves like "Equal, fixed height".
-  - **Equal, fixed height:** equal scaling at a fixed height; the visible
-    x range follows the width.
+  - **Equal, fixed height:** equal scaling at a fixed height; the whole
+    venue stays visible and one range widens to fill the figure.
   - **Stretched:** the data fills the figure, as today.
 
   The page 5 figures keep equal scaling in the same way. The axis ranges

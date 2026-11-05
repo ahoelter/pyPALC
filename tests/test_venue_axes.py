@@ -5,8 +5,8 @@ The venue figure follows the width of the window. Its three axis modes
 
 * 0, "Equal, variable height": equal scaling; the height follows the width
   (aspect ratio of the venue) up to :data:`~pypalc.gui.ranges.VENUE_MAX_HEIGHT`.
-* 1, "Equal, fixed height": equal scaling at the fixed height; the x range
-  follows the width.
+* 1, "Equal, fixed height": equal scaling at the fixed height; the whole
+  venue stays visible and one range widens to fill the figure.
 * 2, "Stretched": the venue ranges fill the figure, as before the port.
 
 Equal scaling is done in the browser: both ranges are ``DataRange1d`` that
