@@ -67,6 +67,15 @@ def test_panel_widgets():
     assert group.value == 'b'
     assert read(group, 'active') == 1 and read(group, 'options') == ['x', 'y']
     assert not has(group, 'value')
+    # a multi-selection button group: ``active`` is the list of indices
+    checks = pmui.CheckButtonGroup(options=['PALC', 'Reference'], value=[])
+    write(checks, 'active', [0, 1])
+    assert checks.value == ['PALC', 'Reference']
+    assert read(checks, 'active') == [0, 1]
+    write(checks, 'active', [1])
+    assert checks.value == ['Reference'] and read(checks, 'active') == [1]
+    assert read(checks, 'options') == ['PALC', 'Reference']
+    assert not has(checks, 'value') and not has(checks, 'label')
     slider = pmui.RangeSlider(start=0, end=10, value=(1, 2), step=0.5)
     assert [read(slider, p) for p in ('start', 'end', 'step', 'value')] == \
         [0, 10, 0.5, (1, 2)]

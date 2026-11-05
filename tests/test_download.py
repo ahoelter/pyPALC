@@ -196,6 +196,24 @@ def test_download_twice_sends_twice(ran):
     assert first is not None and first == second
 
 
+def test_two_quick_clicks_send_twice(ran, monkeypatch):
+    """A second click before the data of the first are emptied again
+    (:data:`~pypalc.gui.app.LATER_DELAY_MS` after the first) sends the file
+    again: the data change, the browser downloads it."""
+    app = ran('simple')
+    # served: the data are emptied later, not at once
+    monkeypatch.setattr(Document, 'session_context',
+                        property(lambda doc: object()))
+    for button in (app.pages[4].download_angles_button,
+                   app.pages[4].save_setup_button):
+        first, second = _fetch(button), _fetch(button)
+        assert first is not None and first == second
+        for callback in list(app.doc.session_callbacks):
+            app.doc.remove_timeout_callback(callback)
+            callback.callback()
+        assert button.data is None
+
+
 def test_invalid_setup_downloads_nothing():
     app = PalcApp(Document())
     app.pages[2].directivity_select.value = "Measured Loudspeaker Data"

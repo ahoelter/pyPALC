@@ -46,7 +46,6 @@ from bokeh.models import ColumnDataSource, LayoutDOM, Model
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 from colorcet import rainbow
-from panel.viewable import Viewable
 
 from pypalc.core import pipeline
 from pypalc.core.errors import PalcError, SetupError
@@ -65,9 +64,9 @@ from pypalc.gui.page_loudspeaker import LoudspeakerPage
 from pypalc.gui.page_results import ResultsPage
 from pypalc.gui.page_venue import VenuePage
 from pypalc.gui.setup_io import setup_from_app
-from pypalc.gui.ranges import (VENUE_BOUNDS, VENUE_MAX_HEIGHT, PlotRanges,
-                               scale_venue_figure, set_figure_ranges,
-                               show_rays)
+from pypalc.gui.ranges import (VENUE_MAX_HEIGHT, PlotRanges,
+                               add_venue_bounds, scale_venue_figure,
+                               set_figure_ranges, show_rays)
 from pypalc.gui.style import LINK, MATERIAL_THEME, TEXT, TEXT_MUTED
 from pypalc.gui.widgets import message
 
@@ -240,9 +239,7 @@ class PalcApp:
         glyphs are added by the venue page."""
         self.venue_figure.toolbar.logo = None
         # the venue ranges, which the equal axis modes cover
-        self.venue_figure.scatter(
-            'x', 'y', source=ColumnDataSource(data=dict(x=[], y=[])),
-            name=VENUE_BOUNDS, visible=False)
+        add_venue_bounds(self.venue_figure)
         # Pages use widgets and sources of pages built before them; the
         # results page comes before the algorithm page, whose download
         # button needs the homogeneity source.
@@ -364,16 +361,16 @@ class PalcApp:
         """Show a page in the content area (legacy ``steps``).
 
         Called when the page tab changes. Showing page 1 clears the result
-        visualization in the venue figure. A page whose ``layout()`` is a
-        Bokeh layout is shown in a Bokeh pane (:meth:`bokeh_pane`).
+        visualization in the venue figure.
 
         A page with the venue figure (:data:`VENUE_FIGURE_PAGES`) gets new
-        ranges in the equal axis modes: the browser draws the figure anew
-        there, and a ``DataRange1d`` would keep the bounds of the figure as
-        drawn on the page before (BokehJS keeps them for every view of the
-        figure), so that one meter would no longer have the same length on
-        both axes. The ranges are renewed after the new page is in the
-        content area, when the view of the page before is removed.
+        ranges in the equal axis modes, and page 5 new ranges of its beam
+        plots: the browser draws the figure anew there, and a
+        ``DataRange1d`` would keep the bounds of the figure as drawn before
+        (BokehJS keeps them for every view of the figure), so that one
+        meter would no longer have the same length on both axes. The
+        ranges are renewed after the new page is in the content area, when
+        the view of the page before is removed.
 
         Parameters
         ----------
@@ -386,14 +383,13 @@ class PalcApp:
         """
         if index == 1:
             self.clear_result_figure()
-        view = self.pages[index].layout()
-        if not isinstance(view, Viewable):
-            view = self.bokeh_pane(view)
-        self.content.objects = [view]
+        self.content.objects = [self.pages[index].layout()]
         # after the swap: the view of the page that is left is gone then
         # and cannot write its bounds into the new ranges
         if index in VENUE_FIGURE_PAGES and self.venue_axes_select.active != 2:
             self.scale_venue_axes()
+        elif index == 5:
+            self.pages[5].scale_beam_figures()
 
     def later(self, func: Callable[[], None]) -> None:
         """Run a function after the browser has shown the changes so far.
@@ -567,7 +563,7 @@ class PalcApp:
             (results.homogeneity_figure, 'y_range'),
             (results.sound_field_figure, 'y_range'),
             (results.reference_sound_field_figure, 'y_range'))
-        return ([(results.beam_checkbox, 'active'),
+        return ([(results.beam_checkbox, 'value'),
                  (results.beam_checkbox, 'disabled'),
                  (results.beam_figure, 'visible'),
                  (results.reference_beam_figure, 'visible')]
@@ -950,7 +946,8 @@ class PalcApp:
             'spl_over_distance_y', [-1, 1], target.region_levels_db,
             spl_over_distance.region_levels_db, spl_over_distance.levels_db,
             reference_spl_over_distance.levels_db)
-        results.beam_checkbox.active, results.beam_checkbox.disabled = [], False
+        results.beam_checkbox.value = []
+        results.beam_checkbox.disabled = False
         # Array visualization
         self.cabinet_patches_source.data.update(dict(
             patches_x=optimized.patches_x, patches_y=optimized.patches_y,

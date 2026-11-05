@@ -33,7 +33,7 @@ More info soon!
 |---|---|
 | `main.py` | entry point of `panel serve`: builds one `PalcApp` per browser session and serves its view |
 | `pypalc/core/` | the calculation without Bokeh: settings and setup files, venue, PALC, sound field prediction, target slope, pipeline, CSV export |
-| `pypalc/gui/` | the GUI: `PalcApp` (page frame and switching), one module per page, plot ranges and the axis modes of the venue figure, setup save/load, the files of the downloads (`downloads.py`), style, card and input building blocks (`widgets.py`) |
+| `pypalc/gui/` | the GUI in Panel / panel-material-ui with Bokeh figures: `PalcApp` (page frame and switching, `app.py`), one module per page (the help texts in `help_text.py`, the sound field in `page_results.py`), plot ranges, the axis modes of the venue figure and the equal scaling of the beam plots (`ranges.py`), setup save/load, the files of the downloads (`downloads.py`), style, card and input building blocks (`widgets.py`) |
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
 | `examples/` | example setup files |
 | `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_reference.json` holds the application data of the former Bokeh GUI after each scripted GUI step (`tests/gui_steps.py`) |

@@ -5,14 +5,22 @@ tabs and logos, page switching and :meth:`PalcApp.later`.
 ``panel serve`` does with ``main.py``; tests that need the models of the
 shown page in the document use it.
 """
+import html
+import re
+
 import panel as pn
 import panel_material_ui as pmui
+import param
 from bokeh.document import Document
+from bokeh.models import Tabs as BokehTabs
+from bokeh.models import widgets as bokeh_widgets
+from bokeh.plotting import figure as BokehFigure
 from panel.viewable import Viewable
 
 from pypalc.gui.app import PalcApp
 from pypalc.gui.style import MATERIAL_THEME, SURFACE, bokeh_figure_theme
 from tests.gui_driver import read, write
+from tests.test_gui_reference import RENAMED_LABELS
 
 #: A model that only the page of the index shows.
 MARKERS = {0: 'tabs', 1: 'save_line_button', 2: 'directivity_select',
@@ -122,3 +130,72 @@ def test_later_waits_when_served(monkeypatch):
     assert callback.timeout == 120
     callback.callback()
     assert calls == [1]
+
+
+def _attributes(app):
+    """(owner, name, value) of the attributes of the app and its pages."""
+    owners = [('app', app)] + [(str(index), page)
+                               for index, page in app.pages.items()]
+    return [(owner, name, value) for owner, obj in owners
+            for name, value in vars(obj).items()]
+
+
+def test_no_bokeh_widgets_left():
+    """Every page is Panel: no Bokeh widget (incl. Div and Paragraph) or
+    Bokeh tabs among the attributes, and no page layout is a Bokeh model
+    (figures are shown in Bokeh panes)."""
+    app = PalcApp(Document())
+    for owner, name, value in _attributes(app):
+        assert not isinstance(value, (bokeh_widgets.Widget, BokehTabs)), (
+            owner, name, type(value).__name__)
+    for index, page in app.pages.items():
+        view = page.layout()
+        assert isinstance(view, Viewable), index
+        assert not isinstance(view, pn.pane.Bokeh), index
+
+
+def _help_text():
+    """The text of the help page, without HTML tags."""
+    return html.unescape(re.sub(r'<[^>]+>', '', '\n'.join(
+        pane.object for pane in PalcApp(Document()).pages[0].layout()
+        .select(pn.pane.HTML))))
+
+
+def test_help_mentions_new_labels():
+    """The help text uses the new labels (all of RENAMED_LABELS, which
+    includes every renamed label that names a step) and none of the old
+    ones."""
+    text = _help_text()
+    for old, new in RENAMED_LABELS.items():
+        assert new in text, new
+        assert old not in text, old
+
+
+def test_help_quotes_the_step_labels():
+    """Every label of a numbered step (inputs, buttons, figure titles of
+    pages 1 to 5) is quoted in the help text as the GUI shows it."""
+    app = PalcApp(Document())
+    text = _help_text()
+    labels = set()
+    for _, _, value in _attributes(app):
+        if isinstance(value, param.Parameterized) and \
+                isinstance(getattr(value, 'label', None), str):
+            labels.add(value.label)
+        elif isinstance(value, BokehFigure) and value.title is not None:
+            labels.add(value.title.text)
+    # the ν label shows the value of ν
+    steps = {label.split(' = ')[0] for label in labels
+             if re.match(r'\d+\. ', label)}
+    assert len(steps) > 30
+    missing = sorted(label for label in steps if label not in text)
+    assert not missing, missing
+
+
+def test_help_tabs_name_the_pages():
+    page = PalcApp(Document()).pages[0]
+    view = page.layout()
+    assert isinstance(page.tabs, pmui.Tabs)
+    assert page.tabs in view.select(pmui.Tabs)
+    assert list(page.tabs._names) == [
+        'General information', '1 · Venue', '2 · Loudspeaker', '3 · Array',
+        '4 · Algorithm', '5 · Sound Field']

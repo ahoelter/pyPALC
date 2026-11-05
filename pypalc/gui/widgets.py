@@ -241,7 +241,11 @@ def download(label: str, filename: str, callback: Callable[[], Any],
     why). The browser downloads the file when the data of the button
     change, so the data are emptied again after each download (through
     ``later``, after the browser got them): a second click downloads the
-    file again, also if it did not change.
+    file again, also if it did not change. A second click before the data
+    are emptied would set the same data again, which is no change; the
+    data then get a count of the click as a parameter of the data URI's
+    media type (``data:text/csv;n=2;base64,...``), which the browser
+    ignores when it saves the file.
 
     Parameters
     ----------
@@ -264,13 +268,26 @@ def download(label: str, filename: str, callback: Callable[[], Any],
         label=label, filename=filename, callback=callback, **{
             'color': 'success', 'variant': 'outlined', 'icon': 'download',
             'sizing_mode': 'stretch_width', 'margin': (4, 8), **params})
+    # Relies on Panel internals (panel 1.10.0, panel-material-ui 0.16.6):
+    # a click calls FileDownload._transfer, which calls the callback and
+    # passes its file to ``self._sync_data`` - looked up on the instance,
+    # so the wrapper below replaces it for this button. _sync_data encodes
+    # the file and sets ``data`` (a data URI), which the frontend
+    # (FileDownload.jsx, ``auto`` True) downloads on a change of ``data``.
     send = widget._sync_data
+    clicks = [0]
 
     def sync_data(fileobj: Any) -> None:
         # Panel's FileDownload raises for None; nothing to send then
         if fileobj is None:
             return
+        before = widget.data
         send(fileobj)
+        clicks[0] += 1
+        if before is not None and widget.data == before:
+            # not emptied yet and the same file: make the data differ
+            widget.data = before.replace(';base64,', ';n=%d;base64,'
+                                         % clicks[0], 1)
         later(lambda: widget.param.update(data=None))
     widget._sync_data = sync_data
     return widget

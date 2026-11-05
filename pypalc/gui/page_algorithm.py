@@ -38,6 +38,7 @@ from pypalc.gui.downloads import (DOWNLOAD_COLUMNS, DOWNLOAD_FILE_NAMES,
                                   RESULTS_FILE_NAME, SETUP_FILE_NAME,
                                   angles_csv, results_zip, setup_yaml)
 from pypalc.gui.ranges import VENUE_MAX_HEIGHT
+from pypalc.gui.setup_io import apply_setup
 from pypalc.gui.style import RUNNING, SUCCESS, TEXT, TEXT_MUTED
 from pypalc.gui.widgets import (GAP, button, caption, card, download,
                                 page_row, select, slider, table, text_input)
@@ -857,13 +858,13 @@ class AlgorithmPage:
         """
         def load() -> None:
             try:
-                self.load_setup('value', None, data)
+                self.load_setup(data)
             finally:
                 self.load_setup_input.value = None
         if data and not self.run_later(load):
             self.load_setup_input.value = None
 
-    def load_setup(self, attr, old, new) -> None:
+    def load_setup(self, data: bytes) -> None:
         """Load a setup file ("Load Setup").
 
         Decodes the file (UTF-8), reads it with
@@ -876,20 +877,17 @@ class AlgorithmPage:
 
         Parameters
         ----------
-        attr : str
-            Changed attribute (value).
-        old, new : bytes or None
-            Old and new content of the uploaded file.
+        data : bytes
+            Content of the uploaded file.
 
         Returns
         -------
         None.
         """
-        from .setup_io import apply_setup
         app = self.app
         try:
             try:
-                text = new.decode('utf-8')
+                text = data.decode('utf-8')
             except ValueError as exc:  # UnicodeDecodeError
                 raise SetupError('file', 'not a UTF-8 text file') from exc
             setup = load_setup_text(text)

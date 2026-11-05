@@ -10,8 +10,11 @@ names (those of the Bokeh GUI) for both kinds of models:
 * ``label`` exists for Panel models only on buttons, toggles and
   downloads;
 * ``active`` of a toggle -> ``value``; ``value`` does not exist on Panel
-  buttons, toggles, downloads and button groups (the Bokeh models have
-  none; the ``value`` of a Panel toggle is the old ``active``);
+  buttons, toggles, downloads and models with an ``active`` (button
+  groups, check button groups, tabs and tab menus: the Bokeh models had
+  ``active`` and no ``value``; the ``value`` of a Panel toggle is the old
+  ``active``). A Panel check *box* group has no ``active``; the GUI uses
+  check button groups (``pmui.CheckButtonGroup``) instead;
 * ``text`` of a text pane (Typography, HTML, Markdown, Alert) ->
   ``object``;
 * ``value`` of a file input: the base64 text of the file (``''`` before
@@ -166,7 +169,8 @@ def write(model: Any, prop: str, value: Any) -> None:
     prop : str
         Bokeh-era property name; ``'selected'`` sets the selected indices
         of a source; ``'active'`` of a Panel button group sets the
-        ``value`` of the option at that index (``active`` follows it).
+        ``value`` of the option at that index, or of a check button group
+        the options at a list of indices (``active`` follows it).
     value : Any
         The new value.
 
@@ -182,11 +186,14 @@ def write(model: Any, prop: str, value: Any) -> None:
     if prop == 'selected':
         model.selected.indices = value
     elif prop == 'active' and _is_panel(model) and 'options' in model.param:
-        # a button group (pmui.RadioButtonGroup): the browser sets the
-        # value, ``active`` follows it (not the other way round)
+        # a button group (pmui.RadioButtonGroup, CheckButtonGroup): the
+        # browser sets the value, ``active`` follows it (not the other way
+        # round); a check group selects a list of indices
         options = model.options
-        model.value = list(options.values() if isinstance(options, dict)
-                           else options)[value]
+        values = list(options.values() if isinstance(options, dict)
+                      else options)
+        model.value = [values[i] for i in value] \
+            if isinstance(value, list) else values[value]
     else:
         setattr(model, name, value)
 

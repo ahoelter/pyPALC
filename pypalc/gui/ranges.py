@@ -3,14 +3,16 @@
 :class:`PlotRanges` (formerly ``Plot_ranges`` in ``fun/PALC_classes.py``)
 and the helpers :func:`show_rays` and :func:`scale_venue_figure` (formerly
 ``venue_slice2CDS`` and ``get_p_axis_rng`` in ``fun/gui_helper.py``), the
-latter with the size and the axis modes of the responsive venue figure.
+latter with the size and the axis modes of the responsive venue figure,
+and :func:`set_figure_ranges` with the equal scaling of the beam plots
+(:func:`scale_equally`).
 
 author: Arne Hoelter
 """
 from __future__ import annotations
 
 import numpy as np
-from bokeh.models import DataRange1d, Range1d
+from bokeh.models import ColumnDataSource, DataRange1d, Range1d
 
 #: Height in px of the venue figure in the axis modes "Equal, fixed height"
 #: and "Stretched", and its maximum height in "Equal, variable height"
@@ -127,6 +129,93 @@ def show_rays(rays_source, hit_points_source, \
                                       stop_rays_x=[], stop_rays_y=[])
 
 
+def add_venue_bounds(figure):
+    """
+    Adds the hidden renderer :data:`VENUE_BOUNDS` to a figure, whose data
+    are the venue ranges that the equal axis modes cover
+    (:func:`scale_equally`).
+
+    Parameters
+    ----------
+    figure : figure [out]
+        A figure that is shown with equal scaling.
+
+    Returns
+    -------
+    GlyphRenderer
+        The hidden renderer.
+
+    """
+    return figure.scatter('x', 'y',
+                          source=ColumnDataSource(data=dict(x=[], y=[])),
+                          name=VENUE_BOUNDS, visible=False)
+
+
+def scale_equally(figure, ranges, variable_height):
+    """
+    Shows the venue ranges in a figure with equal scaling: one meter has
+    the same length on both axes, for every size of the figure.
+
+    The figure follows the width of its container. Equal scaling is done
+    by the browser for the actual size of the figure: both ranges are new
+    ``DataRange1d`` over the renderer :data:`VENUE_BOUNDS` (whose data are
+    set to ``ranges.venue_x``, ``ranges.venue_y``), and the figure matches
+    the aspect (``match_aspect``), so Bokeh widens one range until one
+    meter has the same length on both axes. The left border alternates
+    between None and ``min_border`` (the same border), so that the browser
+    lays out a shown figure with its new ranges.
+
+    Parameters
+    ----------
+    figure : figure [out]
+        A figure with the renderer :data:`VENUE_BOUNDS`
+        (:func:`add_venue_bounds`).
+    ranges : PlotRanges [in]
+        Contains the venue ranges.
+    variable_height : bool
+        If True, the height follows the width with the aspect ratio of the
+        venue ranges, up to :data:`VENUE_MAX_HEIGHT`; at that height the x
+        range follows the width. If False, the height is
+        :data:`VENUE_MAX_HEIGHT` and the x range follows the width.
+
+    Returns
+    -------
+    None.
+
+    """
+    bounds = figure.select_one({'name': VENUE_BOUNDS})
+    bounds.data_source.data = dict(x=list(ranges.venue_x),
+                                   y=list(ranges.venue_y))
+    sizes = dict(sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT,
+                 aspect_ratio=None, max_height=None, styles={},
+                 frame_width=None, frame_height=None)
+    if variable_height:
+        width = ranges.venue_x[1] - ranges.venue_x[0]
+        height = ranges.venue_y[1] - ranges.venue_y[0]
+        # The CSS aspect ratio sets the height from the width. The inline
+        # styles keep the full width when the maximum height is reached
+        # (instead of narrowing the figure to the aspect ratio), stop
+        # Panel's layout from giving the figure a fixed flex height, and
+        # give the maximum height in px: Bokeh writes it as
+        # min(max_height, 100%), which the card ignores when it sizes
+        # itself to the figure, growing to the uncapped height.
+        sizes.update(height=None, aspect_ratio=width / height,
+                     max_height=VENUE_MAX_HEIGHT,
+                     styles={'flex': '0 0 auto', 'width': '100%',
+                             'max-height': '%dpx' % VENUE_MAX_HEIGHT})
+    figure.update(
+        x_range=DataRange1d(renderers=[bounds], range_padding=0),
+        y_range=DataRange1d(renderers=[bounds], range_padding=0),
+        match_aspect=True, aspect_scale=1, **sizes)
+    # BokehJS does not lay out a shown figure again when it gets new ranges;
+    # its axes keep the size they had without ticks (the new ranges start
+    # at NaN) and lose their labels, unless the size of the figure changes.
+    # A changed border is laid out: the left border alternates between None
+    # and min_border, which is the same border.
+    figure.min_border_left = figure.min_border \
+        if figure.min_border_left is None else None
+
+
 def scale_venue_figure(venue_figure, ranges, axes_select):
     """
     Sets the ranges, the scaling and the size of the venue slice figure
@@ -147,12 +236,7 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
     * 2, "Stretched": the venue ranges fill the figure (height
       :data:`VENUE_MAX_HEIGHT`).
 
-    Equal scaling is done by the browser for the actual size of the figure:
-    both ranges are ``DataRange1d`` over the bounds renderer, and the
-    figure matches the aspect (``match_aspect``), so Bokeh widens one range
-    until one meter has the same length on both axes. The left border
-    alternates between None and ``min_border`` (the same border), so that
-    the browser lays out a shown figure with its new ranges.
+    Equal scaling: see :func:`scale_equally`.
 
     Parameters
     ----------
@@ -168,70 +252,50 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
     None.
 
     """
-    bounds = venue_figure.select_one({'name': VENUE_BOUNDS})
-    bounds.data_source.data = dict(x=list(ranges.venue_x),
-                                   y=list(ranges.venue_y))
-    sizes = dict(sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT,
-                 aspect_ratio=None, max_height=None, styles={},
-                 frame_width=None, frame_height=None)
     if axes_select.active == 2:  # stretched
+        bounds = venue_figure.select_one({'name': VENUE_BOUNDS})
+        bounds.data_source.data = dict(x=list(ranges.venue_x),
+                                       y=list(ranges.venue_y))
         venue_figure.update(
             x_range=Range1d(ranges.venue_x[0], ranges.venue_x[1]),
             y_range=Range1d(ranges.venue_y[0], ranges.venue_y[1]),
-            match_aspect=False, **sizes)
+            match_aspect=False, sizing_mode='stretch_width',
+            height=VENUE_MAX_HEIGHT, aspect_ratio=None, max_height=None,
+            styles={}, frame_width=None, frame_height=None)
         return
-    if axes_select.active == 0:  # equal, variable height
-        width = ranges.venue_x[1] - ranges.venue_x[0]
-        height = ranges.venue_y[1] - ranges.venue_y[0]
-        # The CSS aspect ratio sets the height from the width. The inline
-        # styles keep the full width when the maximum height is reached
-        # (instead of narrowing the figure to the aspect ratio), stop
-        # Panel's layout from giving the figure a fixed flex height, and
-        # give the maximum height in px: Bokeh writes it as
-        # min(max_height, 100%), which the card ignores when it sizes
-        # itself to the figure, growing to the uncapped height.
-        sizes.update(height=None, aspect_ratio=width / height,
-                     max_height=VENUE_MAX_HEIGHT,
-                     styles={'flex': '0 0 auto', 'width': '100%',
-                             'max-height': '%dpx' % VENUE_MAX_HEIGHT})
-    venue_figure.update(
-        x_range=DataRange1d(renderers=[bounds], range_padding=0),
-        y_range=DataRange1d(renderers=[bounds], range_padding=0),
-        match_aspect=True, aspect_scale=1, **sizes)
-    # BokehJS does not lay out a shown figure again when it gets new ranges;
-    # its axes keep the size they had without ticks (the new ranges start
-    # at NaN) and lose their labels, unless the size of the figure changes.
-    # A changed border is laid out: the left border alternates between None
-    # and min_border, which is the same border.
-    venue_figure.min_border_left = venue_figure.min_border \
-        if venue_figure.min_border_left is None else None
+    scale_equally(venue_figure, ranges,
+                  variable_height=axes_select.active == 0)
 
 
-def set_figure_ranges(ranges, figures, sizes, x_range, y_range):
+def set_figure_ranges(ranges, figures, equal, x_range, y_range):
     """
     Sets the x- and y-ranges of figures (formerly ``set_ranges`` in
-    ``main.py``). All figures get the same range objects.
+    ``main.py``).
 
     Parameters
     ----------
     ranges : PlotRanges [in]
-        Contains the ranging data; ``venue_x`` and ``venue_y`` give the aspect ratio.
+        Contains the venue ranges.
     figures : list of figure [out]
         Figures to set the ranges of.
-    sizes : list of bool
-        For each figure: if True, the frame height is set so that the axes
-        are equally scaled.
+    equal : list of bool
+        For each figure: if True, it shows the venue ranges with equal
+        scaling and a height that follows its width
+        (:func:`scale_equally`, the figure needs the renderer
+        :data:`VENUE_BOUNDS`); each such figure gets ranges of its own.
+        If False, it gets ``x_range`` and ``y_range`` (all such figures the
+        same range objects).
     x_range, y_range : Range1d
-        The new ranges.
+        The ranges of the figures without equal scaling.
 
     Returns
     -------
     None.
 
     """
-    for figure, size in zip(figures, sizes):
-        figure.x_range = x_range
-        figure.y_range = y_range
-        if size:
-            figure.frame_height = int((ranges.venue_y[1]-ranges.venue_y[0]) * \
-                 figure.frame_width / (ranges.venue_x[1]-ranges.venue_x[0]))
+    for figure, scaled in zip(figures, equal):
+        if scaled:
+            scale_equally(figure, ranges, variable_height=True)
+        else:
+            figure.x_range = x_range
+            figure.y_range = y_range

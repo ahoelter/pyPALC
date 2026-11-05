@@ -107,11 +107,14 @@ def load(app, text):
 
 def models_of(app):
     """Bokeh models and Panel objects of the app and its pages:
-    name -> model."""
+    name -> model. Private attributes (layouts built when a page is first
+    shown, such as ``_layout``) are left out: they hold no state, and the
+    load shows page 5, the hand path does not."""
     owners = [("app", app)] + [(str(i), p) for i, p in app.pages.items()]
     return {"%s.%s" % (owner, name): value
             for owner, obj in owners for name, value in vars(obj).items()
-            if isinstance(value, (Model, Viewable))}
+            if isinstance(value, (Model, Viewable))
+            and not name.startswith("_")}
 
 
 def _norm(value):

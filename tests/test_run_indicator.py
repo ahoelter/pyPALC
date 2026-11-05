@@ -123,3 +123,31 @@ def test_load_ignored_while_running(monkeypatch):
     # emptied, so that selecting the file again loads it
     assert load.value is None
     _assert_idle(app)
+
+
+def test_run_ignored_while_load_pending(monkeypatch):
+    """Served, the load runs later (:meth:`PalcApp.later`); a click on
+    "PALC Run" before it ran, while no setup is applied yet, is ignored."""
+    app = _entered()
+    toggle = app.pages[4].start_toggle
+    looks = _watch_runs(monkeypatch, toggle)
+    pending = []
+    monkeypatch.setattr(app, 'later', pending.append)
+    text = dump_setup(load_setup(case_path('target_slope')))
+    upload(app.pages[4].load_setup_input, text.encode('utf-8'),
+           'pypalc_setup.yaml')
+    assert len(pending) == 1
+    assert app.pages[4].running
+    assert not app.state.applying_setup
+    assert _look(toggle) == (RUNNING_LABEL, RUNNING)
+    write(toggle, 'active', True)
+    assert len(pending) == 1
+    assert looks == []
+    with contextlib.redirect_stdout(io.StringIO()):
+        pending.pop()()
+    assert read(app.config_error_info, 'text') == ''
+    # the load alone: the initial run and the target slope run
+    assert len(looks) == 2
+    assert app.state.result.setup.target_slope is not None
+    assert not pending
+    _assert_idle(app)

@@ -65,6 +65,10 @@ INTENDED: List[Tuple[str, str]] = [
     ('4.fixed_angle_text.disabled',
      'the allowed range of the fixed angle is an HTML pane, which has no '
      'disabled state (the text itself is compared)'),
+    ('5.beam_checkbox.button_type',
+     'the beam plot selection is a Material check button group, which has '
+     'a (deprecated, unset) button type; the Bokeh checkbox group had '
+     'none'),
 ]
 
 
