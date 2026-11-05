@@ -370,7 +370,8 @@ class PalcApp:
         there, and a ``DataRange1d`` would keep the bounds of the figure as
         drawn on the page before (BokehJS keeps them for every view of the
         figure), so that one meter would no longer have the same length on
-        both axes.
+        both axes. The ranges are renewed after the new page is in the
+        content area, when the view of the page before is removed.
 
         Parameters
         ----------
@@ -383,12 +384,14 @@ class PalcApp:
         """
         if index == 1:
             self.clear_result_figure()
-        if index in VENUE_FIGURE_PAGES and self.venue_axes_select.active != 2:
-            self.scale_venue_axes()
         view = self.pages[index].layout()
         if not isinstance(view, Viewable):
             view = self.bokeh_pane(view)
         self.content.objects = [view]
+        # after the swap: the view of the page that is left is gone then
+        # and cannot write its bounds into the new ranges
+        if index in VENUE_FIGURE_PAGES and self.venue_axes_select.active != 2:
+            self.scale_venue_axes()
 
     def later(self, func: Callable[[], None]) -> None:
         """Run a function after the browser has shown the changes so far.

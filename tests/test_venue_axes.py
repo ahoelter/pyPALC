@@ -148,6 +148,25 @@ def test_showing_a_page_keeps_stretched_ranges(app):
 
 
 @pytest.mark.parametrize('mode', [0, 1])
+def test_ranges_are_renewed_after_the_page_is_swapped(app, mode):
+    """The new ranges are set after the content shows the new page, so the
+    view of the page that is left cannot write its bounds into them."""
+    write(app.venue_axes_select, 'active', mode)
+    events = []
+    app.content.param.watch(lambda event: events.append('swap'), 'objects')
+    scale = app.scale_venue_axes
+
+    def logged_scale():
+        events.append('ranges')
+        scale()
+    app.scale_venue_axes = logged_scale
+    for page in (4, 2, 3, 1):
+        events.clear()
+        write(app.page_select, 'active', page)
+        assert events == ['swap', 'ranges'], page
+
+
+@pytest.mark.parametrize('mode', [0, 1])
 def test_new_equal_ranges_are_laid_out(app, mode):
     """BokehJS lays out a shown figure with new ranges only if a layout
     property changes (else its axes lose their labels): every renewal of
