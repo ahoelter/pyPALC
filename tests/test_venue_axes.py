@@ -13,8 +13,8 @@ Equal scaling is done in the browser: both ranges are ``DataRange1d`` that
 cover the venue ranges (the data of the hidden bounds renderer) and the
 figure matches the aspect (``match_aspect``, ``aspect_scale`` 1), so Bokeh
 widens one range until one meter has the same length on both axes, for
-every size of the figure. The browser check (``tools/page_screenshots.py``
-and the measurement in the task report) measures that.
+every size of the figure. The browser check (``tools/browser_check.py``,
+checks ``equal_axes`` and ``axis_labels``) measures that.
 """
 import panel_material_ui as pmui
 import pytest
