@@ -52,11 +52,16 @@ DASHED = [6]
 #: as high as the frame (inline style) and moves the tools that do not fit
 #: into its height minus 15 px into an overflow menu (the short venue figure
 #: of "Equal, variable height"); a toolbar as high as its tools plus that
-#: reserve keeps them all, reaching below the frame as in Bokeh 2.
+#: reserve keeps them all, reaching below the frame as in Bokeh 2. It is at
+#: least as high as the frame: Bokeh measures the toolbar again after each
+#: layout of the figure, and a toolbar measured while its figure had no
+#: height yet (hidden, or in a flex box) would otherwise keep the height of
+#: the overflow button alone and never show its tools.
 TOOLBAR_STYLESHEET = (
     f':host {{ --bokeh-icon-color: {TEXT_MUTED}; }}\n'
     ':host(.bk-left), :host(.bk-right) {\n'
     '  height: auto !important;\n'
+    '  min-height: 100%;\n'
     '  padding-bottom: 16px;\n'
     '}')
 

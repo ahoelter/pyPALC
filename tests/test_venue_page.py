@@ -118,3 +118,12 @@ def test_toolbars_show_every_tool():
     theme = bokeh_figure_theme()
     sheets = theme._json['attrs']['Toolbar']['stylesheets']
     assert any('height: auto !important' in sheet for sheet in sheets)
+
+
+def test_toolbars_recover_from_overflow():
+    """A vertical toolbar is at least as high as its figure: once its
+    tools overflowed (measured while the figure had no height, e.g. hidden
+    or in a flex box), Bokeh's next measurement finds them room again."""
+    theme = bokeh_figure_theme()
+    sheets = theme._json['attrs']['Toolbar']['stylesheets']
+    assert any('min-height: 100%' in sheet for sheet in sheets)
