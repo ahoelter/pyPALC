@@ -4,9 +4,12 @@ The application is based on different scientific publication, which can be found
 
 ### Try it!
 
-pyPALC runs on Python 3.12 with Bokeh 3.10. Install the dependencies in a
-conda environment from the conda-forge channel:
+pyPALC runs on Python 3.12 with Panel 1.10, panel-material-ui 0.16 and
+Bokeh 3.10. Install the dependencies in a conda environment from the
+conda-forge channel:
 `conda create -n pyPALC3 -c conda-forge --file requirements.txt`
+(an environment made for an earlier version of pyPALC has no Panel; create
+it anew).
 
 Or install the dependencies with pip, in a Python 3.12 environment (the
 pinned versions are the same as in `requirements.txt`):
@@ -37,7 +40,7 @@ More info soon!
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
 | `examples/` | example setup files |
 | `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_reference.json` holds the application data of the former Bokeh GUI after each scripted GUI step (`tests/gui_steps.py`) |
-| `tools/` | development tools: browser check and screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
+| `tools/` | development tools: browser check with screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
 | `static/` | logos |
 
 ### Running the tests
@@ -63,31 +66,32 @@ Firefox and geckodriver (the default geckodriver path is
 `/snap/bin/geckodriver`, which matches snap Firefox; pass `--geckodriver`
 for another one). Run the tools from this folder:
 
-- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--setup FILE] [--two-tabs] [--download-dir DIR] [--clean]`:
-  (still written for the former Bokeh GUI, not yet for the Panel GUI)
+- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--width 1280] [--height H] [--setup FILE] [--two-tabs] [--download-dir DIR] [--clean]`:
   checks a running app (`panel serve pyPALC` from the parent folder) in a
-  headless Firefox: screenshots of every page before and after loading a
-  setup, loading through the file input, the downloads (file names and CSV
-  headers), the running indicator of "PALC Run", dragging a target point,
-  the rays on page 1, the toolbars and, with `--two-tabs`, that two browser
-  windows do not share a session. Writes `shots/*.png`, `shots/report.json`
-  and the downloaded files to `shots/downloads`; exits with 1 if a check
-  failed. The column order of the "Download SPL" files once depended on the
-  server's string hash seed; to check it, run the tool against servers
-  started with different `PYTHONHASHSEED` values. `shots` and a given
-  download folder (`--download-dir`; by default the browser downloads into a
-  new temporary folder in the home folder, which is removed afterwards) must
-  be empty or new; the tool refuses to run otherwise. `--clean` first
-  removes the files of an earlier run of the tool (the screenshots,
-  `report.json` and the download files with their numbered copies such as
-  `pypalc_setup(1).yaml`) from them and leaves every other file alone.
-- `python tools/page_screenshots.py --url http://localhost:5006/pyPALC --out shots --width 1280 [--height H]`:
-  opens a running app (`panel serve pyPALC` from the parent folder) in a
-  headless Firefox, clicks each page tab, saves a screenshot of each page
-  (`shots/<index>_<name>.png`) and reports for each page whether it scrolls
-  horizontally at that window width.
-- `python tools/compare_screenshots.py OLD_DIR NEW_DIR compare.html`: puts
-  two folders of screenshots side by side in one HTML page.
+  headless Firefox window of the given size (default 1280 x 800, from a
+  width of 1920 px on 1080 px high): screenshots of every page before and
+  after loading a setup, loading through the "Load Setup" file input, the
+  downloads ("Download PALC Angles", the zip of "Download Results" with the
+  headers of its five CSV files, "Save Setup"), the running look of "PALC
+  Run" during a run and during a load, dragging a target point, the rays on
+  page 1, the equal scaling of the venue figure and of the beam plots
+  (pixels per meter on x and y), the axis labels of the venue figure, the
+  linked zoom of the beam plots, the toolbars, no horizontal scrolling of
+  any page at the window width and, with `--two-tabs`, that two browser
+  windows do not share a session. Writes `shots/*.png` (the whole page),
+  `shots/report.json` and the downloaded files to `shots/downloads`;
+  exits with 1 if a check failed. `shots` and a given download folder
+  (`--download-dir`; by default the browser downloads into a new temporary
+  folder in the home folder, which is removed afterwards; snap Firefox
+  cannot write to `/tmp`) must be empty or new; the tool refuses to run
+  otherwise. `--clean` first removes the files of an earlier run of the
+  tool (the screenshots, `report.json` and the download files with their
+  numbered copies such as `pypalc_setup(1).yaml`) from them and leaves
+  every other file alone. The checks are listed in
+  `docs/superpowers/gui-checklist.md`.
+- `python tools/compare_screenshots.py OLD_DIR NEW_DIR compare.html [--title TITLE] [--jpeg QUALITY] [--max-width PX]`:
+  puts two folders of screenshots side by side in one self-contained HTML
+  page, one row per file name (`--jpeg` keeps the page small).
 - `python tools/record_gui_reference.py OUT.json`: records the application
   data after each scripted GUI step (as `tests/gui_reference.json`).
 
