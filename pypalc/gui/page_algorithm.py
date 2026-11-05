@@ -76,8 +76,10 @@ SUCCESS_HOVER = '#449d44'
 def run_toggle_sx(running: bool) -> dict:
     """Style of "PALC Run": a green button, dark red while running.
 
-    While running, the toggle does not take clicks (a click would toggle
-    its value off).
+    While running, the toggle is disabled (:meth:`AlgorithmPage.set_running`:
+    it takes neither clicks nor keys, which would toggle its value and
+    start the calculation again after the run); the disabled toggle keeps
+    the dark red. The style also blocks the pointer.
 
     Parameters
     ----------
@@ -119,12 +121,16 @@ class AlgorithmPage:
     running : bool
         True while a calculation started by "PALC Run" or "Load Setup"
         runs (from the click until it is done).
+    run_enabled : bool
+        True if the venue is PALC compatible (:meth:`enable_run`); "PALC
+        Run" is enabled if this is True and no calculation runs.
     """
 
     def __init__(self, app: PalcApp) -> None:
         self.app = app
         state = app.state
         self.running = False
+        self.run_enabled = False
         self._layout: Optional[pn.viewable.Viewable] = None
         self._build_widgets()
         # sources
@@ -424,9 +430,12 @@ class AlgorithmPage:
     def set_running(self, running: bool) -> None:
         """Show whether a calculation runs.
 
-        Running: "PALC Run" reads :data:`RUNNING_LABEL` and is dark red.
-        Done: it reads :data:`RUN_LABEL`, is green and released
-        (``value`` False).
+        Running: "PALC Run" reads :data:`RUNNING_LABEL`, is dark red and
+        disabled, so that neither a click nor a key press (Space, Enter)
+        starts the calculation again after the run (the browser would send
+        them while the server runs the calculation, and the server would
+        handle them after it). Done: it reads :data:`RUN_LABEL`, is green,
+        released (``value`` False) and enabled if :attr:`run_enabled`.
 
         Parameters
         ----------
@@ -440,12 +449,30 @@ class AlgorithmPage:
         self.running = running
         if running:
             self.start_toggle.param.update(label=RUNNING_LABEL,
-                                           icon=RUNNING_ICON,
+                                           icon=RUNNING_ICON, disabled=True,
                                            sx=run_toggle_sx(True))
         else:
             self.start_toggle.param.update(value=False, label=RUN_LABEL,
                                            icon=RUN_ICON,
+                                           disabled=not self.run_enabled,
                                            sx=run_toggle_sx(False))
+
+    def enable_run(self, enabled: bool) -> None:
+        """Enable "PALC Run" if the venue is PALC compatible; while a
+        calculation runs it stays disabled until the run is done
+        (:meth:`set_running`).
+
+        Parameters
+        ----------
+        enabled : bool
+            Whether the venue is PALC compatible.
+
+        Returns
+        -------
+        None.
+        """
+        self.run_enabled = enabled
+        self.start_toggle.disabled = self.running or not enabled
 
     def run_later(self, func: Callable[[], None]) -> bool:
         """Show the running look and run a calculation after the browser

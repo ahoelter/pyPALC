@@ -489,13 +489,13 @@ class PalcApp:
         """
         venue_page, algorithm = self.pages[1], self.pages[4]
         if checked and self.has_venue():
-            algorithm.start_toggle.disabled = False
+            algorithm.enable_run(True)
             venue_page.check_venue_button.color = "success"
             venue_page.check_venue_button.label = "8. Venue is PALC compatible!"
             self.venue_figure.legend.visible = False
             algorithm.use_fixed_angle_select.disabled = False
         else:
-            algorithm.start_toggle.disabled = True
+            algorithm.enable_run(False)
             venue_page.check_venue_button.color = "warning"
             venue_page.check_venue_button.label = "8. Get PALC Venue Proposal"
             self.venue_figure.legend.visible = False

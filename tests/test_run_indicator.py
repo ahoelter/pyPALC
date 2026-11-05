@@ -1,6 +1,10 @@
 """The running look of "26. PALC Run": while a calculation runs (started
 by the toggle or by "Load Setup") the toggle reads "Running..." and is dark
-red; a second start is ignored; the look is reset in every case."""
+red; a second start is ignored; the look is reset in every case.
+
+While it runs the toggle is also disabled: the browser does not block key
+presses (Space, Enter) on the focused toggle otherwise, and the server
+would handle them after the run, starting a second calculation."""
 import contextlib
 import io
 
@@ -50,6 +54,8 @@ def _assert_idle(app):
     assert color != RUNNING
     assert read(toggle, 'active') is False
     assert app.pages[4].running is False
+    # enabled again (the venue of the cases is PALC compatible)
+    assert read(toggle, 'disabled') is False
 
 
 def test_running_look_during_run(monkeypatch):
@@ -151,3 +157,56 @@ def test_run_ignored_while_load_pending(monkeypatch):
     assert app.state.result.setup.target_slope is not None
     assert not pending
     _assert_idle(app)
+
+
+def test_run_toggle_disabled_while_running(monkeypatch):
+    """Disabled during the run, also when the venue is checked during it
+    (as Load Setup does); enabled again afterwards."""
+    app = _entered()
+    toggle = app.pages[4].start_toggle
+    assert read(toggle, 'disabled') is False
+    disabled = []
+
+    def check_venue():
+        disabled.append(read(toggle, 'disabled'))
+        app.set_venue_checked(True)
+        disabled.append(read(toggle, 'disabled'))
+    _watch_runs(monkeypatch, toggle, check_venue)
+    write(toggle, 'active', True)
+    assert disabled == [True, True]
+    _assert_idle(app)
+
+
+def test_run_toggle_disabled_while_loading(monkeypatch):
+    """Disabled during a load and while the load is pending."""
+    app = PalcApp(Document())
+    toggle = app.pages[4].start_toggle
+    assert read(toggle, 'disabled') is True  # no venue yet
+    disabled = []
+    _watch_runs(monkeypatch, toggle,
+                lambda: disabled.append(read(toggle, 'disabled')))
+    pending = []
+    monkeypatch.setattr(app, 'later', pending.append)
+    text = dump_setup(load_setup(case_path('simple')))
+    upload(app.pages[4].load_setup_input, text.encode('utf-8'),
+           'pypalc_setup.yaml')
+    assert read(toggle, 'disabled') is True
+    with contextlib.redirect_stdout(io.StringIO()):
+        pending.pop()()
+    assert disabled == [True]
+    _assert_idle(app)
+
+
+def test_run_toggle_stays_disabled_without_venue():
+    """After a run, the toggle is enabled only if the venue is PALC
+    compatible."""
+    app = PalcApp(Document())
+    page = app.pages[4]
+    page.set_running(True)
+    page.enable_run(True)
+    assert read(page.start_toggle, 'disabled') is True
+    page.enable_run(False)
+    page.set_running(False)
+    assert read(page.start_toggle, 'disabled') is True
+    page.enable_run(True)
+    assert read(page.start_toggle, 'disabled') is False
