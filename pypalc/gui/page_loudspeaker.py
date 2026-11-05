@@ -9,8 +9,9 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
+import panel as pn
 from bokeh.layouts import column, row
-from bokeh.models import (ColumnDataSource, FileInput, LayoutDOM, Range1d,
+from bokeh.models import (ColumnDataSource, FileInput, Range1d,
                           Select, TabPanel, Tabs, TextInput)
 from bokeh.plotting import figure
 
@@ -86,7 +87,8 @@ class LoudspeakerPage:
         self.tabs = Tabs(tabs=[TabPanel(child=app.venue_figure,
                                         title="Venue Slice"),
                                TabPanel(child=directivity_figure,
-                                        title="Loudspeaker Directivity")])
+                                        title="Loudspeaker Directivity")],
+                         sizing_mode='stretch_width')
         self.compute_modeled_directivity()
         # callbacks
         self.aperture_input.on_change("value", app.store_value)
@@ -94,19 +96,26 @@ class LoudspeakerPage:
         self.directivity_select.on_change("value", app.store_value)
         self.directivity_upload.on_change("value", self.upload_directivity)
 
-    def layout(self) -> LayoutDOM:
+    def layout(self) -> pn.Row:
         """Body of the page below the header.
+
+        The Bokeh widgets of the page are shown in Bokeh panes
+        (:meth:`~.app.PalcApp.bokeh_pane`), beside the axis mode selection
+        of the venue figure, which is a Panel widget.
 
         Returns
         -------
-        LayoutDOM
+        panel.Row
         """
         col0 = column([self.aperture_input, self.cabinet_height_input],
                       width=270)
         col1 = column([self.directivity_select, self.directivity_upload,
                        self.app.config_error_info], width=270)
-        col2 = column([self.app.venue_axes_row(), self.tabs], width=690)
-        return row([col0, col1, col2])
+        col2 = pn.Column(self.app.venue_axes_row(),
+                         self.app.bokeh_pane(self.tabs,
+                                             sizing_mode='stretch_width'),
+                         width=690)
+        return pn.Row(self.app.bokeh_pane(row([col0, col1])), col2)
 
     def compute_modeled_directivity(self) -> None:
         """Compute and plot the modeled directivity of the configuration."""

@@ -8,8 +8,9 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
+import panel as pn
 from bokeh.layouts import column, row
-from bokeh.models import (ColumnDataSource, DataTable, LayoutDOM, Paragraph,
+from bokeh.models import (ColumnDataSource, DataTable, Paragraph,
                           Select, TableColumn, TextAreaInput, TextInput)
 
 from pypalc.core.geometry import reference_tilt_angles_deg
@@ -112,12 +113,16 @@ class ArrayPage:
                        self.reference_user_angles_input):
             widget.on_change("value", self.reference_input_changed)
 
-    def layout(self) -> LayoutDOM:
+    def layout(self) -> pn.Row:
         """Body of the page below the header.
+
+        The Bokeh widgets of the page are shown in Bokeh panes
+        (:meth:`~.app.PalcApp.bokeh_pane`), beside the axis mode selection
+        of the venue figure, which is a Panel widget.
 
         Returns
         -------
-        LayoutDOM
+        panel.Row
         """
         col0 = column([self.cabinet_count_input, self.top_x_input,
                        self.top_y_input, self.spacer, self.rule_left,
@@ -130,9 +135,11 @@ class ArrayPage:
                        self.rule_right, self.reference_start_input,
                        self.reference_step_stop_input, self.reference_table],
                       width=270)
-        col2 = column([self.app.venue_axes_row(), self.app.venue_figure],
-                      width=690)
-        return row([col0, col1, col2])
+        col2 = pn.Column(self.app.venue_axes_row(),
+                         self.app.bokeh_pane(self.app.venue_figure,
+                                             sizing_mode='stretch_width'),
+                         width=690)
+        return pn.Row(self.app.bokeh_pane(row([col0, col1])), col2)
 
     # ------------------------------------------------------------------
     # Callbacks

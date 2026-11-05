@@ -5,8 +5,10 @@ tabs and logos, page switching and :meth:`PalcApp.later`.
 ``panel serve`` does with ``main.py``; tests that need the models of the
 shown page in the document use it.
 """
+import panel as pn
 import panel_material_ui as pmui
 from bokeh.document import Document
+from panel.viewable import Viewable
 
 from pypalc.gui.app import PalcApp
 from pypalc.gui.style import MATERIAL_THEME, SURFACE, bokeh_figure_theme
@@ -23,13 +25,30 @@ def rendered(app: PalcApp) -> PalcApp:
     return app
 
 
+def _shows(view, model):
+    """Whether a Panel view holds the model: a Panel object in it or a
+    Bokeh model in one of its Bokeh panes."""
+    if isinstance(model, Viewable):
+        return any(obj is model for obj in view.select())
+    return any(model in pane.object.references()
+               for pane in view.select(pn.pane.Bokeh))
+
+
+def _in_document(model, doc):
+    """Whether the model (Bokeh model or Panel object) is shown in the
+    document."""
+    if isinstance(model, Viewable):
+        return any(bokeh_model.document is doc
+                   for bokeh_model, _ in model._models.values())
+    return model.document is doc
+
+
 def _shown_markers(app):
     """Indices of the pages whose marker model the content area shows."""
     objects = app.content.objects
     assert len(objects) == 1
-    shown = objects[0].object.references()
     return [index for index, name in MARKERS.items()
-            if getattr(app.pages[index], name) in shown]
+            if _shows(objects[0], getattr(app.pages[index], name))]
 
 
 def test_page_select_switches_content():
@@ -41,7 +60,7 @@ def test_page_select_switches_content():
         assert _shown_markers(app) == [index]
         # only the shown page is in the document
         in_doc = [i for i, name in MARKERS.items()
-                  if getattr(app.pages[i], name).document is app.doc]
+                  if _in_document(getattr(app.pages[i], name), app.doc)]
         assert in_doc == [index]
 
 

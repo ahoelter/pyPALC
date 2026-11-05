@@ -42,8 +42,7 @@ import numpy as np
 import panel as pn
 import panel_material_ui as pmui
 from bokeh.document import Document
-from bokeh.layouts import row
-from bokeh.models import ColumnDataSource, Div, Model, Paragraph, RadioGroup
+from bokeh.models import ColumnDataSource, LayoutDOM, Model, Paragraph
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 from colorcet import rainbow
@@ -66,7 +65,8 @@ from pypalc.gui.page_loudspeaker import LoudspeakerPage
 from pypalc.gui.page_results import ResultsPage
 from pypalc.gui.page_venue import VenuePage
 from pypalc.gui.setup_io import setup_from_app
-from pypalc.gui.ranges import (PlotRanges, scale_venue_figure, set_figure_ranges,
+from pypalc.gui.ranges import (VENUE_BOUNDS, VENUE_MAX_HEIGHT, PlotRanges,
+                               scale_venue_figure, set_figure_ranges,
                                show_rays)
 from pypalc.gui.style import LINK, MATERIAL_THEME, TEXT, TEXT_MUTED
 
@@ -169,6 +169,11 @@ def _error_text(exc: PalcError) -> str:
 #: Labels of the page tabs, in the order of the page indices.
 PAGE_LABELS = ('Help', '1 · Venue', '2 · Loudspeaker', '3 · Array',
                '4 · Algorithm', '5 · Sound Field')
+#: Labels of the axis modes of the venue figure (``venue_axes_select``), in
+#: the order of their index (see :func:`~.ranges.scale_venue_figure`).
+AXIS_MODES = ('Equal, variable height', 'Equal, fixed height', 'Stretched')
+#: Indices of the pages that show the venue figure.
+VENUE_FIGURE_PAGES = (1, 2, 3, 4)
 #: Delay of :meth:`PalcApp.later` in ms.
 LATER_DELAY_MS = 120
 
@@ -228,10 +233,15 @@ class PalcApp:
             title="", x_axis_label="x in m", y_axis_label="y in m",
             toolbar_location="right",
             tools="box_zoom,pan,wheel_zoom,reset,tap,hover,save",
-            frame_height=478, frame_width=637)
-        """Venue slice figure (pages 1 to 4); its glyphs are added by the
-        venue page."""
+            sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT)
+        """Venue slice figure (pages 1 to 4); it follows the width of the
+        window, its axis mode is set by :meth:`scale_venue_axes`. Its
+        glyphs are added by the venue page."""
         self.venue_figure.toolbar.logo = None
+        # the venue ranges, which the equal axis modes cover
+        self.venue_figure.scatter(
+            'x', 'y', source=ColumnDataSource(data=dict(x=[], y=[])),
+            name=VENUE_BOUNDS, visible=False)
         # Pages use widgets and sources of pages built before them; the
         # results page comes before the algorithm page, whose download
         # button needs the homogeneity source.
@@ -244,8 +254,9 @@ class PalcApp:
         self.content = pn.Column(sizing_mode='stretch_width', margin=(8, 0))
         self.page_select.param.watch(
             lambda event: self.show_page(event.new), 'active')
-        self.venue_axes_select.on_change(
-            'active', lambda attr, old, new: self.scale_venue_axes())
+        self.venue_axes_select.param.watch(
+            lambda event: self.scale_venue_axes(), 'active')
+        self.scale_venue_axes()
         # values the legacy GUI stores at start-up
         self.state.config.store_config('aperture_angles',
                                        self.pages[2].aperture_input.value)
@@ -269,13 +280,12 @@ class PalcApp:
                                          'borderRadius': '3px 3px 0 0'}})
         """Page tabs in the header; ``active`` is the index of the shown
         page."""
-        self.venue_axes_select = RadioGroup(
-            labels=['Equal (variable figure height)',
-                    'Equal (const. figure height)', 'Stretched'],
-            active=2, height=15, margin=5, inline=True)
-        """Scaling of the venue figure."""
-        self.venue_axes_label = Div(text='      <b> Venue Slice Axes: </b>',
-                                    height=15, width=150)
+        self.venue_axes_select = pmui.RadioButtonGroup(
+            options=list(AXIS_MODES), value=AXIS_MODES[2], size='small',
+            color='primary', margin=(0, 8), sx={'& .MuiToggleButton-root': {
+                'whiteSpace': 'nowrap', 'padding': '3px 12px'}})
+        """Axis mode of the venue figure; ``active`` is the index in
+        :data:`AXIS_MODES`."""
         self.config_error_info = Paragraph(text="", width=250, height=50)
         """Error text of the configuration pages 2 to 4."""
 
@@ -283,9 +293,36 @@ class PalcApp:
     # Layout
     # ------------------------------------------------------------------
 
-    def venue_axes_row(self):
-        """Row with the scaling selection of the venue figure."""
-        return row([self.venue_axes_label, self.venue_axes_select])
+    def venue_axes_row(self) -> pn.Row:
+        """Row with the axis mode selection of the venue figure.
+
+        Returns
+        -------
+        panel.Row
+            A new row holding :attr:`venue_axes_select`.
+        """
+        label = pn.pane.HTML(f'<span style="color:{TEXT_MUTED};'
+                             f'font-size:12px">Axes</span>',
+                             align='center', margin=(0, 0, 0, 8))
+        return pn.Row(label, self.venue_axes_select, margin=(0, 0, 8, 0))
+
+    def bokeh_pane(self, model: LayoutDOM, **params) -> pn.pane.Bokeh:
+        """A Bokeh figure or layout as a Panel pane, drawn with the theme of
+        the document (not the one of Panel's design, which the pane would
+        apply otherwise).
+
+        Parameters
+        ----------
+        model : LayoutDOM
+            The Bokeh figure or layout.
+        **params
+            Further parameters of the pane.
+
+        Returns
+        -------
+        panel.pane.Bokeh
+        """
+        return pn.pane.Bokeh(model, theme=self.doc.theme, **params)
 
     def view(self) -> pmui.Page:
         """The Material page of the session.
@@ -324,11 +361,16 @@ class PalcApp:
     def show_page(self, index: int) -> None:
         """Show a page in the content area (legacy ``steps``).
 
-        Called when the page tab changes and to show the current page
-        again after a change of its layout. Showing page 1 clears the
-        result visualization in the venue figure. A page whose ``layout()``
-        is a Bokeh layout is shown in a Bokeh pane with the theme of the
-        document.
+        Called when the page tab changes. Showing page 1 clears the result
+        visualization in the venue figure. A page whose ``layout()`` is a
+        Bokeh layout is shown in a Bokeh pane (:meth:`bokeh_pane`).
+
+        A page with the venue figure (:data:`VENUE_FIGURE_PAGES`) gets new
+        ranges in the equal axis modes: the browser draws the figure anew
+        there, and a ``DataRange1d`` would keep the bounds of the figure as
+        drawn on the page before (BokehJS keeps them for every view of the
+        figure), so that one meter would no longer have the same length on
+        both axes.
 
         Parameters
         ----------
@@ -341,11 +383,11 @@ class PalcApp:
         """
         if index == 1:
             self.clear_result_figure()
+        if index in VENUE_FIGURE_PAGES and self.venue_axes_select.active != 2:
+            self.scale_venue_axes()
         view = self.pages[index].layout()
         if not isinstance(view, Viewable):
-            # the theme of the document (main.py), not the one of Panel's
-            # design, which the pane would apply otherwise
-            view = pn.pane.Bokeh(view, theme=self.doc.theme)
+            view = self.bokeh_pane(view)
         self.content.objects = [view]
 
     def later(self, func: Callable[[], None]) -> None:
@@ -414,7 +456,6 @@ class PalcApp:
                                    sound_field_only_lines=sound_field_only_lines)
             self.set_venue_checked(True)
             self.config_error_info.text = ''
-            self.show_page(self.page_select.active)
             if algorithm.weighting_select.value in ['Target Slope']:
                 algorithm.weighting_select.value = 'Without'
                 st.target.initialized = False
@@ -444,13 +485,13 @@ class PalcApp:
         venue_page, algorithm = self.pages[1], self.pages[4]
         if checked and self.has_venue():
             algorithm.start_toggle.disabled = False
-            venue_page.check_venue_button.button_type = "success"
+            venue_page.check_venue_button.color = "success"
             venue_page.check_venue_button.label = "8. Venue is PALC compatible!"
             self.venue_figure.legend.visible = False
             algorithm.use_fixed_angle_select.disabled = False
         else:
             algorithm.start_toggle.disabled = True
-            venue_page.check_venue_button.button_type = "warning"
+            venue_page.check_venue_button.color = "warning"
             venue_page.check_venue_button.label = "8. Get PALC Venue Proposal"
             self.venue_figure.legend.visible = False
             algorithm.use_fixed_angle_select.disabled = True
@@ -478,29 +519,25 @@ class PalcApp:
                                          st.drawn_lines.line_stop_x, st.config.top_x)
         y_range = st.ranges.update_range('venue_y', [-2, 2], st.drawn_lines.line_start_y,
                                          st.drawn_lines.line_stop_y, st.config.top_y)
-        self.scale_venue_axes(call=False)
+        self.scale_venue_axes()
         set_figure_ranges(st.ranges, [results.beam_figure,
                                       results.reference_beam_figure,
                                       results.venue_points_figure],
                           [True, True, False], x_range, y_range)
         self.pages[4].spl_over_distance_figure.x_range = x_range
 
-    def scale_venue_axes(self, call: bool = True) -> None:
+    def scale_venue_axes(self) -> None:
         """Scale the venue figure as selected (legacy ``scale_p_axis``).
 
-        Parameters
-        ----------
-        call : bool, optional
-            If True, shows the page again. The default is True.
+        The figure is shown with the new ranges and size where it is; the
+        page is not built again.
 
         Returns
         -------
         None.
         """
         scale_venue_figure(self.venue_figure, self.state.ranges,
-                       self.venue_axes_select)
-        if call:
-            self.show_page(self.page_select.active)
+                           self.venue_axes_select)
 
     def _result_properties(self) -> list:
         """(model, property) pairs that showing a result writes
@@ -759,7 +796,6 @@ class PalcApp:
             st.result = result
             st.target_of_result = self.pages[4].shown_target()
             self.pages[4].start_toggle.active = False
-            self.show_page(self.page_select.active)
             return True
         except Exception:
             logger.exception('PALC calculation failed unexpectedly')

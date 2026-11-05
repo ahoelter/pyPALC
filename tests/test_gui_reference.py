@@ -32,12 +32,24 @@ RENAMED_LABELS: Dict[str, str] = {
     '3. Array Configuration': '3 · Array',
     '4. Algorithm': '4 · Algorithm',
     '5. Sound Field Prediction': '5 · Sound Field',
+    # axis modes of the venue figure
+    'Equal (variable figure height)': 'Equal, variable height',
+    'Equal (const. figure height)': 'Equal, fixed height',
 }
 
 #: (key pattern, reason) of keys whose value changes on purpose.
 INTENDED: List[Tuple[str, str]] = [
     ('app.page_select.button_type',
      'the page tabs are a Material tab menu, which has no button type'),
+    ('app.venue_axes_select.button_type',
+     'the axis modes are a Material button group, which has a button type '
+     '(unset); the Bokeh radio group had none'),
+    ('1.venue_error_info.disabled',
+     'the error text of page 1 is a Material alert, which has no disabled '
+     'state'),
+    ('1.venue_error_info.visible',
+     'the error alert of page 1 is hidden while its text is empty (the '
+     'text itself is compared)'),
 ]
 
 

@@ -47,6 +47,19 @@ LINK = '#5cb85c'
 #: ``[6]``, but sends the name), so glyphs use this pattern instead.
 DASHED = [6]
 
+#: Style sheet of the figures' toolbars: icons in the muted text color, and
+#: every tool shown beside a short frame. Bokeh 3 makes a vertical toolbar
+#: as high as the frame (inline style) and moves the tools that do not fit
+#: into its height minus 15 px into an overflow menu (the short venue figure
+#: of "Equal, variable height"); a toolbar as high as its tools plus that
+#: reserve keeps them all, reaching below the frame as in Bokeh 2.
+TOOLBAR_STYLESHEET = (
+    f':host {{ --bokeh-icon-color: {TEXT_MUTED}; }}\n'
+    ':host(.bk-left), :host(.bk-right) {\n'
+    '  height: auto !important;\n'
+    '  padding-bottom: 16px;\n'
+    '}')
+
 #: Material UI theme of the page (``pmui.Page(theme_config=...)``).
 MATERIAL_THEME = {
     'palette': {
@@ -75,7 +88,7 @@ MATERIAL_THEME = {
 
 def bokeh_figure_theme() -> Theme:
     """Bokeh theme of the figures: dark plot area, muted axes, faint
-    dashed grid.
+    dashed grid, toolbars of :data:`TOOLBAR_STYLESHEET`.
 
     Set on the document, it also keeps panel-material-ui from restyling
     these model types in the browser.
@@ -102,6 +115,7 @@ def bokeh_figure_theme() -> Theme:
                  'minor_grid_line_alpha': 0.04},
         'Title': {'text_color': TEXT, 'text_font_size': '13px',
                   'text_font_style': 'normal'},
+        'Toolbar': {'stylesheets': [TOOLBAR_STYLESHEET]},
         'Legend': {'background_fill_color': HEADER,
                    'background_fill_alpha': 0.8, 'border_line_color': None,
                    'label_text_color': TEXT, 'label_text_font_size': '12px'},

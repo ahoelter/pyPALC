@@ -10,10 +10,11 @@ import logging
 from typing import TYPE_CHECKING, Sequence
 
 import numpy as np
+import panel as pn
 from bokeh.layouts import column, row
 from bokeh.models import (Button, ColumnDataSource, CustomJS,
                           CustomJSTickFormatter, DataTable, Div, FileInput,
-                          LayoutDOM, Paragraph, PointDrawTool, RangeSlider,
+                          Paragraph, PointDrawTool, RangeSlider,
                           Select, Slider, TableColumn, TabPanel, Tabs,
                           TextInput, Toggle)
 from bokeh.plotting import figure
@@ -128,7 +129,8 @@ class AlgorithmPage:
             TabPanel(child=app.venue_figure, title="Venue Slice"),
             TabPanel(child=column([self.frequency_range_slider,
                                    self.spl_over_distance_figure]),
-                     title="SPL over Distance")])
+                     title="SPL over Distance")],
+            sizing_mode='stretch_width')
         self._wire_callbacks()
 
     def _build_widgets(self) -> None:
@@ -307,12 +309,16 @@ class AlgorithmPage:
             code=DOWNLOAD_TEXT_JS.read_text()))
         self.load_setup_input.on_change('value', self.load_setup)
 
-    def layout(self) -> LayoutDOM:
+    def layout(self) -> pn.Row:
         """Body of the page below the header.
+
+        The Bokeh widgets of the page are shown in Bokeh panes
+        (:meth:`~.app.PalcApp.bokeh_pane`), beside the axis mode selection
+        of the venue figure, which is a Panel widget.
 
         Returns
         -------
-        LayoutDOM
+        panel.Row
         """
         app = self.app
         col0 = column([self.palc_variant_select, self.gap_handling_select,
@@ -324,14 +330,19 @@ class AlgorithmPage:
                        self.rule_tolerance, self.tolerance_slider,
                        self.use_fixed_angle_select, self.fixed_angle_input,
                        self.fixed_angle_text], width=270)
-        col1 = column([app.pages[1].check_venue_button, self.start_toggle,
+        col1 = column([self.start_toggle,
                        self.clear_results_button, app.config_error_info,
                        self.download_angles_button, self.download_spl_button,
                        self.save_setup_button, self.load_setup_title,
                        self.load_setup_input, self.results_table],
                       width=270)
-        col2 = column([app.venue_axes_row(), self.tabs], width=690)
-        return row([col0, col1, col2])
+        col2 = pn.Column(app.venue_axes_row(),
+                         app.bokeh_pane(self.tabs, sizing_mode='stretch_width'),
+                         width=690)
+        return pn.Row(app.bokeh_pane(col0),
+                      pn.Column(app.pages[1].check_venue_button,
+                                app.bokeh_pane(col1), width=270),
+                      col2)
 
     # ------------------------------------------------------------------
     # Widget arrangement

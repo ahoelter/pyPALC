@@ -2,14 +2,23 @@
 
 :class:`PlotRanges` (formerly ``Plot_ranges`` in ``fun/PALC_classes.py``)
 and the helpers :func:`show_rays` and :func:`scale_venue_figure` (formerly
-``venue_slice2CDS`` and ``get_p_axis_rng`` in ``fun/gui_helper.py``).
+``venue_slice2CDS`` and ``get_p_axis_rng`` in ``fun/gui_helper.py``), the
+latter with the size and the axis modes of the responsive venue figure.
 
 author: Arne Hoelter
 """
 from __future__ import annotations
 
 import numpy as np
-from bokeh.models import Range1d
+from bokeh.models import DataRange1d, Range1d
+
+#: Height in px of the venue figure in the axis modes "Equal, fixed height"
+#: and "Stretched", and its maximum height in "Equal, variable height"
+#: (low enough that the figure ends inside a 1280 x 800 window).
+VENUE_MAX_HEIGHT = 500
+#: Name of the hidden renderer of the venue figure whose data are the venue
+#: ranges; the ranges of the equal axis modes cover it.
+VENUE_BOUNDS = 'venue_bounds'
 
 
 class PlotRanges():
@@ -120,46 +129,73 @@ def show_rays(rays_source, hit_points_source, \
 
 def scale_venue_figure(venue_figure, ranges, axes_select):
     """
-    Sets the range and the scaling of the venue slice plot :any:`venue_figure`. The
-    scaling depends on the user selection in CheckBoxGroup widget
-    :any:`axes_select` and called by :any:`scale_p_axis`.
+    Sets the ranges, the scaling and the size of the venue slice figure
+    (:attr:`pypalc.gui.app.PalcApp.venue_figure`) as selected in
+    ``axes_select``.
+
+    The figure always follows the width of its container. The venue ranges
+    (``ranges.venue_x``, ``ranges.venue_y``) are the data of the hidden
+    renderer :data:`VENUE_BOUNDS` of the figure. Axis modes
+    (``axes_select.active``):
+
+    * 0, "Equal, variable height": equal scaling; the height follows the
+      width with the aspect ratio of the venue ranges, up to
+      :data:`VENUE_MAX_HEIGHT`; at that height the x range follows the
+      width (as in mode 1).
+    * 1, "Equal, fixed height": equal scaling at the height
+      :data:`VENUE_MAX_HEIGHT`; the x range follows the width.
+    * 2, "Stretched": the venue ranges fill the figure (height
+      :data:`VENUE_MAX_HEIGHT`).
+
+    Equal scaling is done by the browser for the actual size of the figure:
+    both ranges are ``DataRange1d`` over the bounds renderer, and the
+    figure matches the aspect (``match_aspect``), so Bokeh widens one range
+    until one meter has the same length on both axes.
 
     Parameters
     ----------
     venue_figure : figure [out]
-        Venue slice figure.
-    ranges : obj [in] 
-        Contains the ranging data.
-    axes_select : obj [in]
-        CheckBoxGroup widget to select scaling type of :any:`venue_figure`.
+        Venue slice figure with the renderer :data:`VENUE_BOUNDS`.
+    ranges : PlotRanges [in]
+        Contains the venue ranges.
+    axes_select : panel_material_ui.RadioButtonGroup [in]
+        Selection of the axis mode; ``active`` is its index.
 
     Returns
     -------
     None.
 
     """
-    venue_figure.frame_height=478
-    if axes_select.active == 2: # stretched is active
-        venue_figure.x_range = Range1d(ranges.venue_x[0], ranges.venue_x[1])
-        venue_figure.y_range = Range1d(ranges.venue_y[0], ranges.venue_y[1])
-        venue_figure.match_aspect=False
-    elif axes_select.active == 1: # equal axis const. height is active
-        scaling_factor = venue_figure.frame_height/venue_figure.frame_width
-        axmin = min([ranges.venue_x[0],ranges.venue_y[0]])
-        axmax = max([ranges.venue_x[1], ranges.venue_y[1]])
-        if ranges.venue_x[1] >= ranges.venue_y[1]:
-            venue_figure.x_range = Range1d(axmin, axmax)
-            venue_figure.y_range = Range1d(axmin*scaling_factor, axmax*scaling_factor)
-        else:
-            venue_figure.y_range = Range1d(axmin, axmax)
-            venue_figure.x_range = Range1d(axmin/scaling_factor, axmax/scaling_factor)
-        venue_figure.match_aspect=True
-    elif axes_select.active == 0: # equal axis variable height is active
-        venue_figure.x_range = Range1d(ranges.venue_x[0], ranges.venue_x[1])
-        venue_figure.y_range = Range1d(ranges.venue_y[0], ranges.venue_y[1])        
-        venue_figure.frame_height = int(venue_figure.frame_width*((ranges.venue_y[1]-ranges.venue_y[0]) / \
-                                            (ranges.venue_x[1]-ranges.venue_x[0])))
-        venue_figure.match_aspect=True
+    bounds = venue_figure.select_one({'name': VENUE_BOUNDS})
+    bounds.data_source.data = dict(x=list(ranges.venue_x),
+                                   y=list(ranges.venue_y))
+    sizes = dict(sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT,
+                 aspect_ratio=None, max_height=None, styles={},
+                 frame_width=None, frame_height=None)
+    if axes_select.active == 2:  # stretched
+        venue_figure.update(
+            x_range=Range1d(ranges.venue_x[0], ranges.venue_x[1]),
+            y_range=Range1d(ranges.venue_y[0], ranges.venue_y[1]),
+            match_aspect=False, **sizes)
+        return
+    if axes_select.active == 0:  # equal, variable height
+        width = ranges.venue_x[1] - ranges.venue_x[0]
+        height = ranges.venue_y[1] - ranges.venue_y[0]
+        # The CSS aspect ratio sets the height from the width. The inline
+        # styles keep the full width when the maximum height is reached
+        # (instead of narrowing the figure to the aspect ratio), stop
+        # Panel's layout from giving the figure a fixed flex height, and
+        # give the maximum height in px: Bokeh writes it as
+        # min(max_height, 100%), which the card ignores when it sizes
+        # itself to the figure, growing to the uncapped height.
+        sizes.update(height=None, aspect_ratio=width / height,
+                     max_height=VENUE_MAX_HEIGHT,
+                     styles={'flex': '0 0 auto', 'width': '100%',
+                             'max-height': '%dpx' % VENUE_MAX_HEIGHT})
+    venue_figure.update(
+        x_range=DataRange1d(renderers=[bounds], range_padding=0),
+        y_range=DataRange1d(renderers=[bounds], range_padding=0),
+        match_aspect=True, aspect_scale=1, **sizes)
 
 
 def set_figure_ranges(ranges, figures, sizes, x_range, y_range):
