@@ -23,7 +23,8 @@ from bokeh.models import DataRange1d, Range1d
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-from pypalc.gui.ranges import VENUE_BOUNDS, VENUE_MAX_HEIGHT
+from pypalc.gui.ranges import (VARIABLE_MAX_HEIGHT, VENUE_BOUNDS,
+                               VENUE_MAX_HEIGHT)
 from tests.gui_driver import read, write
 from tests.gui_steps import ROOT
 
@@ -91,9 +92,11 @@ def test_variable_height_follows_width_up_to_maximum(app):
     assert figure.aspect_ratio == pytest.approx(width / height)
     assert figure.max_height == VENUE_MAX_HEIGHT
     assert figure.height is None
-    # in px, so that the card around the figure is sized to the capped
-    # height (Bokeh's own rule is min(max_height, 100%))
-    assert figure.styles['max-height'] == '%dpx' % VENUE_MAX_HEIGHT
+    # without a percentage, so that the card around the figure is sized to
+    # the capped height (Bokeh's own rule is min(max_height, 100%)); at
+    # most VENUE_MAX_HEIGHT, less on low windows
+    assert figure.styles['max-height'] == VARIABLE_MAX_HEIGHT == \
+        'min(500px, max(200px, calc(100vh - 210px)))'
     assert figure.styles['width'] == '100%'
 
 

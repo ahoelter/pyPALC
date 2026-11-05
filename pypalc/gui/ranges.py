@@ -18,6 +18,19 @@ from bokeh.models import ColumnDataSource, DataRange1d, Range1d
 #: and "Stretched", and its maximum height in "Equal, variable height"
 #: (low enough that the figure ends inside a 1280 x 800 window).
 VENUE_MAX_HEIGHT = 500
+#: Space in px of the window above and below an equally scaled figure with
+#: a height that follows its width (header, page tabs, the tabs of pages 2
+#: and 4, card margins): its maximum height is also the window height less
+#: this space (:data:`VARIABLE_MAX_HEIGHT`), so that it ends inside smaller
+#: windows such as 1366 x 768 and 1280 x 720 too.
+WINDOW_MARGIN = 210
+#: Smallest maximum height in px of such a figure on very low windows.
+MIN_MAX_HEIGHT = 200
+#: CSS maximum height of such a figure: :data:`VENUE_MAX_HEIGHT`, at most
+#: the window height less :data:`WINDOW_MARGIN`, at least
+#: :data:`MIN_MAX_HEIGHT`.
+VARIABLE_MAX_HEIGHT = 'min(%dpx, max(%dpx, calc(100vh - %dpx)))' % (
+    VENUE_MAX_HEIGHT, MIN_MAX_HEIGHT, WINDOW_MARGIN)
 #: Name of the hidden renderer of the venue figure whose data are the venue
 #: ranges; the ranges of the equal axis modes cover it.
 VENUE_BOUNDS = 'venue_bounds'
@@ -197,7 +210,8 @@ def scale_equally(figure, ranges, variable_height):
         Contains the venue ranges.
     variable_height : bool
         If True, the height follows the width with the aspect ratio of the
-        venue ranges, up to :data:`VENUE_MAX_HEIGHT`; at that height it
+        venue ranges, up to :data:`VARIABLE_MAX_HEIGHT`
+        (:data:`VENUE_MAX_HEIGHT`, less on low windows); at that height it
         behaves as with False. If False, the height is
         :data:`VENUE_MAX_HEIGHT`; the whole venue stays visible and one
         range widens to fill the figure.
@@ -220,13 +234,16 @@ def scale_equally(figure, ranges, variable_height):
         # styles keep the full width when the maximum height is reached
         # (instead of narrowing the figure to the aspect ratio), stop
         # Panel's layout from giving the figure a fixed flex height, and
-        # give the maximum height in px: Bokeh writes it as
+        # give the maximum height without a percentage: Bokeh writes it as
         # min(max_height, 100%), which the card ignores when it sizes
-        # itself to the figure, growing to the uncapped height.
+        # itself to the figure, growing to the uncapped height. The
+        # maximum also depends on the window height, so that the figure
+        # ends inside low windows; the browser lays the figure out again
+        # when the window is resized.
         sizes.update(height=None, aspect_ratio=width / height,
                      max_height=VENUE_MAX_HEIGHT,
                      styles={'flex': '0 0 auto', 'width': '100%',
-                             'max-height': '%dpx' % VENUE_MAX_HEIGHT})
+                             'max-height': VARIABLE_MAX_HEIGHT})
     figure.update(
         x_range=DataRange1d(renderers=[bounds], range_padding=0),
         y_range=DataRange1d(renderers=[bounds], range_padding=0),
@@ -253,7 +270,9 @@ def scale_venue_figure(venue_figure, ranges, axes_select):
 
     * 0, "Equal, variable height": equal scaling; the height follows the
       width with the aspect ratio of the venue ranges, up to
-      :data:`VENUE_MAX_HEIGHT`; at that height it behaves as mode 1.
+      :data:`VARIABLE_MAX_HEIGHT` (:data:`VENUE_MAX_HEIGHT`, less on low
+      windows, so that the figure ends inside the window); at that height
+      it behaves as mode 1.
     * 1, "Equal, fixed height": equal scaling at the height
       :data:`VENUE_MAX_HEIGHT`; the whole venue stays visible and one
       range widens to fill the figure.

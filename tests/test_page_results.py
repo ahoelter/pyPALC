@@ -13,7 +13,8 @@ from bokeh.models import BoxZoomTool, CustomJS, DataRange1d, Range1d
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-from pypalc.gui.ranges import VENUE_MAX_HEIGHT, venue_bounds
+from pypalc.gui.ranges import (VARIABLE_MAX_HEIGHT, VENUE_MAX_HEIGHT,
+                               venue_bounds)
 from tests.baseline_cases import case_path
 from tests.gui_driver import read, write
 from tests.test_gui_equivalence import drive
@@ -103,6 +104,7 @@ def test_beam_figures_are_equally_scaled(ran):
         # height" of the venue figure)
         assert figure.aspect_ratio == pytest.approx(width / height)
         assert figure.max_height == VENUE_MAX_HEIGHT
+        assert figure.styles['max-height'] == VARIABLE_MAX_HEIGHT
         assert figure.height is None
     # each figure has its own ranges (BokehJS computes them per figure)
     beam, reference = _beam_figures(page)
