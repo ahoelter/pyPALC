@@ -110,6 +110,14 @@ TWO_TABS_LINE = {'1. Start x in m': '2', '4. Start y in m': '0',
 #: gets new ranges.
 CONFIG_INPUTS = {2: ('9. Aperture angle in deg', '3.5'),
                  3: ('14. Top y in m', '2.5')}
+#: Pages whose venue figure is in a tab, the other tab there and an input
+#: of the page that gives the venue figure new ranges: page -> (tab, label,
+#: value). The equal axes check changes the input (and sets it back) while
+#: the other tab is shown; a value of None is a slider moved one step up
+#: (and down again) with the arrow keys.
+HIDDEN_VENUE_INPUTS = {
+    2: ('Directivity', '9. Aperture angle in deg', '3.5'),
+    4: ('SPL over distance', '23. Tolerance (abort criterion) in m', None)}
 #: The CSV files of "Download Results" (all but the tilt angles) and their
 #: headers.
 RESULT_FILES = {DOWNLOAD_FILE_NAMES[key]: list(DOWNLOAD_COLUMNS[key])
@@ -221,7 +229,8 @@ function plotState(v) {
             x: [num(m.x_range.start), num(m.x_range.end)],
             y: [num(m.y_range.start), num(m.y_range.end)],
             left: f.left, below: v.bbox.height - f.bottom,
-            bottom: r.bottom, window_height: window.innerHeight};
+            bottom: r.bottom, window_height: window.innerHeight,
+            range_ids: [m.x_range.id, m.y_range.id]};
 }
 """
 
@@ -539,6 +548,39 @@ class BrowserCheck:
         element.click()
         element.send_keys(Keys.CONTROL, 'a')
         element.send_keys(value, Keys.ENTER)
+
+    def step_slider(self, label: str, key: str) -> str:
+        """Move the shown slider with this label one step with an arrow
+        key, as a user does with the keyboard.
+
+        Parameters
+        ----------
+        label : str
+            Label of the slider (its ``aria-label``).
+        key : str
+            ``'up'`` or ``'down'``.
+
+        Returns
+        -------
+        tuple of str
+            The value of the slider before and after (``aria-valuenow``).
+        """
+        from selenium.webdriver.common.action_chains import ActionChains
+        from selenium.webdriver.common.keys import Keys
+        find = """return deep('input[type=range]').find(
+                        e => e.getAttribute('aria-label') === arguments[0]
+                             && visible(e.closest('.MuiSlider-root'))
+                             && !e.disabled) || null;"""
+        element = self.js(find, label)
+        if element is None:
+            raise RuntimeError('no enabled slider %r' % label)
+        before = element.get_attribute('aria-valuenow')
+        self.js("arguments[0].scrollIntoView({block: 'center'}); "
+                "arguments[0].focus();", element)
+        ActionChains(self.driver).send_keys(
+            Keys.ARROW_RIGHT if key == 'up' else Keys.ARROW_LEFT).perform()
+        time.sleep(0.5)
+        return before, self.js(find, label).get_attribute('aria-valuenow')
 
     def set_axis_mode(self, mode: int) -> None:
         """Select an axis mode of the venue figure on the shown page.
@@ -1110,12 +1152,16 @@ class BrowserCheck:
     def check_equal_axes(self) -> tuple:
         """Equal scaling: one meter has the same length in px on both
         axes (within :data:`EQUAL_TOLERANCE`) in the venue figure in the
-        axis modes "Equal, variable height" and "Equal, fixed height" (page
-        1, page 4 and page 1 again) and in both beam plots (page 5, again
-        after page 1 was shown). In "Equal, variable height" the figure
-        must end inside the window. Screenshots of page 1 in every axis
-        mode (states ``axes_0`` to ``axes_2``); the mode is "Stretched"
-        again afterwards.
+        axis modes "Equal, variable height" and "Equal, fixed height" (pages
+        1 to 4 and page 1 again) and in both beam plots (page 5, again
+        after page 1 was shown). On pages 2 and 4, whose venue figure is in
+        a tab, also after a round trip to the other tab during which an
+        input gave the figure new ranges (:data:`HIDDEN_VENUE_INPUTS`; the
+        input is set back with a second round trip, and the check fails if
+        the ranges were not renewed). In "Equal, variable height" the
+        figure must end inside the window. Screenshots of page 1 in every
+        axis mode (states ``axes_0`` to ``axes_2``); the mode is
+        "Stretched" again afterwards.
 
         Returns
         -------
@@ -1141,15 +1187,54 @@ class BrowserCheck:
             if bottom and state['bottom'] > state['window_height']:
                 problems.append('%s: figure ends below the window' % name)
 
+        def change_hidden(page, mode, step):
+            # change the input while the other tab hides the venue figure;
+            # step 0 changes it, step 1 sets it back
+            tab, label, value = HIDDEN_VENUE_INPUTS[page]
+            before = self.venue_state()
+            self.show_tab(tab)
+            if value is None:
+                old, shown = self.step_slider(label, ('up', 'down')[step])
+                if step == 0:
+                    old_inputs[page] = old
+                elif shown != old_inputs[page]:
+                    problems.append('page %d: %s not set back to %s (%s)' % (
+                        page, label, old_inputs[page], shown))
+            else:
+                if step == 0:
+                    old_inputs[page] = self.js(
+                        'return fields()[arguments[0]];', label)
+                shown = (value, old_inputs[page])[step]
+                self.enter(label, shown)
+                time.sleep(0.5)
+            self.wait_settled()
+            self.show_tab(VENUE_TAB)
+            self.js('const m = mainArea(); if (m) m.scrollTop = 0;')
+            state = self.venue_state()
+            name = 'page %d mode %d %s=%s on tab %r' % (
+                page, mode, label.split('.')[0], shown, tab)
+            measure(name, state, bottom=mode == 0)
+            if before and state and \
+                    before['range_ids'] == state['range_ids']:
+                problems.append('%s: the venue figure got no new ranges, '
+                                'so the round trip checked nothing' % name)
+
+        old_inputs = {}
         self.show_page(1)
         for mode in (0, 1):
             self.set_axis_mode(mode)
             measure('page 1 mode %d' % mode, self.venue_state(),
                     bottom=mode == 0)
             self.screenshot(1, 'axes_%d' % mode)
-            self.show_page(4)
-            self.show_tab(VENUE_TAB)
-            measure('page 4 mode %d' % mode, self.venue_state())
+            for page in (2, 3, 4):
+                self.show_page(page)
+                if page in HIDDEN_VENUE_INPUTS:
+                    self.show_tab(VENUE_TAB)
+                measure('page %d mode %d' % (page, mode), self.venue_state(),
+                        bottom=mode == 0)
+                if page in HIDDEN_VENUE_INPUTS:
+                    for step in (0, 1):
+                        change_hidden(page, mode, step)
             self.show_page(1)
             measure('page 1 again mode %d' % mode, self.venue_state(),
                     bottom=mode == 0)

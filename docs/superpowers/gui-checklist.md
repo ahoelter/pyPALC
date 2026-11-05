@@ -83,8 +83,9 @@ These were not walked in a browser; they are noted from the legacy
   (`tools/compare_screenshots.py`) is by eye
 - [ ] Axis modes of the venue figure ("Equal, variable height", "Equal,
   fixed height", "Stretched") — browser_check: `equal_axes` (equal
-  pixels per meter in the equal modes on pages 1 and 4, the figure inside
-  the window, a screenshot in each mode), `axis_labels` (labels kept
+  pixels per meter in the equal modes on pages 1 to 4, also after an
+  input changed while the other tab of pages 2 and 4 was shown, the
+  figure inside the window, a screenshot in each mode), `axis_labels` (labels kept
   after a mode change and after inputs on pages 2 and 3)
 - [ ] The directivity plot updates on directivity change; "Measured
   Loudspeaker Data" shows the upload — needs browser
@@ -194,7 +195,7 @@ running server in a headless Firefox window (`--width`, default 1280 x
 | `running_indicator` | "PALC Run" is dark red (`rgb(139, 0, 0)`) and reads "Running..." while the calculation runs and while the setup of `load` loaded, and is green and ready afterwards |
 | `drag` | moves a target point as the PointDrawTool does; the server snaps it to the distance grid and moves the optimization region |
 | `rays_cleared` | page 4 shows the rays of the result, page 1 afterwards shows none |
-| `equal_axes` | the venue figure in "Equal, variable height" and "Equal, fixed height" on page 1, page 4 and page 1 again, and both beam plots on page 5 (again after page 1): pixels per meter on x and y differ by less than 1 %; in "Equal, variable height" the figure ends inside the window; screenshots of page 1 in all three axis modes |
+| `equal_axes` | the venue figure in "Equal, variable height" and "Equal, fixed height" on pages 1 to 4 and page 1 again, on pages 2 and 4 also after a round trip to the other tab during which an input there ("9. Aperture angle", "23. Tolerance") gave the figure new ranges, and both beam plots on page 5 (again after page 1): pixels per meter on x and y differ by less than 1 %; in "Equal, variable height" the figure ends inside the window; screenshots of page 1 in all three axis modes |
 | `beam_link` | a box zoom (mouse drag) in the PALC beam plot zooms the reference beam plot too, the reset tool of the reference plot resets both |
 | `toolbars` | no toolbar hides tools in an overflow menu, in every screenshot and in every tab of pages 4 and 5 |
 | `axis_labels` | the venue figure keeps its tick labels and axis titles (space left of and below its frame) after axis mode changes and, in "Equal, fixed height", after an input on pages 2 and 3 |
