@@ -1,7 +1,7 @@
 # pyPALC Panel redesign: design
 
 Date: 2026-11-05
-Status: draft, awaiting user approval
+Status: approved (2026-11-05)
 
 This is the third of five projects:
 
@@ -85,6 +85,9 @@ show the final GUI.
 - No reorganization of pages or steps.
 - No target slope work (project 5) and no Sphinx docs (project 4).
 - No phone or tablet layout (window widths below 1280 px may scroll).
+  But a phone/tablet layout must stay possible later (user wish, after the
+  other projects): no layout decision may block it, for example cards at
+  fixed pixel positions or widths that cannot shrink.
 
 ## Anti-goals
 
