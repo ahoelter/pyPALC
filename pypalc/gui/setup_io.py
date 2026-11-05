@@ -359,7 +359,6 @@ def _set_algorithm(app: PalcApp, alg: AlgorithmSettings) -> None:
         float(f) for f in alg.frequency_range_hz)
     page.weighting_select.options = list(WEIGHTINGS)
     page.weighting_select.value = 'Without'
-    page.weighting_select.width = 255
     page.hinges_select.visible = False
     page.weighting_nu_slider.value = 1.0
     for widget in (page.weighting_nu_slider, page.nu_plus_button,
@@ -370,7 +369,7 @@ def _set_algorithm(app: PalcApp, alg: AlgorithmSettings) -> None:
     page.fixed_angle_input.value = '0.0'
     page.fixed_angle_input.disabled = True
     page.show_initial_fixed_angle_range()
-    page.start_toggle.active = False
+    page.start_toggle.value = False
     page.tabs.active = 0
 
 

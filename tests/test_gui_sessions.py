@@ -67,7 +67,7 @@ def test_run_calculation_matches_pipeline():
     a.check_venue()
     with contextlib.redirect_stdout(io.StringIO()):
         a.run_calculation()
-    assert a.config_error_info.text == ''
+    assert a.config_error_info.object == ''
     data = a.pages[4].results_source.data
     # baseline tolerance: BLAS builds differ in the last digits
     with np.load(baseline_path('simple')) as baseline:
@@ -109,9 +109,9 @@ def test_failed_calculation_shows_error_and_keeps_results():
     array.use_discrete_angles_select.value = 'Yes'
     array.discrete_angles_input.value = 'a,b'
     algorithm = app.pages[4]
-    algorithm.start_toggle.active = True
-    assert algorithm.start_toggle.active is False
-    assert app.config_error_info.text.startswith(
+    algorithm.start_toggle.value = True
+    assert algorithm.start_toggle.value is False
+    assert app.config_error_info.object.startswith(
         'Error: array.discrete_tilt_angles_deg')
     assert app.state.result is result
     assert algorithm.results_source.data == angles
@@ -126,7 +126,7 @@ def test_unexpected_error_releases_start_toggle(monkeypatch, caplog):
     monkeypatch.setattr(pipeline, 'run', fail)
     algorithm = app.pages[4]
     with pytest.raises(RuntimeError):
-        algorithm.start_toggle.active = True
-    assert algorithm.start_toggle.active is False
+        algorithm.start_toggle.value = True
+    assert algorithm.start_toggle.value is False
     assert any(record.exc_info and record.levelname == 'ERROR'
                for record in caplog.records)

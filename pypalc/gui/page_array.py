@@ -132,7 +132,7 @@ class ArrayPage:
                 'Discrete tilt angles', self.use_discrete_angles_select,
                 self.discrete_angles_input,
                 caption("Separate the angles by ','."),
-                self.app.config_message())
+                self.app.config_error_info)
             reference_card = card(
                 'Reference array',
                 caption('Array that the PALC result is compared with.',
@@ -141,6 +141,8 @@ class ArrayPage:
                 self.reference_discrete_angles_select,
                 self.reference_start_input, self.reference_step_stop_input,
                 self.reference_user_angles_input,
+                caption("Separate the angles by ','.", visible=(
+                    self.reference_user_angles_input.param.visible)),
                 self._reference_table())
             figure_card = card(
                 'Venue slice', self.app.venue_axes_row(),
@@ -230,16 +232,16 @@ class ArrayPage:
         # discrete angles were disabled
         # the legacy value check
         if config.use_discrete_angles == False:  # noqa: E712
-            error_info.text = ''
+            error_info.object = ''
             config.discrete_tilt_angles = []
             return
         try:
             config.discrete_tilt_angles = np.array(
                 [float(s) for s in self.discrete_angles_input.value.split(',')]
             ) * (np.pi/180)
-            error_info.text = ''
+            error_info.object = ''
         except ValueError:
-            error_info.text = 'Error: Could not process the input'
+            error_info.object = 'Error: Could not process the input'
 
     @skipped_while_applying_setup
     def reference_input_changed(self, attr, old, new) -> None:
@@ -351,10 +353,10 @@ class ArrayPage:
             # in radian
             reference.tilt_angles = reference.tilt_angles_deg * (np.pi / 180)
             if cabinet_count_changed == False:  # noqa: E712
-                self.app.config_error_info.text = ''
+                self.app.config_error_info.object = ''
         except CALLBACK_ERRORS:
             logger.debug('Could not compute the reference array',
                          exc_info=True)
-            self.app.config_error_info.text = 'Error: Could not process the input'
+            self.app.config_error_info.object = 'Error: Could not process the input'
             self.reference_start_input.value = '0'
             self.reference_step_stop_input.value = '0'

@@ -33,13 +33,12 @@ More info soon!
 |---|---|
 | `main.py` | entry point of `panel serve`: builds one `PalcApp` per browser session and serves its view |
 | `pypalc/core/` | the calculation without Bokeh: settings and setup files, venue, PALC, sound field prediction, target slope, pipeline, CSV export |
-| `pypalc/gui/` | the GUI: `PalcApp` (page frame and switching), one module per page, plot ranges and the axis modes of the venue figure, setup save/load, style, card and input building blocks (`widgets.py`) |
+| `pypalc/gui/` | the GUI: `PalcApp` (page frame and switching), one module per page, plot ranges and the axis modes of the venue figure, setup save/load, the files of the downloads (`downloads.py`), style, card and input building blocks (`widgets.py`) |
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
 | `examples/` | example setup files |
 | `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_reference.json` holds the application data of the former Bokeh GUI after each scripted GUI step (`tests/gui_steps.py`) |
 | `tools/` | development tools: browser check and screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
 | `static/` | logos |
-| `ext/` | JavaScript of the CSV downloads |
 
 ### Running the tests
 
@@ -120,9 +119,12 @@ Output files and their columns:
 
 ### CSV header changes
 
-The GUI downloads ("Download PALC Angles" and "Download SPL" on page 4) now
-use the file names and column names of the headless export. Before, every
-file was saved as `PALC_result.csv`.
+The GUI downloads ("Download PALC Angles" and "Download Results" on page 4)
+now use the file names and column names of the headless export, and write
+the numbers as it does. Before, every file was saved as `PALC_result.csv`.
+"Download Results" (formerly "Download SPL") saves the five files other than
+`tilt_angles.csv` in one zip file, `pypalc_results.zip`. Before the first
+calculation the files hold the header only.
 
 | file (was `PALC_result.csv`) | old columns | new columns |
 |---|---|---|

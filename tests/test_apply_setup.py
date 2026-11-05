@@ -5,15 +5,14 @@ exactly as a user leaves it who enters the setup by hand, page by page, and
 clicks "PALC Run" (the hand path of ``tests/test_gui_equivalence.py``,
 clicked on page 4). Compared are all widgets, sources and figures of the
 pages (:func:`state_of`) and the values the PALC configuration stores, for
-every baseline case. Four differences are accepted (:data:`NOT_COMPARED`):
+every baseline case. Three differences are accepted (:data:`NOT_COMPARED`),
+and the start-up nesting of the reference table is removed:
 
 * ``app.page_select.active``: load switches to page 5 (the results).
 * ``2.directivity_upload.value``: a browser file input cannot be filled by
   the server, so after a load the directivity upload shows no file. The
   data is restored in the session (``state.measured_directivity_csv``).
 * ``4.load_setup_input.value``: the uploaded setup file itself.
-* ``4.setup_file_source.data``: the text of the last "Save Setup" (the
-  tests save from the shared loaded sessions).
 * ``3.reference_angles_source.data`` of a new session holds each column as
   a nested list (one table row with all cabinets); load writes the
   computed table, as every change of the reference array does. The angles
@@ -26,7 +25,6 @@ cases the round trip compares the setup of the run (``result.setup``) with
 the loaded setup, and the shown setup with the one shown after the hand
 path.
 """
-import base64
 import contextlib
 import csv
 import dataclasses
@@ -37,9 +35,9 @@ import math
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from bokeh.document import Document
-from bokeh.events import ButtonClick
 from bokeh.model import Model
 from bokeh.models import DataRange1d, Range1d
 from panel.viewable import Viewable
@@ -52,6 +50,7 @@ from pypalc.core.pipeline import fixed_angle_limits, result_arrays, run
 from pypalc.core.settings import (AudienceLine, MeasuredDirectivity,
                                   dump_setup, load_setup, load_setup_text)
 from pypalc.gui.app import PalcApp
+from pypalc.gui.downloads import setup_yaml
 from pypalc.gui.setup_io import apply_setup, setup_from_app
 from tests.baseline_cases import CASES
 from tests.gui_driver import has, read, upload
@@ -65,7 +64,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TARGET_SLOPE_CASES = ("target_slope", "gap_soft_margin_target_slope")
 #: Values that differ on purpose between load and the hand path.
 NOT_COMPARED = ("app.page_select.active", "2.directivity_upload.value",
-                "4.load_setup_input.value", "4.setup_file_source.data")
+                "4.load_setup_input.value")
 PATH_KEY = "loudspeaker.measured_directivity.path"
 #: Compared properties (Bokeh-era names, read through
 #: ``tests/gui_driver.py``): those of the GUI reference and the titles,
@@ -101,12 +100,9 @@ def new_app():
 
 
 def load(app, text):
-    """Upload a setup file through the "Load Setup" input.
-
-    Bokeh 3: ``FileInput.value`` is read-only in Python; the browser's
-    upload arrives through ``set_from_json``."""
-    quiet(app.pages[4].load_setup_input.set_from_json, "value",
-          base64.b64encode(text.encode("utf-8")).decode("ascii"))
+    """Upload a setup file through the "Load Setup" input."""
+    quiet(upload, app.pages[4].load_setup_input, text.encode("utf-8"),
+          "pypalc_setup.yaml")
 
 
 def models_of(app):
@@ -129,6 +125,8 @@ def _norm(value):
             for x in (value.start, value.end)]
     if isinstance(value, Model):
         return type(value).__name__
+    if isinstance(value, pd.DataFrame):  # the value of a table
+        return norm(value.to_dict('list'))
     return norm(value)
 
 
@@ -158,6 +156,13 @@ def state_of(app):
     key = '3.reference_angles_source.data'
     state[key] = _flat_reference_table(state[key])
     return state
+
+
+def without_error(state):
+    """The state without the error text (and whether its alert shows)."""
+    return {key: value for key, value in state.items()
+            if key not in ('app.config_error_info.text',
+                           'app.config_error_info.visible')}
 
 
 def _flat_reference_table(data):
@@ -208,10 +213,10 @@ def loaded(case):
 @pytest.mark.parametrize("case", CASES)
 def test_load_shows_results(case):
     app = loaded(case)
-    assert app.config_error_info.text == ''
+    assert app.config_error_info.object == ''
     assert app.page_select.active == 5
     assert app.state.result is not None
-    assert app.pages[4].start_toggle.active is False
+    assert app.pages[4].start_toggle.value is False
     assert app.state.applying_setup is False
 
 
@@ -276,15 +281,13 @@ def test_apply_setup_rejects_path_directivity():
     before, setup_before = state_of(app), setup_from_app(app)
     text = (ROOT / "tests" / "cases" / "measured.yaml").read_text()
     load(app, text)
-    error = app.config_error_info.text
+    error = app.config_error_info.object
     assert error.startswith(
         "Error: setup file invalid at %s: " % PATH_KEY), error
     assert "Save Setup" in error and "python -m pypalc run" in error
     assert setup_from_app(app) == setup_before
     after = state_of(app)
-    after.pop('app.config_error_info.text')
-    before.pop('app.config_error_info.text')
-    assert not differences(before, after)
+    assert not differences(without_error(before), without_error(after))
 
 
 def test_apply_setup_raises_for_path_directivity():
@@ -305,13 +308,11 @@ def assert_load_rejected(text, key):
     quiet(drive, app, case_setup("fixed_angle"))
     before, setup_before = state_of(app), setup_from_app(app)
     load(app, text)
-    error = app.config_error_info.text
+    error = app.config_error_info.object
     assert error.startswith("Error: setup file invalid at %s: " % key), error
     assert setup_from_app(app) == setup_before
     after = state_of(app)
-    after.pop('app.config_error_info.text')
-    before.pop('app.config_error_info.text')
-    assert not differences(before, after)
+    assert not differences(without_error(before), without_error(after))
 
 
 def test_load_rejects_invalid_yaml():
@@ -352,7 +353,7 @@ def test_load_logs_rejection_with_traceback_at_debug_level(caplog):
     app = new_app()
     with caplog.at_level(logging.DEBUG, logger="pypalc.gui.page_algorithm"):
         load(app, dump_setup(_setup_with_reversed_line()))
-    assert app.config_error_info.text.startswith(
+    assert app.config_error_info.object.startswith(
         "Error: setup file invalid at venue.audience_lines: ")
     debug = [r for r in caplog.records if r.levelno == logging.DEBUG]
     assert len(debug) == 1 and debug[0].exc_info is not None
@@ -375,17 +376,39 @@ def test_load_rejects_frequency_range_outside_slider():
         "algorithm.frequency_range_hz")
 
 
+def test_load_invalid_yaml_shows_error():
+    app = new_app()
+    load(app, "::: not yaml")
+    assert app.config_error_info.object.startswith("Error: "), \
+        app.config_error_info.object
+    assert app.config_error_info.visible
+    toggle = app.pages[4].start_toggle
+    assert app.pages[4].running is False
+    assert toggle.value is False and toggle.label == '26. PALC Run'
+    assert app.state.result is None
+
+
+def test_load_same_file_again_loads_again():
+    """The browser sends a file selected again; it is loaded again."""
+    app = new_app()
+    text = case_text("simple")
+    load(app, text)
+    first = app.state.result
+    app.pages[2].aperture_input.value = '5'
+    load(app, text)
+    assert app.state.result is not first
+    assert setup_from_app(app) == load_setup_text(text)
+
+
 def test_load_rejects_non_utf8_file():
     app = new_app()
     before = state_of(app)
-    quiet(app.pages[4].load_setup_input.set_from_json, "value",
-          base64.b64encode(b"\xff\xfe\x00bad").decode("ascii"))
-    assert app.config_error_info.text.startswith(
+    quiet(upload, app.pages[4].load_setup_input, b"\xff\xfe\x00bad",
+          "pypalc_setup.yaml")
+    assert app.config_error_info.object.startswith(
         "Error: setup file invalid at file: ")
     after = state_of(app)
-    after.pop('app.config_error_info.text')
-    before.pop('app.config_error_info.text')
-    assert not differences(before, after)
+    assert not differences(without_error(before), without_error(after))
 
 
 def test_failed_run_after_load_shows_error(monkeypatch):
@@ -395,7 +418,7 @@ def test_failed_run_after_load_shows_error(monkeypatch):
     app = new_app()
     monkeypatch.setattr(pipeline, "run", fail)
     load(app, case_text("simple"))
-    assert app.config_error_info.text == 'Error: No convergence reached'
+    assert app.config_error_info.object == 'Error: No convergence reached'
     assert app.page_select.active == 4
     assert app.state.result is None
     assert app.state.applying_setup is False
@@ -420,7 +443,7 @@ def test_failed_load_clears_previous_results(previous, failing):
     load(app, case_text(previous))
     assert app.state.result is not None
     load(app, _failing_text(failing))
-    assert app.config_error_info.text == 'Error: No convergence reached'
+    assert app.config_error_info.object == 'Error: No convergence reached'
     assert app.state.result is None
     fresh = new_app()
     fresh.page_select.active = 4
@@ -443,8 +466,8 @@ def test_failed_run_keeps_previous_results(monkeypatch):
         raise ConvergenceError('Error: No convergence reached')
 
     monkeypatch.setattr(pipeline, "run", fail)
-    app.pages[4].start_toggle.active = True
-    assert app.config_error_info.text == 'Error: No convergence reached'
+    app.pages[4].start_toggle.value = True
+    assert app.config_error_info.object == 'Error: No convergence reached'
     assert app.state.result is previous
     np.testing.assert_array_equal(
         app.pages[4].results_source.data['tilt_angle_deg'],
@@ -452,62 +475,19 @@ def test_failed_run_keeps_previous_results(monkeypatch):
 
 
 def saved_text(app):
-    """Click "Save Setup" and return the text the browser downloads."""
-    algorithm = app.pages[4]
-    quiet(algorithm.save_setup_button._trigger_event,
-          ButtonClick(algorithm.save_setup_button))
-    texts = algorithm.setup_file_source.data['text']
-    assert len(texts) == 1
-    return texts[0]
+    """The text "Save Setup" downloads."""
+    text = quiet(setup_yaml, app.pages[4])
+    assert text is not None, app.config_error_info.object
+    return text
 
 
-def test_save_writes_yaml_to_download_source():
+def test_save_writes_yaml():
     app = new_app()
     quiet(enter, app, case_setup("measured"))
     text = saved_text(app)
     assert load_setup_text(text) == setup_from_app(app)
     assert load_setup_text(text).loudspeaker.measured_directivity.csv == \
         (ROOT / "tests" / "cases" / "measured.csv").read_bytes().decode()
-
-
-def test_save_twice_downloads_twice():
-    app = new_app()
-    algorithm = app.pages[4]
-    changes = []
-    algorithm.setup_file_source.on_change(
-        'data', lambda attr, old, new: changes.append(list(new['text'])))
-    saved_text(app)
-    saved_text(app)
-    assert [c for c in changes if c] == [[dump_setup(setup_from_app(app))]] * 2
-
-
-def test_save_changes_download_source_once():
-    """One "Save Setup" click changes the download source once.
-
-    Bokeh 3 serializes a change of a source's data when the session sends
-    its patches, after the callback, with the data of that moment: two
-    changes in one callback both reach the browser with the text, and its
-    callback downloads the file twice."""
-    app = new_app()
-    app.page_select.active = 4
-    source = app.pages[4].setup_file_source
-    events = []
-    app.doc.on_change(events.append)
-    saved_text(app)
-    saved_text(app)
-    assert len([e for e in events
-                if getattr(e, 'model', None) is source]) == 2
-
-
-def test_save_shows_error_for_invalid_input():
-    app = new_app()
-    app.pages[2].directivity_select.value = "Measured Loudspeaker Data"
-    quiet(app.pages[4].save_setup_button._trigger_event,
-          ButtonClick(app.pages[4].save_setup_button))
-    assert app.config_error_info.text.startswith(
-        "Error: setup not saved, invalid input at "
-        "loudspeaker.measured_directivity: ")
-    assert app.pages[4].setup_file_source.data['text'] == []
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -553,8 +533,8 @@ def test_failed_display_keeps_previous_result(monkeypatch):
         raise ValueError("display failed")
 
     monkeypatch.setattr(app, "_show_result", fail)
-    app.pages[4].start_toggle.active = True
-    assert app.config_error_info.text == 'Error: Could not store the output'
+    app.pages[4].start_toggle.value = True
+    assert app.config_error_info.object == 'Error: Could not store the output'
     assert app.state.result is previous
 
 
@@ -565,7 +545,7 @@ def test_fixed_angle_follows_top_position():
     array.top_y_input.value = '20'
     max_deg, min_deg = fixed_angle_limits(app.state.venue,
                                           setup_from_app(app))
-    assert algorithm.fixed_angle_text.text == 'Max: %s, Min: %s' % (
+    assert algorithm.fixed_angle_text.object == 'Max: %s, Min: %s' % (
         np.round(max_deg, decimals=2), np.round(min_deg, decimals=2))
     shown = float(algorithm.fixed_angle_input.value)
     assert shown == app.state.config.fixed_angle
@@ -591,7 +571,7 @@ def load_and_save(text):
     """Load a setup file into a new session; the session and its save."""
     app = new_app()
     load(app, text)
-    assert app.config_error_info.text == '', app.config_error_info.text
+    assert app.config_error_info.object == '', app.config_error_info.object
     return app, saved_text(app)
 
 

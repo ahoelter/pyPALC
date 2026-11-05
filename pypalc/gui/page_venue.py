@@ -30,10 +30,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-#: Separator lines between widget groups (pages 3 and 4).
-RULE_LONG = "______________________________________"
-RULE = "___________________________________"
-
 #: Shown if the discretization cannot be read.
 _DISCRETIZATION_ERROR = 'Couldnt process discretization input. Use default: 5 points per m'
 

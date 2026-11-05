@@ -35,6 +35,9 @@ RENAMED_LABELS: Dict[str, str] = {
     # axis modes of the venue figure
     'Equal (variable figure height)': 'Equal, variable height',
     'Equal (const. figure height)': 'Equal, fixed height',
+    # page 4
+    '27. Delete Result Visualization': '27. Delete result visualization',
+    'Download SPL': 'Download Results',
 }
 
 #: (key pattern, reason) of keys whose value changes on purpose.
@@ -53,6 +56,15 @@ INTENDED: List[Tuple[str, str]] = [
     ('2.directivity_upload.button_type',
      'the directivity upload is a Material file input, a button with a '
      'button type (its color); the Bokeh file input had none'),
+    ('app.config_error_info.disabled',
+     'the error text of pages 2 to 4 is a Material alert, which has no '
+     'disabled state'),
+    ('app.config_error_info.visible',
+     'the error alert of pages 2 to 4 is hidden while its text is empty '
+     '(the text itself is compared)'),
+    ('4.fixed_angle_text.disabled',
+     'the allowed range of the fixed angle is an HTML pane, which has no '
+     'disabled state (the text itself is compared)'),
 ]
 
 

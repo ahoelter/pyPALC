@@ -42,7 +42,7 @@ import numpy as np
 import panel as pn
 import panel_material_ui as pmui
 from bokeh.document import Document
-from bokeh.models import ColumnDataSource, LayoutDOM, Model, Paragraph
+from bokeh.models import ColumnDataSource, LayoutDOM, Model
 from bokeh.plotting import figure
 from bokeh.transform import linear_cmap
 from colorcet import rainbow
@@ -287,8 +287,9 @@ class PalcApp:
                 'whiteSpace': 'nowrap', 'padding': '3px 12px'}})
         """Axis mode of the venue figure; ``active`` is the index in
         :data:`AXIS_MODES`."""
-        self.config_error_info = Paragraph(text="", width=250, height=50)
-        """Error text of the configuration pages 2 to 4."""
+        self.config_error_info = message()
+        """Error text of the configuration pages 2 to 4 (its ``object``),
+        one alert shown on each of these pages."""
 
     # ------------------------------------------------------------------
     # Layout
@@ -306,24 +307,6 @@ class PalcApp:
                              f'font-size:12px">Axes</span>',
                              align='center', margin=(0, 0, 0, 8))
         return pn.Row(label, self.venue_axes_select, margin=(0, 0, 8, 0))
-
-    def config_message(self) -> pmui.Alert:
-        """Alert that shows the error text of the configuration pages.
-
-        The text is that of :attr:`config_error_info` (a Bokeh paragraph
-        until page 4 is ported); the alert follows every change of it and
-        is hidden while it is empty (:func:`~.widgets.message`).
-
-        Returns
-        -------
-        panel_material_ui.Alert
-            A new alert, for the layout of one page.
-        """
-        alert = message()
-        alert.object = self.config_error_info.text
-        self.config_error_info.on_change(
-            'text', lambda attr, old, new: setattr(alert, 'object', new))
-        return alert
 
     def bokeh_pane(self, model: LayoutDOM, **params) -> pn.pane.Bokeh:
         """A Bokeh figure or layout as a Panel pane, drawn with the theme of
@@ -477,7 +460,7 @@ class PalcApp:
                                    non_audience_lines=non_audience_lines,
                                    sound_field_only_lines=sound_field_only_lines)
             self.set_venue_checked(True)
-            self.config_error_info.text = ''
+            self.config_error_info.object = ''
             if algorithm.weighting_select.value in ['Target Slope']:
                 algorithm.weighting_select.value = 'Without'
                 st.target.initialized = False
@@ -488,7 +471,7 @@ class PalcApp:
             algorithm.hinges_select.value = '0'
         except CALLBACK_ERRORS:
             logger.exception('Could not create the PALC venue')
-            self.config_error_info.text = 'Error: Could not create PAL proposal'
+            self.config_error_info.object = 'Error: Could not create PAL proposal'
 
     def set_venue_checked(self, checked: bool) -> None:
         """Enable the start toggle if the venue is PALC compatible
@@ -676,7 +659,7 @@ class PalcApp:
         if hasattr(st.sound_field_config, key) and \
                 failed_key in [None, 'too low']:
             st.sound_field_config.store_config(key, val)
-        self.config_error_info.text = str(error_info)
+        self.config_error_info.object = str(error_info)
 
     def _config_values_stored(self) -> None:
         """Arrange the pages after configuration values were stored.
@@ -795,7 +778,7 @@ class PalcApp:
         st = self.state
         try:
             if not self.has_venue():
-                self.config_error_info.text = 'Error: Please CREATE and GET PALC compatible venue proposal on page 1.'
+                self.config_error_info.object = 'Error: Please CREATE and GET PALC compatible venue proposal on page 1.'
                 return False
             try:
                 result = pipeline.run(self._calculation_setup(),
@@ -803,27 +786,27 @@ class PalcApp:
             except PalcError as exc:
                 logger.warning('PALC calculation failed: %s', exc,
                                exc_info=True)
-                self.config_error_info.text = _error_text(exc)
+                self.config_error_info.object = _error_text(exc)
                 return False
             except CALLBACK_ERRORS:
                 logger.exception('PALC calculation failed')
-                self.config_error_info.text = 'Error: PALC calculation failed'
+                self.config_error_info.object = 'Error: PALC calculation failed'
                 return False
             try:
                 self._show_result(result)
             except CALLBACK_ERRORS:
                 logger.exception('Could not store the output')
-                self.config_error_info.text = 'Error: Could not store the output'
+                self.config_error_info.object = 'Error: Could not store the output'
                 return False
             st.result = result
             st.target_of_result = self.pages[4].shown_target()
-            self.pages[4].start_toggle.active = False
+            self.pages[4].start_toggle.value = False
             return True
         except Exception:
             logger.exception('PALC calculation failed unexpectedly')
             raise
         finally:
-            self.pages[4].start_toggle.active = False
+            self.pages[4].start_toggle.value = False
 
     def _show_result(self, result: RunResult) -> None:
         """Copy the results of a calculation into the sources and figures.
@@ -847,7 +830,7 @@ class PalcApp:
         reference_spl_over_distance = reference.spl_over_distance
         drawn_lines = result.venue.drawn_lines
         target = st.target
-        self.config_error_info.text = ''
+        self.config_error_info.object = ''
         # array and rays in the venue figure
         show_rays(self.rays_source, self.hit_points_source, result.ray_plot,
                   result.geometry)

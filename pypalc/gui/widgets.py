@@ -1,9 +1,10 @@
 """Building blocks of the pages in the look of the prototype.
 
 Cards with titles (:func:`card`), captions (:func:`caption`), outlined
-inputs and selections (:func:`text_input`, :func:`select`), full-width
-buttons (:func:`button`), tables (:func:`table`) and the alert that shows
-an error or note text (:func:`message`), plus the layout of a page with a
+inputs and selections (:func:`text_input`, :func:`select`), sliders
+(:func:`slider`), full-width buttons (:func:`button`), download buttons
+(:func:`download`), tables (:func:`table`) and the alert that shows an
+error or note text (:func:`message`), plus the layout of a page with a
 side column and a main area (:func:`page_row`). Every function returns a
 new object: Panel objects belong to one session.
 
@@ -11,7 +12,7 @@ author: Arne Hoelter
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 import panel as pn
 import panel_material_ui as pmui
@@ -144,6 +145,10 @@ def _table_stylesheet() -> str:
         .tabulator-col-sorter {{ display: none !important; }}
         .tabulator .tabulator-header {{
             border-bottom: 1px solid {BORDER}; }}
+        .tabulator-placeholder span,
+        .tabulator-placeholder-contents {{
+            color: {TEXT_MUTED} !important; font-size: 12px !important;
+            font-weight: 400 !important; padding: 14px !important; }}
     """
 
 
@@ -173,8 +178,9 @@ def table(value: Any, titles: dict, widths: dict,
     align = dict({first: 'center'}, **{name: 'right' for name in others})
     return pn.widgets.Tabulator(value, **{
         'show_index': False, 'disabled': True, 'sortable': False,
-        'selectable': False, 'layout': 'fit_columns', 'theme': 'midnight', 'titles': titles,
-        'widths': widths, 'text_align': align, 'header_align': align,
+        'selectable': False, 'layout': 'fit_columns', 'theme': 'midnight',
+        'titles': titles, 'widths': widths, 'text_align': align,
+        'header_align': align,
         'sizing_mode': 'stretch_width', 'margin': (4, 8),
         'stylesheets': [_table_stylesheet()], **params})
 
@@ -200,6 +206,74 @@ def button(label: str, color: str, **params: Any) -> pmui.Button:
     """
     return pmui.Button(label=label, color=color, **{
         'sizing_mode': 'stretch_width', 'margin': (4, 8), **params})
+
+
+def slider(label: str, value: float, start: float, end: float,
+           step: float, **params: Any) -> pmui.FloatSlider:
+    """A slider that stretches to the width of its container.
+
+    Parameters
+    ----------
+    label : str
+        Label of the slider (with its step number).
+    value, start, end, step : float
+        Value, range and step.
+    **params
+        Further parameters of the slider.
+
+    Returns
+    -------
+    panel_material_ui.FloatSlider
+    """
+    return pmui.FloatSlider(
+        label=label, value=value, start=start, end=end, step=step, **{
+            'sizing_mode': 'stretch_width', 'margin': (4, 16), **params})
+
+
+def download(label: str, filename: str, callback: Callable[[], Any],
+             later: Callable[[Callable[[], None]], None],
+             **params: Any) -> pmui.FileDownload:
+    """A full-width outlined button that downloads a file made on click.
+
+    A click calls ``callback``, which returns the file as a file-like
+    object (``io.StringIO`` or ``io.BytesIO``), or None to download
+    nothing (e.g. when the file cannot be made; the callback then shows
+    why). The browser downloads the file when the data of the button
+    change, so the data are emptied again after each download (through
+    ``later``, after the browser got them): a second click downloads the
+    file again, also if it did not change.
+
+    Parameters
+    ----------
+    label : str
+        Text of the button.
+    filename : str
+        Name of the downloaded file.
+    callback : callable
+        Makes the file; without arguments.
+    later : callable
+        :meth:`~.app.PalcApp.later` of the session.
+    **params
+        Further parameters of the button.
+
+    Returns
+    -------
+    panel_material_ui.FileDownload
+    """
+    widget = pmui.FileDownload(
+        label=label, filename=filename, callback=callback, **{
+            'color': 'success', 'variant': 'outlined', 'icon': 'download',
+            'sizing_mode': 'stretch_width', 'margin': (4, 8), **params})
+    send = widget._sync_data
+
+    def sync_data(fileobj: Any) -> None:
+        # Panel's FileDownload raises for None; nothing to send then
+        if fileobj is None:
+            return
+        send(fileobj)
+        later(lambda: widget.param.update(data=None))
+    widget._sync_data = sync_data
+    return widget
 
 
 def _severity(text: str) -> str:
@@ -238,11 +312,12 @@ def message(**params: Any) -> pmui.Alert:
     return alert
 
 
-def page_row(side: Any, main: Any) -> pn.FlexBox:
+def page_row(side: Any, main: Any, side_width: int = SIDE_WIDTH
+             ) -> pn.FlexBox:
     """A page with a side column of cards and a main area.
 
-    The side column is :data:`SIDE_WIDTH` wide and may shrink; the main
-    area takes the rest of the width. If the window is too narrow for both
+    The side column is ``side_width`` wide and may shrink; the main area
+    takes the rest of the width. If the window is too narrow for both
     (main area below :data:`MAIN_MIN_WIDTH`), the main area moves below the
     side column. The sizing mode and the styles of both are set here
     (styles they had before are replaced).
@@ -253,13 +328,15 @@ def page_row(side: Any, main: Any) -> pn.FlexBox:
         The side column (cards with the steps).
     main : Viewable
         The main area (figures).
+    side_width : int, optional
+        Width of the side column in px, :data:`SIDE_WIDTH` by default.
 
     Returns
     -------
     panel.FlexBox
     """
     side.param.update(sizing_mode='stretch_width', styles={
-        'flex': f'1 1 {SIDE_WIDTH}px', 'max-width': f'{SIDE_WIDTH}px'})
+        'flex': f'1 1 {side_width}px', 'max-width': f'{side_width}px'})
     main.param.update(sizing_mode='stretch_width', styles={
         'flex': f'1000 1 {MAIN_MIN_WIDTH}px', 'min-width': '0'})
     return pn.FlexBox(side, main, flex_wrap='wrap', gap=f'{GAP}px',

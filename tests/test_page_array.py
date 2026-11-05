@@ -116,3 +116,16 @@ def test_discrete_angles_enable_their_input():
     write(page.use_discrete_angles_select, 'value', 'No')
     assert page.discrete_angles_input.disabled
     assert read(page.discrete_angles_input, 'value') == ''
+
+
+def test_user_angles_have_a_separator_hint():
+    app = rendered(PalcApp(Document()))
+    page = app.pages[3]
+    reference_card = [c for c in _shown(app).select(pmui.Card)
+                      if c.title == 'Reference array'][0]
+    objects = list(reference_card.objects)
+    hint = objects[objects.index(page.reference_user_angles_input) + 1]
+    assert "Separate the angles by ','." in hint.object
+    assert not hint.visible
+    write(page.reference_type_select, 'value', 'User Defined')
+    assert hint.visible

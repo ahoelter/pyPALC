@@ -146,9 +146,9 @@ def drive(app, setup):
     enter(app, setup)
     algorithm, results = app.pages[4], app.pages[5]
     alg = setup.algorithm
-    algorithm.start_toggle.active = True
-    assert app.config_error_info.text == '', app.config_error_info.text
-    assert algorithm.start_toggle.active is False
+    algorithm.start_toggle.value = True
+    assert app.config_error_info.object == '', app.config_error_info.object
+    assert algorithm.start_toggle.value is False
     st = app.state
 
     def a(v):

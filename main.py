@@ -22,9 +22,9 @@ import panel as pn  # noqa: E402
 from pypalc.gui.app import PalcApp  # noqa: E402
 from pypalc.gui.style import bokeh_figure_theme  # noqa: E402
 
-# bokeh-tables: Panel loads the JavaScript of Bokeh's tables only if the
-# first page shows one; later pages do (the DataTables of pages 3 and 4)
-pn.extension('bokeh-tables')
+# tabulator: Panel loads the JavaScript of a widget only if the first page
+# shows one; the tables of pages 3 and 4 are on later pages
+pn.extension('tabulator')
 app = PalcApp()
 app.doc.theme = bokeh_figure_theme()
 app.view().servable(title="pyPALC")

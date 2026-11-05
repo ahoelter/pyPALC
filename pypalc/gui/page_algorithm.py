@@ -1,33 +1,46 @@
-"""Page 4 of the GUI: algorithm options, calculation and SPL over distance.
+"""Page 4 of the GUI: algorithm options, calculation, files and the SPL
+over distance.
+
+The steps 18 to 25 are in the cards "PALC", "Weighting" and "Tolerance and
+fixed angle"; the venue check, steps 26 and 27 and the error text of the
+configuration pages in the card "Run"; the downloads and the setup file in
+"Files" (:mod:`~.downloads`); the computed tilt angles in "Tilt angles".
+The card "Results" shows the venue figure of the app
+(:attr:`~.app.PalcApp.venue_figure`) and the SPL over distance with the
+draggable target slope in tabs.
+
+"26. PALC Run" (:attr:`AlgorithmPage.start_toggle`) and "Load Setup" run
+the calculation in :meth:`~.app.PalcApp.later`, so that the browser first
+shows the running look (:data:`RUNNING_LABEL`, dark red); while it runs,
+another start is ignored.
 
 author: Arne Hoelter
 """
 from __future__ import annotations
 
-import base64
-import binascii
+import io
 import logging
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 import numpy as np
+import pandas as pd
 import panel as pn
-from bokeh.layouts import column, row
-from bokeh.models import (Button, ColumnDataSource, CustomJS,
-                          CustomJSTickFormatter, DataTable, Div, FileInput,
-                          Paragraph, PointDrawTool, RangeSlider,
-                          Select, Slider, TableColumn, TabPanel, Tabs,
-                          TextInput, Toggle)
+import panel_material_ui as pmui
+from bokeh.models import ColumnDataSource, NumberFormatter, PointDrawTool
 from bokeh.plotting import figure
 
-from pypalc.core import export
 from pypalc.core.errors import SetupError
 from pypalc.core.palc import clamp_fixed_angle, fixed_angle_borders
-from pypalc.core.settings import (TargetPoint, dump_setup, load_setup_text,
-                                  validate)
+from pypalc.core.settings import TargetPoint, load_setup_text
 from pypalc.core.target_slope import hinge_indices, snap_to_distance_grid
-from pypalc.gui import (CALLBACK_ERRORS, DOWNLOAD_JS, DOWNLOAD_TEXT_JS,
-                        skipped_while_applying_setup)
-from pypalc.gui.page_venue import RULE
+from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
+from pypalc.gui.downloads import (DOWNLOAD_COLUMNS, DOWNLOAD_FILE_NAMES,
+                                  RESULTS_FILE_NAME, SETUP_FILE_NAME,
+                                  angles_csv, results_zip, setup_yaml)
+from pypalc.gui.ranges import VENUE_MAX_HEIGHT
+from pypalc.gui.style import RUNNING, SUCCESS, TEXT, TEXT_MUTED
+from pypalc.gui.widgets import (GAP, button, caption, card, download,
+                                page_row, select, slider, table, text_input)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -37,33 +50,6 @@ logger = logging.getLogger(__name__)
 #: Weightings available without target slope.
 WEIGHTINGS_WITHOUT_TARGET_SLOPE = ['Without', 'Linear Spacing',
                                    'Logarithmic Spacing']
-#: Names of the CSV files "Download PALC Angles" (results) and "Download
-#: SPL" (the others) download, by source.
-DOWNLOAD_FILE_NAMES = {
-    'results': 'tilt_angles.csv',
-    'spl_over_distance': 'spl_over_distance.csv',
-    'target': 'target_slope.csv',
-    'target_reference': 'target_reference.csv',
-    'reference_spl_over_distance': 'reference_spl_over_distance.csv',
-    'homogeneity': 'homogeneity.csv',
-}
-#: Columns of the CSV downloads, in the order of the headless export (the
-#: two SPL over distance downloads leave out the other array's column).
-#: The download writes exactly these columns in this order: the browser's
-#: order of the source columns follows the server's string hash seed, since
-#: Bokeh 3 sends the columns of ``data.update`` as a set.
-DOWNLOAD_COLUMNS = {
-    'results': export.TILT_ANGLES_HEADER,
-    'spl_over_distance': [c for c in export.SPL_OVER_DISTANCE_HEADER
-                          if c != 'reference_spl_db'],
-    'target': export.TARGET_SLOPE_HEADER,
-    'target_reference': export.TARGET_REFERENCE_HEADER,
-    'reference_spl_over_distance': [c for c in export.SPL_OVER_DISTANCE_HEADER
-                                    if c != 'spl_db'],
-    'homogeneity': export.HOMOGENEITY_HEADER,
-}
-#: Name of the file "Save Setup" downloads.
-SETUP_FILE_NAME = 'pypalc_setup.yaml'
 #: Key of the error of a setup file that gives the measured directivity as
 #: a path, and the error text the GUI shows for it.
 PATH_DIRECTIVITY_KEY = 'loudspeaker.measured_directivity.path'
@@ -71,21 +57,74 @@ PATH_DIRECTIVITY_MESSAGE = (
     "the GUI cannot read a measured directivity file given as a path. "
     "Upload the data on page 2 and use Save Setup (it embeds the data), or "
     "run the setup file with the headless runner (python -m pypalc run)")
+#: Label and icon of "PALC Run", and while a calculation runs.
+RUN_LABEL = '26. PALC Run'
+RUN_ICON = 'play_arrow'
+RUNNING_LABEL = 'Running...'
+RUNNING_ICON = 'hourglass_top'
+#: Label of the ν slider; ν is the slider value to the power of 3.
+NU_LABEL = '22. Weighting parameter ν = %.2f'
+#: Widths of the settings and the action column in px (they shrink on
+#: narrow windows).
+SETTINGS_WIDTH = 300
+ACTIONS_WIDTH = 280
+#: Hover color of the green "PALC Run" (Bootstrap 3's success hover).
+SUCCESS_HOVER = '#449d44'
+
+
+def run_toggle_sx(running: bool) -> dict:
+    """Style of "PALC Run": a green button, dark red while running.
+
+    While running, the toggle does not take clicks (a click would toggle
+    its value off).
+
+    Parameters
+    ----------
+    running : bool
+        Whether a calculation runs.
+
+    Returns
+    -------
+    dict
+        The ``sx`` of the toggle; ``backgroundColor`` is its color.
+    """
+    color = RUNNING if running else SUCCESS
+    hover = RUNNING if running else SUCCESS_HOVER
+    sx = {'backgroundColor': color, 'color': TEXT, 'border': 'none',
+          '&:hover, &.Mui-selected, &.Mui-selected:hover': {
+              'backgroundColor': hover, 'color': TEXT}}
+    if running:
+        sx['pointerEvents'] = 'none'
+        sx['&.Mui-disabled'] = {'backgroundColor': RUNNING, 'color': TEXT}
+    else:
+        sx['&.Mui-disabled'] = {
+            'backgroundColor': 'action.disabledBackground',
+            'color': 'action.disabled'}
+    return sx
 
 
 class AlgorithmPage:
     """Page 4: PALC variant, gap handling, weighting, tolerance, fixed
-    angle, the start toggle, the results table and the SPL over distance.
+    angle, the start toggle, the downloads and setup files, the results
+    table and the SPL over distance.
 
     Parameters
     ----------
     app : PalcApp
         The session the page belongs to.
+
+    Attributes
+    ----------
+    running : bool
+        True while a calculation started by "PALC Run" or "Load Setup"
+        runs (from the click until it is done).
     """
 
     def __init__(self, app: PalcApp) -> None:
         self.app = app
         state = app.state
+        self.running = False
+        self._layout: Optional[pn.viewable.Viewable] = None
         self._build_widgets()
         # sources
         empty = list(zip([0, 0]))
@@ -112,99 +151,119 @@ class AlgorithmPage:
         self.target_region_source = ColumnDataSource(data=dict(
             x=[0, 0, 0, 0], y=[0, 0, 0, 0]))
         """Polygon of the optimization region."""
-        self.setup_file_source = ColumnDataSource(data=dict(text=[],
-                                                            save=[]))
-        """Text of the setup file "Save Setup" downloads, and the number of
-        the save (so that saving the same text again changes the data)."""
-        self.results_table = DataTable(
-            source=self.results_source,
-            columns=[TableColumn(field="cabinet", title="LS", width=20),
-                     TableColumn(field="tilt_angle_deg",
-                                 title="Total Angle", width=80),
-                     TableColumn(field="inter_cabinet_angle_deg",
-                                 title="ICA", width=80)],
-            index_position=None, width=250, height=700, fit_columns=False)
+        self.results_table = table(
+            self._angles_frame(),
+            titles={'cabinet': 'LS', 'tilt_angle_deg': 'Total angle',
+                    'inter_cabinet_angle_deg': 'ICA'},
+            widths={'cabinet': 56, 'inter_cabinet_angle_deg': 64},
+            formatters={'tilt_angle_deg': NumberFormatter(format='0.00'),
+                        'inter_cabinet_angle_deg':
+                            NumberFormatter(format='0.00')},
+            configuration={'placeholder': 'Run PALC to see the angles'})
+        """Table of the tilt angles (``results_source``)."""
         self._build_spl_over_distance_figure()
-        self.tabs = Tabs(tabs=[
-            TabPanel(child=app.venue_figure, title="Venue Slice"),
-            TabPanel(child=column([self.frequency_range_slider,
-                                   self.spl_over_distance_figure]),
-                     title="SPL over Distance")],
-            sizing_mode='stretch_width')
+        self._venue_tab = pn.Column(sizing_mode='stretch_width',
+                                    margin=(8, 0, 0, 0))
+        self._spl_tab = pn.Column(sizing_mode='stretch_width',
+                                  margin=(8, 0, 0, 0))
+        self.tabs = pmui.Tabs(('Venue slice', self._venue_tab),
+                              ('SPL over distance', self._spl_tab),
+                              sizing_mode='stretch_width', margin=(0, 8))
+        """Tabs of the venue figure and the SPL over distance (their
+        figures are added with the layout, when the document has its
+        theme)."""
         self._wire_callbacks()
 
     def _build_widgets(self) -> None:
         """Create the widgets of the page."""
-        self.palc_variant_select = Select(
-            title="18. PALC-Algorithm", value="PALC 2",
-            options=["PALC 1", "PALC 2", "PALC 3"], width=255, height=50)
-        self.gap_handling_select = Select(
-            title="19. Gap Handling Approach", value="Without",
-            options=["Without", "Hard Margin", "Soft Margin"], width=255,
-            height=50)
-        self.soft_margin_slider = Slider(
-            title="20. Strength of Soft Margin", value=1.0, start=0.1,
-            end=1.9, step=0.05, disabled=True, width=255)
-        self.weighting_select = Select(
-            title="21. Weighting", value="Without",
-            options=["Without", "Linear Spacing", "Logarithmic Spacing",
-                     "Target Slope"], width=255, height=50)
-        self.hinges_select = Select(title="Hinges in Target", value="0",
-                                    options=["0", "1", "2"], width=105,
-                                    height=50, visible=False)
+        app = self.app
+        self.palc_variant_select = select(
+            '18. PALC algorithm', ['PALC 1', 'PALC 2', 'PALC 3'], 'PALC 2')
+        self.gap_handling_select = select(
+            '19. Gap handling', ['Without', 'Hard Margin', 'Soft Margin'],
+            'Without')
+        self.soft_margin_slider = slider(
+            '20. Strength of soft margin', 1.0, 0.1, 1.9, 0.05,
+            disabled=True)
+        self.weighting_select = select(
+            '21. Weighting', WEIGHTINGS_WITHOUT_TARGET_SLOPE
+            + ['Target Slope'], 'Without')
+        self.hinges_select = select('Hinges', ['0', '1', '2'], '0',
+                                    visible=False, width=90,
+                                    sizing_mode='fixed')
         """Number of hinges of the target slope; the choosable numbers
         depend on the number of audience lines."""
         # cubic spaced slider: the stored ν is the value to the power of 3
-        self.weighting_nu_slider = Slider(
-            title="Weighting Parameter ν", value=np.cbrt(1.00),
-            start=np.cbrt(0.01), end=np.cbrt(10.00), step=0.01,
-            disabled=True, width=255,
-            format=CustomJSTickFormatter(
-                code="return Math.pow(tick,3).toFixed(2)"))
-        self.weighting_title = Paragraph(
-            text="22. Adjustment of ν and Step Size", width=255, height=20)
-        self.nu_plus_button = Button(label="+", button_type="success",
-                                     disabled=True, width=70)
-        self.nu_minus_button = Button(label="-", button_type="danger",
-                                      disabled=True, width=70)
-        self.nu_step_select = Select(
-            value='0.05', options=['0.01', '0.05', '0.10', '0.50'],
-            disabled=True, width=80, height=30)
+        self.weighting_nu_slider = slider(
+            NU_LABEL % 1.0, np.cbrt(1.00), np.cbrt(0.01), np.cbrt(10.00),
+            0.01, disabled=True, show_value=False)
+        self.nu_minus_button = button('-', 'danger', disabled=True,
+                                      variant='outlined', width=56,
+                                      sizing_mode='fixed')
+        self.nu_plus_button = button('+', 'success', disabled=True,
+                                     variant='outlined', width=56,
+                                     sizing_mode='fixed')
+        self.nu_step_select = select(
+            'Step', ['0.01', '0.05', '0.10', '0.50'], '0.05', disabled=True,
+            width=100, sizing_mode='fixed')
         """Step size of the + and - buttons."""
-        self.tolerance_slider = Slider(
-            title="23. Tolerance (Abort Criterion) in m", value=1.0,
-            start=0.05, end=5, step=0.05, width=255)
-        self.use_fixed_angle_select = Select(
-            title="24. Fix Angle of Uppermost Cabinet?", value="No",
-            options=["No", "Yes"], disabled=True, width=255, height=50)
-        self.fixed_angle_input = TextInput(
-            title="25. Angle of Uppermost Cabinet in deg", value="0.0",
-            disabled=True, width=255)
-        self.fixed_angle_text = Paragraph(text='')
+        self.tolerance_slider = slider(
+            '23. Tolerance (abort criterion) in m', 1.0, 0.05, 5, 0.05)
+        self.use_fixed_angle_select = select(
+            '24. Fix angle of uppermost cabinet?', ['No', 'Yes'], 'No',
+            disabled=True)
+        self.fixed_angle_input = text_input(
+            '25. Angle of uppermost cabinet in deg', '0.0', disabled=True)
+        self.fixed_angle_text = pn.pane.HTML(
+            '', margin=(2, 8), styles={'color': TEXT_MUTED,
+                                       'font-size': '12px'})
         """Allowed range of the fixed angle."""
         self.show_initial_fixed_angle_range()
-        self.start_toggle = Toggle(label="26. PALC Run", button_type="success",
-                                   disabled=True, width=255, active=False)
-        """Starts the PALC computation; active while it runs."""
-        self.clear_results_button = Button(
-            label="27. Delete Result Visualization", button_type="danger",
-            width=255)
-        self.download_angles_button = Button(label="Download PALC Angles",
-                                             button_type="success", width=255)
-        self.frequency_range_slider = RangeSlider(
-            title="Frequency Range", width=690, start=0, end=20000,
-            value=(200, 8000), step=20)
-        self.download_spl_button = Button(label="Download SPL",
-                                          button_type="success", width=255)
-        self.save_setup_button = Button(label="Save Setup",
-                                        button_type="success", width=255)
-        """Downloads the setup as a YAML file."""
-        self.load_setup_title = Div(text="Load Setup")
-        self.load_setup_input = FileInput(accept=".yaml,.yml", width=255)
-        """Upload of a setup file; loading it restores the setup and runs
-        the calculation."""
-        self.rule_gap = Paragraph(text=RULE)
-        self.rule_tolerance = Paragraph(text=RULE)
+        self.start_toggle = pmui.Toggle(
+            label=RUN_LABEL, icon=RUN_ICON, color='success', disabled=True,
+            value=False, sx=run_toggle_sx(False),
+            sizing_mode='stretch_width', margin=(4, 8))
+        """Starts the PALC computation (``value`` True); it reads
+        :data:`RUNNING_LABEL` and is dark red while it runs."""
+        self.clear_results_button = button(
+            '27. Delete result visualization', 'danger', variant='outlined')
+        self.frequency_range_slider = pmui.RangeSlider(
+            label='Frequency range in Hz', start=0, end=20000,
+            value=(200, 8000), step=20, sizing_mode='stretch_width',
+            margin=(4, 16))
+        self.download_angles_button = download(
+            'Download PALC Angles', DOWNLOAD_FILE_NAMES['results'],
+            lambda: io.StringIO(angles_csv(self)), app.later)
+        """Downloads the tilt angles (:func:`~.downloads.angles_csv`)."""
+        self.download_results_button = download(
+            'Download Results', RESULTS_FILE_NAME,
+            lambda: io.BytesIO(results_zip(self)), app.later)
+        """Downloads the SPL over distance, target slope and homogeneity
+        files in a zip file (:func:`~.downloads.results_zip`)."""
+        self.save_setup_button = download(
+            'Save Setup', SETUP_FILE_NAME, self._setup_file, app.later,
+            icon='save')
+        """Downloads the setup as a YAML file
+        (:func:`~.downloads.setup_yaml`)."""
+        self.load_setup_input = pmui.FileInput(
+            label='Load Setup', uploaded_label='Load Setup',
+            accept='.yaml,.yml', color='primary', variant='outlined',
+            icon='upload_file', sizing_mode='stretch_width', margin=(4, 8))
+        """Upload of a setup file; loading it restores the setup, runs the
+        calculation and shows page 5."""
+
+    def _setup_file(self) -> Optional[io.StringIO]:
+        """The file of "Save Setup", None if the setup cannot be saved."""
+        text = setup_yaml(self)
+        return None if text is None else io.StringIO(text)
+
+    def _angles_frame(self) -> pd.DataFrame:
+        """The tilt angles as shown in the table."""
+        data = self.results_source.data
+        frame = pd.DataFrame({column: np.asarray(data[column], dtype=float)
+                              for column in DOWNLOAD_COLUMNS['results']})
+        frame['cabinet'] = frame['cabinet'].astype(int)
+        return frame
 
     def _build_spl_over_distance_figure(self) -> None:
         """SPL over distance figure with the draggable target slope."""
@@ -216,7 +275,8 @@ class AlgorithmPage:
             tooltips=[("Title", "$name"), ("Index", "$index"),
                       ("SPL in dB", "$y"), ("Distance", "$x"),
                       ("(x,y) of Venue Slice in m", "@x_m, @y_m")],
-            y_range=(-15, 0.3), height=550, width=690)
+            y_range=(-15, 0.3), sizing_mode='stretch_width',
+            height=VENUE_MAX_HEIGHT)
         spl_figure.toolbar.logo = None
         spl_figure.line('distance_m', 'spl_db',
                         source=self.spl_over_distance_source,
@@ -254,95 +314,164 @@ class AlgorithmPage:
                                              reference_point], add=False)
         spl_figure.add_tools(draw_tool)
         spl_figure.toolbar.active_tap = draw_tool
-        spl_figure.background_fill_color = None
-        spl_figure.border_fill_color = None
         spl_figure.output_backend = "svg"
         self.spl_over_distance_figure = spl_figure
 
     def _wire_callbacks(self) -> None:
         """Connect the widgets with their callbacks."""
         app = self.app
-        self.palc_variant_select.on_change("value", app.store_value)
-        self.gap_handling_select.on_change("value", app.store_value)
-        self.soft_margin_slider.on_change("value", app.store_value)
-        self.weighting_select.on_change("value", self.choose_weighting)
-        self.hinges_select.on_change("value", self.choose_hinges)
-        self.weighting_nu_slider.on_change("value", self.store_nu)
-        self.nu_plus_button.on_click(self.increase_nu)
-        self.nu_minus_button.on_click(self.decrease_nu)
-        self.nu_step_select.on_change("value", self.set_nu_step)
-        self.tolerance_slider.on_change("value", app.store_value)
-        self.use_fixed_angle_select.on_change("value",
-                                              self.choose_fixed_angle)
-        self.fixed_angle_input.on_change("value", app.store_value)
-        self.start_toggle.on_click(self.start_toggled)
-        self.clear_results_button.on_click(app.clear_result_figure)
+
+        def watch(widget, callback: Callable) -> None:
+            """Call ``callback(attr, old, new)`` on changes of the value."""
+            widget.param.watch(lambda event: callback(
+                'value', event.old, event.new), 'value')
+        for widget in (self.palc_variant_select, self.gap_handling_select,
+                       self.soft_margin_slider, self.tolerance_slider,
+                       self.fixed_angle_input, self.frequency_range_slider):
+            watch(widget, app.store_value)
+        watch(self.weighting_select, self.choose_weighting)
+        watch(self.hinges_select, self.choose_hinges)
+        watch(self.weighting_nu_slider, self.store_nu)
+        self.weighting_nu_slider.param.watch(
+            lambda event: self.show_nu(), 'value')
+        self.nu_plus_button.on_click(lambda event: self.increase_nu())
+        self.nu_minus_button.on_click(lambda event: self.decrease_nu())
+        watch(self.nu_step_select, self.set_nu_step)
+        watch(self.use_fixed_angle_select, self.choose_fixed_angle)
+        self.start_toggle.param.watch(
+            lambda event: self.start_toggled(event.new), 'value')
+        self.clear_results_button.on_click(
+            lambda event: app.clear_result_figure())
         self.target_source.on_change('data', self.snap_target)
         self.target_reference_source.on_change('data', self.snap_target)
-        download_js = DOWNLOAD_JS.read_text()
-        self.download_angles_button.js_on_click(CustomJS(
-            args=dict(source=self.results_source,
-                      filename=DOWNLOAD_FILE_NAMES['results'],
-                      columns=list(DOWNLOAD_COLUMNS['results'])),
-            code=download_js))
-        self.frequency_range_slider.on_change("value", app.store_value)
-        for name, source in (
-                ('spl_over_distance', self.spl_over_distance_source),
-                ('target', self.target_source),
-                ('target_reference', self.target_reference_source),
-                ('reference_spl_over_distance',
-                 self.reference_spl_over_distance_source),
-                ('homogeneity', app.pages[5].homogeneity_source)):
-            self.download_spl_button.js_on_click(CustomJS(
-                args=dict(source=source, filename=DOWNLOAD_FILE_NAMES[name],
-                          columns=list(DOWNLOAD_COLUMNS[name])),
-                code=download_js))
-        self.save_setup_button.on_click(self.save_setup)
-        # the source must belong to the document so that its JavaScript
-        # callback runs in the browser; the layout reaches it only through
-        # the args of this (empty) callback of the button
-        self.save_setup_button.js_on_click(CustomJS(
-            args=dict(source=self.setup_file_source), code=''))
-        self.setup_file_source.js_on_change('data', CustomJS(
-            args=dict(source=self.setup_file_source,
-                      filename=SETUP_FILE_NAME),
-            code=DOWNLOAD_TEXT_JS.read_text()))
-        self.load_setup_input.on_change('value', self.load_setup)
+        self.results_source.on_change(
+            'data', lambda attr, old, new: setattr(
+                self.results_table, 'value', self._angles_frame()))
+        self.load_setup_input.param.watch(
+            lambda event: self.load_selected(event.new), 'value')
 
-    def layout(self) -> pn.Row:
+    def layout(self) -> pn.FlexBox:
         """Body of the page below the header.
 
-        The Bokeh widgets of the page are shown in Bokeh panes
-        (:meth:`~.app.PalcApp.bokeh_pane`), beside the axis mode selection
-        of the venue figure, which is a Panel widget.
+        Built at the first call, then the same object: its widgets show
+        every change in place.
 
         Returns
         -------
-        panel.Row
+        panel.FlexBox
+            The settings column (cards "PALC", "Weighting", "Tolerance and
+            fixed angle") and the action column (cards "Run", "Files",
+            "Tilt angles") beside (or, on narrow windows, above) the card
+            "Results".
         """
-        app = self.app
-        col0 = column([self.palc_variant_select, self.gap_handling_select,
-                       self.soft_margin_slider, self.rule_gap,
-                       row([self.weighting_select, self.hinges_select]),
-                       self.weighting_nu_slider, self.weighting_title,
-                       row([self.nu_plus_button, self.nu_minus_button,
-                            self.nu_step_select]),
-                       self.rule_tolerance, self.tolerance_slider,
-                       self.use_fixed_angle_select, self.fixed_angle_input,
-                       self.fixed_angle_text], width=270)
-        col1 = column([self.start_toggle,
-                       self.clear_results_button, app.config_error_info,
-                       self.download_angles_button, self.download_spl_button,
-                       self.save_setup_button, self.load_setup_title,
-                       self.load_setup_input, self.results_table],
-                      width=270)
-        col2 = pn.Column(app.venue_axes_row(),
-                         app.bokeh_pane(self.tabs, sizing_mode='stretch_width'),
-                         width=690)
-        return pn.Row(app.bokeh_pane(col0),
-                      pn.Column(app.pages[1].check_venue_button,
-                                app.bokeh_pane(col1), width=270),
-                      col2)
+        if self._layout is None:
+            app = self.app
+            self._venue_tab.objects = [
+                app.venue_axes_row(),
+                app.bokeh_pane(app.venue_figure,
+                               sizing_mode='stretch_width')]
+            self._spl_tab.objects = [
+                self.frequency_range_slider,
+                app.bokeh_pane(self.spl_over_distance_figure,
+                               sizing_mode='stretch_width')]
+            palc_card = card('PALC', self.palc_variant_select,
+                             self.gap_handling_select,
+                             self.soft_margin_slider)
+            weighting_card = card(
+                'Weighting',
+                pn.Row(self.weighting_select, self.hinges_select,
+                       sizing_mode='stretch_width', margin=0),
+                self.weighting_nu_slider,
+                pn.Row(self.nu_minus_button, self.nu_plus_button,
+                       self.nu_step_select, align='center', margin=0))
+            limits_card = card(
+                'Tolerance and fixed angle', self.tolerance_slider,
+                self.use_fixed_angle_select, self.fixed_angle_input,
+                pn.Row(caption('Allowed range in deg:', margin=(2, 0, 2, 8),
+                               sizing_mode=None),
+                       self.fixed_angle_text, margin=0))
+            run_card = card('Run', app.pages[1].check_venue_button,
+                            self.start_toggle, self.clear_results_button,
+                            app.config_error_info)
+            files_card = card('Files', self.download_angles_button,
+                              self.download_results_button,
+                              self.save_setup_button, self.load_setup_input)
+            table_card = card('Tilt angles', self.results_table)
+            settings = pn.Column(palc_card, weighting_card, limits_card,
+                                 margin=0, sizing_mode='stretch_width',
+                                 styles={'flex': f'1 1 {SETTINGS_WIDTH}px',
+                                         'min-width': '0'})
+            actions = pn.Column(run_card, files_card, table_card, margin=0,
+                                sizing_mode='stretch_width',
+                                styles={'flex': f'1 1 {ACTIONS_WIDTH}px',
+                                        'min-width': '0'})
+            side = pn.FlexBox(settings, actions, flex_wrap='wrap',
+                              gap=f'{GAP}px', align_items='flex-start',
+                              margin=0)
+            self._layout = page_row(
+                side,
+                # the tabs name the figures: no header, so that the figures
+                # end inside the window like those of pages 1 and 3
+                card('Results', self.tabs, hide_header=True),
+                side_width=SETTINGS_WIDTH + GAP + ACTIONS_WIDTH)
+        return self._layout
+
+    # ------------------------------------------------------------------
+    # Running
+    # ------------------------------------------------------------------
+
+    def set_running(self, running: bool) -> None:
+        """Show whether a calculation runs.
+
+        Running: "PALC Run" reads :data:`RUNNING_LABEL` and is dark red.
+        Done: it reads :data:`RUN_LABEL`, is green and released
+        (``value`` False).
+
+        Parameters
+        ----------
+        running : bool
+            Whether a calculation runs.
+
+        Returns
+        -------
+        None.
+        """
+        self.running = running
+        if running:
+            self.start_toggle.param.update(label=RUNNING_LABEL,
+                                           icon=RUNNING_ICON,
+                                           sx=run_toggle_sx(True))
+        else:
+            self.start_toggle.param.update(value=False, label=RUN_LABEL,
+                                           icon=RUN_ICON,
+                                           sx=run_toggle_sx(False))
+
+    def run_later(self, func: Callable[[], None]) -> bool:
+        """Show the running look and run a calculation after the browser
+        shows it (:meth:`~.app.PalcApp.later`); the look is reset when it
+        is done, also after an error.
+
+        Parameters
+        ----------
+        func : callable
+            The calculation, without arguments.
+
+        Returns
+        -------
+        bool
+            False if a calculation runs already (``func`` is not run).
+        """
+        if self.running:
+            return False
+        self.set_running(True)
+
+        def run() -> None:
+            try:
+                func()
+            finally:
+                self.set_running(False)
+        self.app.later(run)
+        return True
 
     # ------------------------------------------------------------------
     # Widget arrangement
@@ -403,7 +532,7 @@ class AlgorithmPage:
         fixed_angle = fixed_angle_borders(state.venue.palc_venue.segments[-1],
                                           state.config)
         state.optimized_array.fixed_angle = fixed_angle
-        self.fixed_angle_text.text = \
+        self.fixed_angle_text.object = \
             'Max: ' + str(np.round(fixed_angle[0], decimals=2)) + \
             ', Min: ' + str(np.round(fixed_angle[2], decimals=2))
         return fixed_angle
@@ -411,7 +540,7 @@ class AlgorithmPage:
     def show_initial_fixed_angle_range(self) -> None:
         """Show the range of the fixed angle as in a new session."""
         fixed_angle = self.app.state.optimized_array.fixed_angle
-        self.fixed_angle_text.text = 'Max: ' + str(fixed_angle[0]) + \
+        self.fixed_angle_text.object = 'Max: ' + str(fixed_angle[0]) + \
             ', Min: ' + str(fixed_angle[2])
 
     def round_fixed_angle(self) -> None:
@@ -432,19 +561,20 @@ class AlgorithmPage:
 
     @skipped_while_applying_setup
     def start_toggled(self, active: bool) -> None:
-        """Run the calculation when the start toggle is pressed.
+        """Run the calculation when the start toggle is pressed
+        (:meth:`run_later`); ignored while a calculation runs.
 
         Parameters
         ----------
         active : bool
-            New state of the toggle.
+            New state of the toggle (its ``value``).
 
         Returns
         -------
         None.
         """
         if active:
-            self.app.run_calculation()
+            self.run_later(self.app.run_calculation)
 
     @skipped_while_applying_setup
     def choose_weighting(self, attr, old, new) -> None:
@@ -483,10 +613,8 @@ class AlgorithmPage:
             self.app.state.target.initialized = True
             self.tabs.active = 1
             self.hinges_select.visible = True
-            self.weighting_select.width = 135
         else:
             self.hinges_select.visible = False
-            self.weighting_select.width = 255
         self.app.state.config.store_config('use_weighting',
                                            self.weighting_select.value)
         self.exclude_hard_margin_target_slope()
@@ -508,6 +636,12 @@ class AlgorithmPage:
         None.
         """
         self.weighting_nu_slider.step = float(self.nu_step_select.value)
+
+    def show_nu(self) -> None:
+        """Show ν (the slider value to the power of 3) in the label of the
+        slider."""
+        self.weighting_nu_slider.label = NU_LABEL % (
+            self.weighting_nu_slider.value**3)
 
     def increase_nu(self) -> None:
         """Increase ν by the step size."""
@@ -704,53 +838,48 @@ class AlgorithmPage:
     # Setup files
     # ------------------------------------------------------------------
 
-    def save_setup(self) -> None:
-        """Download the entered setup as a YAML file ("Save Setup").
+    def load_selected(self, data: Optional[bytes]) -> None:
+        """Load a setup file selected in "Load Setup" (:meth:`load_setup`)
+        with the running look (:meth:`run_later`); ignored while a
+        calculation runs.
 
-        Writes the text of :func:`~.setup_io.setup_to_save` into
-        ``setup_file_source``; its JavaScript callback downloads it as
-        :data:`SETUP_FILE_NAME`. An uploaded measured directivity is
-        embedded. A setup that cannot be read or is invalid is not saved;
-        the reason is shown in the error text.
+        Afterwards the input is emptied, so that the same file selected
+        again is loaded again (the browser sends it again).
+
+        Parameters
+        ----------
+        data : bytes or None
+            Content of the file.
 
         Returns
         -------
         None.
         """
-        from .setup_io import setup_to_save
-        app = self.app
-        try:
-            setup = setup_to_save(app)
-            validate(setup)
-        except SetupError as exc:
-            app.config_error_info.text = \
-                'Error: setup not saved, invalid input at %s: %s' \
-                % (exc.key, exc.message)
-            return
-        # one change per save: Bokeh 3 sends a change of the data with the
-        # data at the end of the callback, so emptying the source first
-        # would download the text twice; the number of the save makes the
-        # data differ also when the same text is saved again
-        saves = self.setup_file_source.data['save']
-        self.setup_file_source.data = dict(
-            text=[dump_setup(setup)], save=[saves[0] + 1 if saves else 1])
+        def load() -> None:
+            try:
+                self.load_setup('value', None, data)
+            finally:
+                self.load_setup_input.value = None
+        if data and not self.run_later(load):
+            self.load_setup_input.value = None
 
     def load_setup(self, attr, old, new) -> None:
-        """Load an uploaded setup file ("Load Setup").
+        """Load a setup file ("Load Setup").
 
         Decodes the file (UTF-8), reads it with
         :func:`~pypalc.core.settings.load_setup_text` and applies it with
-        :func:`~.setup_io.apply_setup`, which runs the calculation. An
-        invalid file shows ``Error: setup file invalid at <key>: <msg>`` and
-        changes nothing. A measured directivity given as a path is invalid
-        here, because the GUI only receives the file's contents.
+        :func:`~.setup_io.apply_setup`, which runs the calculation and
+        shows page 5. An invalid file shows ``Error: setup file invalid at
+        <key>: <msg>`` and changes nothing. A measured directivity given as
+        a path is invalid here, because the GUI only receives the file's
+        contents.
 
         Parameters
         ----------
         attr : str
             Changed attribute (value).
-        old, new : str
-            Old and new upload (base64 encoded).
+        old, new : bytes or None
+            Old and new content of the uploaded file.
 
         Returns
         -------
@@ -760,8 +889,8 @@ class AlgorithmPage:
         app = self.app
         try:
             try:
-                text = base64.b64decode(new).decode('utf-8')
-            except (binascii.Error, ValueError) as exc:
+                text = new.decode('utf-8')
+            except ValueError as exc:  # UnicodeDecodeError
                 raise SetupError('file', 'not a UTF-8 text file') from exc
             setup = load_setup_text(text)
             apply_setup(app, setup)
@@ -770,8 +899,9 @@ class AlgorithmPage:
                 if exc.key == PATH_DIRECTIVITY_KEY else exc.message
             logger.info('Setup file not loaded: %s', exc)
             logger.debug('Setup file not loaded', exc_info=True)
-            app.config_error_info.text = \
+            app.config_error_info.object = \
                 'Error: setup file invalid at %s: %s' % (exc.key, message)
         except CALLBACK_ERRORS:
             logger.exception('Could not load the setup file')
-            app.config_error_info.text = 'Error: Could not load the setup file'
+            app.config_error_info.object = \
+                'Error: Could not load the setup file'

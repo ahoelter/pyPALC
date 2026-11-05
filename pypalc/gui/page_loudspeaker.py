@@ -135,14 +135,13 @@ class LoudspeakerPage:
                     self.directivity_figure, sizing_mode='stretch_width',
                     margin=(8, 0, 0, 0))),
                 sizing_mode='stretch_width', margin=(0, 8))
-            # a venue figure drawn anew needs new ranges (see show_page)
             cabinet_card = card('Cabinet', self.aperture_input,
                                 self.cabinet_height_input)
             directivity_card = card(
                 'Directivity', self.directivity_select,
                 caption(_MEASURED_CAPTION,
                         visible=self.directivity_upload.param.visible),
-                self.directivity_upload, app.config_message())
+                self.directivity_upload, app.config_error_info)
             self._layout = page_row(
                 pn.Column(cabinet_card, directivity_card, margin=0),
                 # the tabs name the figures: no header, so that the figures
@@ -239,6 +238,6 @@ class LoudspeakerPage:
             self.read_measured_directivity(new.decode('utf-8'))
         except CALLBACK_ERRORS:  # also UnicodeDecodeError (a ValueError)
             logger.exception('Could not read the measured loudspeaker data')
-            self.app.config_error_info.text = 'Error: Could not read Measured Loudspeaker Data'
+            self.app.config_error_info.object = 'Error: Could not read Measured Loudspeaker Data'
             return
-        self.app.config_error_info.text = ''
+        self.app.config_error_info.object = ''

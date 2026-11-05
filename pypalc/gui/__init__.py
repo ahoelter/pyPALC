@@ -9,10 +9,6 @@ from pypalc.core.errors import PalcError
 
 #: Directory of the app (the one with ``main.py``).
 APP_DIR = Path(__file__).resolve().parents[2]
-#: JavaScript of the CSV download buttons.
-DOWNLOAD_JS = APP_DIR / 'ext' / 'download.js'
-#: JavaScript that downloads a text (the setup file of "Save Setup").
-DOWNLOAD_TEXT_JS = APP_DIR / 'ext' / 'download_text.js'
 
 #: Exceptions a GUI callback catches to show an error text instead of
 #: failing: the errors of :mod:`pypalc.core` and those the legacy
