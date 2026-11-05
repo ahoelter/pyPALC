@@ -18,6 +18,7 @@ from bokeh.plotting import figure as BokehFigure
 from panel.viewable import Viewable
 
 from pypalc.gui.app import PalcApp
+from pypalc.gui.downloads import DOWNLOAD_FILE_NAMES, RESULTS_FILE_NAME
 from pypalc.gui.style import MATERIAL_THEME, SURFACE, bokeh_figure_theme
 from tests.gui_driver import read, write
 from tests.test_gui_reference import RENAMED_LABELS
@@ -189,6 +190,17 @@ def test_help_quotes_the_step_labels():
     assert len(steps) > 30
     missing = sorted(label for label in steps if label not in text)
     assert not missing, missing
+
+
+def test_help_names_every_download_file():
+    """The help text names every file of "Download PALC Angles" and
+    "Download Results" (all of DOWNLOAD_FILE_NAMES and the zip) and that
+    the zip holds five files."""
+    text = _help_text()
+    for name in [*DOWNLOAD_FILE_NAMES.values(), RESULTS_FILE_NAME]:
+        assert name in text, name
+    assert len(DOWNLOAD_FILE_NAMES) - 1 == 5
+    assert 'five CSV files' in text
 
 
 def test_help_tabs_name_the_pages():

@@ -194,9 +194,12 @@ _ALGORITHM = (
      'the results in the venue figure. This is also done when switching '
      'to <b>1 · Venue</b> in the header.',
      '<b>Download PALC Angles</b> downloads the tilt angles as '
-     'tilt_angles.csv. <b>Download Results</b> downloads the SPL over '
-     'distance, the target slope and the homogeneity as five CSV files in '
-     'pypalc_results.zip.',
+     'tilt_angles.csv. <b>Download Results</b> downloads five CSV files '
+     'in pypalc_results.zip: the SPL over distance of the optimized array '
+     '(spl_over_distance.csv) and of the reference array '
+     '(reference_spl_over_distance.csv), the target slope '
+     '(target_slope.csv), its reference point (target_reference.csv) and '
+     'the homogeneity (homogeneity.csv).',
      '<b>Save Setup</b> downloads all inputs, the drawn venue and the '
      'target slope as the file pypalc_setup.yaml (uploaded measured '
      'loudspeaker data is embedded); it also runs headless with \'python '
