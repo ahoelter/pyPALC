@@ -331,6 +331,10 @@ class PalcApp:
         Communication Group; the main area is :attr:`content`, which shows
         the selected page.
 
+        Side effect: shows the selected page (:meth:`show_page`), which
+        fills :attr:`content` and, depending on the page, clears the
+        result visualization or renews the figure ranges.
+
         Returns
         -------
         panel_material_ui.Page
