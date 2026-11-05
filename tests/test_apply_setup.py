@@ -54,7 +54,7 @@ from pypalc.core.settings import (AudienceLine, MeasuredDirectivity,
 from pypalc.gui.app import PalcApp
 from pypalc.gui.setup_io import apply_setup, setup_from_app
 from tests.baseline_cases import CASES
-from tests.gui_driver import has, read
+from tests.gui_driver import has, read, upload
 from tests.gui_steps import CONFIG_KEYS
 from tests.test_gui_equivalence import drive, enter
 from tests.test_shell import rendered
@@ -248,8 +248,9 @@ def dirty_app():
     quiet(drive, app, case_setup("gap_soft_margin_target_slope"))
     loudspeaker, array = app.pages[2], app.pages[3]
     loudspeaker.directivity_select.value = "Measured Loudspeaker Data"
-    loudspeaker.directivity_upload.set_from_json('value', base64.b64encode(
-        (ROOT / "tests" / "cases" / "measured.csv").read_bytes()).decode())
+    upload(loudspeaker.directivity_upload,
+           (ROOT / "tests" / "cases" / "measured.csv").read_bytes(),
+           'measured.csv')
     array.use_discrete_angles_select.value = 'Yes'
     array.reference_type_select.value = 'Arc'
     array.reference_step_stop_input.value = '2'

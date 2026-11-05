@@ -1,24 +1,28 @@
 """Page 2 of the GUI: loudspeaker configuration.
 
+The steps 9 to 11 are in the cards "Cabinet" and "Directivity"; the card
+"Figures" shows the venue figure of the app
+(:attr:`~.app.PalcApp.venue_figure`) and the directivity figure in tabs.
+
 author: Arne Hoelter
 """
 from __future__ import annotations
 
-import base64
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import panel as pn
-from bokeh.layouts import column, row
-from bokeh.models import (ColumnDataSource, FileInput, Range1d,
-                          Select, TabPanel, Tabs, TextInput)
+import panel_material_ui as pmui
+from bokeh.models import ColumnDataSource, Range1d
 from bokeh.plotting import figure
 
 from pypalc.core.sound_field import (cabinet_directivity,
                                      initial_directivity_plot,
                                      parse_measured_directivity)
 from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
+from pypalc.gui.ranges import VENUE_MAX_HEIGHT
+from pypalc.gui.widgets import caption, card, page_row, select, text_input
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -28,6 +32,17 @@ logger = logging.getLogger(__name__)
 #: Modeled directivities; the other option is measured loudspeaker data.
 MODELED_DIRECTIVITIES = ('Circular Piston', 'Line Piston',
                          'Combined Circular/Line')
+#: Shown label -> value of the directivity selection.
+DIRECTIVITY_OPTIONS = {
+    'Modeled: Circular Piston': 'Circular Piston',
+    'Modeled: Line Piston': 'Line Piston',
+    'Modeled: Combined Circular/Line': 'Combined Circular/Line',
+    'Measured Loudspeaker Data': 'Measured Loudspeaker Data'}
+#: Explains the file of measured directivity data.
+_MEASURED_CAPTION = ('CSV file: the frequencies in Hz in the first row, the '
+                     'angles in deg in the first column and the complex '
+                     'directivity (imaginary unit j or i) in the other '
+                     'cells.')
 
 
 class LoudspeakerPage:
@@ -41,21 +56,19 @@ class LoudspeakerPage:
 
     def __init__(self, app: PalcApp) -> None:
         self.app = app
-        self.aperture_input = TextInput(
-            value="3.0", title="9. PALC Aperture Angle in deg", width=255,
-            height=50)
+        self.aperture_input = text_input('9. Aperture angle in deg', '3.0')
         """Initial aperture angle of the cabinets in degree."""
-        self.cabinet_height_input = TextInput(
-            value="0.2", title="10. Loudspeaker Height in m", width=255)
-        self.directivity_select = Select(
-            title="11. Loudspeaker Directivity", value="Circular Piston",
-            options=[("Circular Piston", "Modeled: Circular Piston"),
-                     ("Line Piston", "Modeled: Line Piston"),
-                     ("Combined Circular/Line",
-                      "Modeled: Combined Circular/Line"),
-                     "Measured Loudspeaker Data"], width=255, height=50)
-        self.directivity_upload = FileInput(accept=".csv", visible=False)
-        """Upload of measured (complex) directivity data."""
+        self.cabinet_height_input = text_input(
+            '10. Loudspeaker height in m', '0.2')
+        self.directivity_select = select(
+            '11. Directivity', dict(DIRECTIVITY_OPTIONS), 'Circular Piston')
+        self.directivity_upload = pmui.FileInput(
+            label='Upload measured data', accept='.csv', visible=False,
+            color='primary', variant='outlined', icon='upload_file',
+            sizing_mode='stretch_width', margin=(4, 8))
+        """Upload of measured (complex) directivity data; shown while
+        measured data are selected."""
+        self._layout: Optional[pn.viewable.Viewable] = None
         # directivity of 100 Hz, 1 kHz and 10 kHz used in the sound field
         # prediction
         empty = list(zip([0, 0]))
@@ -68,7 +81,9 @@ class LoudspeakerPage:
             tooltips=[("Index", "$index"), ("Amplitude in dB", "$y"),
                       ("Angle in deg", "$x")],
             x_axis_label="Angle in deg", y_axis_label="Amplitude in dB",
-            x_range=Range1d(-92, 92), height=550, width=690)
+            x_range=Range1d(-92, 92), sizing_mode='stretch_width',
+            height=VENUE_MAX_HEIGHT)
+        """Directivity figure; it follows the width of the window."""
         directivity_figure = self.directivity_figure
         directivity_figure.toolbar.logo = None
         directivity_figure.line('angle_deg', 'amplitude_100hz_db',
@@ -84,38 +99,56 @@ class LoudspeakerPage:
         directivity_figure.legend.location = "bottom_right"
         directivity_figure.legend.background_fill_alpha = 0.5
         directivity_figure.xaxis.ticker = [-90, -60, -30, 0, 30, 60, 90]
-        self.tabs = Tabs(tabs=[TabPanel(child=app.venue_figure,
-                                        title="Venue Slice"),
-                               TabPanel(child=directivity_figure,
-                                        title="Loudspeaker Directivity")],
-                         sizing_mode='stretch_width')
+        self.tabs: Optional[pmui.Tabs] = None
+        """Tabs of the venue figure and the directivity figure (built with
+        the layout, when the document has its theme)."""
         self.compute_modeled_directivity()
         # callbacks
-        self.aperture_input.on_change("value", app.store_value)
-        self.cabinet_height_input.on_change("value", app.store_value)
-        self.directivity_select.on_change("value", app.store_value)
-        self.directivity_upload.on_change("value", self.upload_directivity)
+        for widget in (self.aperture_input, self.cabinet_height_input,
+                       self.directivity_select):
+            widget.param.watch(lambda event: app.store_value(
+                'value', event.old, event.new), 'value')
+        self.directivity_upload.param.watch(lambda event: (
+            self.upload_directivity('value', event.old, event.new)), 'value')
 
-    def layout(self) -> pn.Row:
+    def layout(self) -> pn.FlexBox:
         """Body of the page below the header.
 
-        The Bokeh widgets of the page are shown in Bokeh panes
-        (:meth:`~.app.PalcApp.bokeh_pane`), beside the axis mode selection
-        of the venue figure, which is a Panel widget.
+        Built at the first call, then the same object: its widgets show
+        every change in place.
 
         Returns
         -------
-        panel.Row
+        panel.FlexBox
+            The cards "Cabinet" and "Directivity" beside (or, on narrow
+            windows, above) the card "Figures".
         """
-        col0 = column([self.aperture_input, self.cabinet_height_input],
-                      width=270)
-        col1 = column([self.directivity_select, self.directivity_upload,
-                       self.app.config_error_info], width=270)
-        col2 = pn.Column(self.app.venue_axes_row(),
-                         self.app.bokeh_pane(self.tabs,
-                                             sizing_mode='stretch_width'),
-                         width=690)
-        return pn.Row(self.app.bokeh_pane(row([col0, col1])), col2)
+        if self._layout is None:
+            app = self.app
+            self.tabs = pmui.Tabs(
+                ('Venue slice', pn.Column(
+                    app.venue_axes_row(),
+                    app.bokeh_pane(app.venue_figure,
+                                   sizing_mode='stretch_width'),
+                    sizing_mode='stretch_width', margin=(8, 0, 0, 0))),
+                ('Directivity', app.bokeh_pane(
+                    self.directivity_figure, sizing_mode='stretch_width',
+                    margin=(8, 0, 0, 0))),
+                sizing_mode='stretch_width', margin=(0, 8))
+            # a venue figure drawn anew needs new ranges (see show_page)
+            cabinet_card = card('Cabinet', self.aperture_input,
+                                self.cabinet_height_input)
+            directivity_card = card(
+                'Directivity', self.directivity_select,
+                caption(_MEASURED_CAPTION,
+                        visible=self.directivity_upload.param.visible),
+                self.directivity_upload, app.config_message())
+            self._layout = page_row(
+                pn.Column(cabinet_card, directivity_card, margin=0),
+                # the tabs name the figures: no header, so that the figures
+                # end inside the window like those of pages 1 and 3
+                card('Figures', self.tabs, hide_header=True))
+        return self._layout
 
     def compute_modeled_directivity(self) -> None:
         """Compute and plot the modeled directivity of the configuration."""
@@ -185,23 +218,27 @@ class LoudspeakerPage:
         The CSV file holds the frequency bins in the first line and the
         angles in degree in the first column; the imaginary unit is "j" or
         "i". The text of a readable file is kept in the session state
-        (``measured_directivity_csv``) for the calculation. Triggered by the
-        file upload.
+        (``measured_directivity_csv``) for the calculation and the error
+        text is cleared; for an unreadable file the error text is shown.
+        Triggered by the file upload.
 
         Parameters
         ----------
         attr : str
             Changed attribute (value).
-        old, new : str
-            Old and new upload (base64 encoded).
+        old, new : bytes or None
+            Old and new content of the uploaded file.
 
         Returns
         -------
         None.
         """
+        if not new:
+            return
         try:
-            self.read_measured_directivity(
-                base64.b64decode(new).decode('utf-8'))
-        except CALLBACK_ERRORS:
+            self.read_measured_directivity(new.decode('utf-8'))
+        except CALLBACK_ERRORS:  # also UnicodeDecodeError (a ValueError)
             logger.exception('Could not read the measured loudspeaker data')
             self.app.config_error_info.text = 'Error: Could not read Measured Loudspeaker Data'
+            return
+        self.app.config_error_info.text = ''

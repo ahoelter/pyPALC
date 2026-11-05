@@ -69,6 +69,7 @@ from pypalc.gui.ranges import (VENUE_BOUNDS, VENUE_MAX_HEIGHT, PlotRanges,
                                scale_venue_figure, set_figure_ranges,
                                show_rays)
 from pypalc.gui.style import LINK, MATERIAL_THEME, TEXT, TEXT_MUTED
+from pypalc.gui.widgets import message
 
 logger = logging.getLogger(__name__)
 
@@ -305,6 +306,24 @@ class PalcApp:
                              f'font-size:12px">Axes</span>',
                              align='center', margin=(0, 0, 0, 8))
         return pn.Row(label, self.venue_axes_select, margin=(0, 0, 8, 0))
+
+    def config_message(self) -> pmui.Alert:
+        """Alert that shows the error text of the configuration pages.
+
+        The text is that of :attr:`config_error_info` (a Bokeh paragraph
+        until page 4 is ported); the alert follows every change of it and
+        is hidden while it is empty (:func:`~.widgets.message`).
+
+        Returns
+        -------
+        panel_material_ui.Alert
+            A new alert, for the layout of one page.
+        """
+        alert = message()
+        alert.object = self.config_error_info.text
+        self.config_error_info.on_change(
+            'text', lambda attr, old, new: setattr(alert, 'object', new))
+        return alert
 
     def bokeh_pane(self, model: LayoutDOM, **params) -> pn.pane.Bokeh:
         """A Bokeh figure or layout as a Panel pane, drawn with the theme of

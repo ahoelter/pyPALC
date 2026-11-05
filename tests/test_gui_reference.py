@@ -50,6 +50,9 @@ INTENDED: List[Tuple[str, str]] = [
     ('1.venue_error_info.visible',
      'the error alert of page 1 is hidden while its text is empty (the '
      'text itself is compared)'),
+    ('2.directivity_upload.button_type',
+     'the directivity upload is a Material file input, a button with a '
+     'button type (its color); the Bokeh file input had none'),
 ]
 
 

@@ -1,5 +1,4 @@
 """The GUI builds a :class:`Setup` from its widgets and session state."""
-import base64
 import contextlib
 import io
 from pathlib import Path
@@ -12,6 +11,7 @@ from pypalc.gui.app import PalcApp
 from pypalc.core.errors import SetupError
 from pypalc.gui.setup_io import _number, _numbers, setup_from_app
 from tests.baseline_cases import CASES
+from tests.gui_driver import upload
 from tests.test_gui_equivalence import enter
 from tests.test_shell import rendered
 
@@ -37,8 +37,8 @@ def test_setup_from_app_measured():
     app = PalcApp(Document())
     loudspeaker = app.pages[2]
     loudspeaker.directivity_select.value = "Measured Loudspeaker Data"
-    loudspeaker.directivity_upload.set_from_json('value', base64.b64encode(
-        csv_path.read_bytes()).decode("ascii"))
+    upload(loudspeaker.directivity_upload, csv_path.read_bytes(),
+           'measured.csv')
     setup = setup_from_app(app)
     assert setup.loudspeaker.directivity == "measured"
     assert setup.loudspeaker.measured_directivity.csv == \

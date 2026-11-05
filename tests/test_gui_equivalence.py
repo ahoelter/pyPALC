@@ -13,7 +13,6 @@ the GUI computes exactly what the pipeline computes in the same process is
 pinned by ``tests/test_apply_setup.py`` (hand path equals loaded session,
 loaded session equals headless run).
 """
-import base64
 import contextlib
 import io
 from pathlib import Path
@@ -26,6 +25,7 @@ from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
 from tests.baseline_cases import (CASES, assert_matches_baseline,
                                    baseline_path, case_path)
+from tests.gui_driver import upload
 from tests.test_shell import rendered
 
 _VARIANTS = {"palc1": "PALC 1", "palc2": "PALC 2", "palc3": "PALC 3"}
@@ -58,11 +58,10 @@ def _enter_text(widget, value, as_int=False):
     widget.value = str(int(value)) if as_int else _fmt(value)
 
 
-def _measured_csv_base64(setup):
+def _measured_csv(setup):
     md = setup.loudspeaker.measured_directivity
-    raw = Path(md.path).read_bytes() if md.path is not None \
+    return Path(md.path).read_bytes() if md.path is not None \
         else md.csv.encode("utf-8")
-    return base64.b64encode(raw).decode("ascii")
 
 
 def enter(app, setup):
@@ -86,10 +85,8 @@ def enter(app, setup):
     _enter_text(loudspeaker.cabinet_height_input, ls.cabinet_height)
     loudspeaker.directivity_select.value = _DIRECTIVITY[ls.directivity]
     if ls.directivity == 'measured':
-        # Bokeh 3: FileInput.value is read-only in Python; the browser's
-        # upload arrives through set_from_json
-        loudspeaker.directivity_upload.set_from_json(
-            'value', _measured_csv_base64(setup))
+        upload(loudspeaker.directivity_upload, _measured_csv(setup),
+               'measured.csv')
     # page 3
     _enter_text(array.cabinet_count_input, ar.cabinet_count, as_int=True)
     _enter_text(array.top_x_input, ar.top_position[0])
