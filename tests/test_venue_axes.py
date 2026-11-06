@@ -9,9 +9,9 @@ The venue figure follows the width of the window. Its three axis modes
 * 1, "Equal, fixed height": equal scaling; the figure is as high as in
   "Stretched" (less on low windows) and its width follows, up to the
   available width (then it is lower).
+* 2, "Stretched": the venue ranges fill the figure, as before the port.
 
 A figure narrower than its card is centered in it.
-* 2, "Stretched": the venue ranges fill the figure, as before the port.
 
 In every mode the ranges are the data extent (the venue ranges with their
 margin), never widened. Equal scaling is done in the browser by the
@@ -103,6 +103,13 @@ def test_ranges_are_the_data_extent_in_every_mode(app, mode):
         assert pane.data_aspect == pytest.approx(24 / 7)
     # a box zoom keeps the equal scaling; in "Stretched" it is free
     assert _box_zoom(figure).match_aspect is (mode != 2)
+
+
+def test_main_area_keeps_the_scrollbar_space():
+    """The width of the pages, from which "Equal, variable height" sets the
+    height, does not change when the main area shows a scrollbar."""
+    view = PalcApp(Document()).view()
+    assert view.sx == {'& .main-content': {'scrollbarGutter': 'stable'}}
 
 
 def test_height_limits():

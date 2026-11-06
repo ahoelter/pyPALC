@@ -1273,7 +1273,9 @@ class BrowserCheck:
         The figure is sized, its ranges are not widened: in the equal modes
         the ranges are those of "Stretched" on the same page (the data
         extent; measured first on pages 1 to 4, where the figure must be as
-        wide as its container). In "Equal, variable height" the figure is
+        wide as its container), and its container is as wide as in
+        "Stretched" (the main area keeps the space of its scrollbar). In
+        "Equal, variable height" the figure is
         as wide as its container (as in "Stretched") unless it has the
         largest height (:func:`~pypalc.gui.ranges.window_limit` of the
         window; it may be higher than in "Stretched"); in "Equal, fixed
@@ -1312,6 +1314,13 @@ class BrowserCheck:
                     abs(left - right) > SIZE_TOLERANCE:
                 problems.append('%s: not centered (%d px left, %d px '
                                 'right)' % (name, left, right))
+            if page is not None and abs(
+                    available - stretched[page]['available']) > \
+                    SIZE_TOLERANCE:
+                problems.append('%s: container %d px wide, in Stretched %d '
+                                'px (a scrollbar?)' % (
+                                    name, available,
+                                    stretched[page]['available']))
             if extent:
                 if not close(state['x'] + state['y'],
                              stretched[page]['x'] + stretched[page]['y']):

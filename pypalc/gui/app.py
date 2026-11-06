@@ -174,6 +174,12 @@ PAGE_LABELS = ('Help', '1 · Venue', '2 · Loudspeaker', '3 · Array',
 AXIS_MODES = ('Equal, variable height', 'Equal, fixed height', 'Stretched')
 #: Name of the venue figure (pages 1 to 4).
 VENUE_FIGURE_NAME = 'venue_figure'
+#: Style of the Material page: its main area, which scrolls, always keeps
+#: the space of its vertical scrollbar, so the width of the pages does not
+#: change when a scrollbar appears. An equally scaled figure sets its height
+#: from that width (:class:`~.ranges.ScaledFigure`); without it the height
+#: could show and hide the scrollbar in turn near the window bottom.
+MAIN_AREA_SX = {'& .main-content': {'scrollbarGutter': 'stable'}}
 #: Delay of :meth:`PalcApp.later` in ms.
 LATER_DELAY_MS = 120
 
@@ -383,7 +389,7 @@ class PalcApp:
             title='pyPALC', header=[subtitle, self.page_select, logos],
             main=[self.content], dark_theme=True, theme_toggle=False,
             theme_config=copy.deepcopy(MATERIAL_THEME),
-            busy_indicator='linear')
+            busy_indicator='linear', sx=copy.deepcopy(MAIN_AREA_SX))
 
     def show_page(self, index: int) -> None:
         """Show a page in the content area (legacy ``steps``).

@@ -162,8 +162,8 @@ The user chose A.
 - "Download SPL" becomes "Download Results", one zip file.
 - Laptops and large monitors, both if possible.
 - Shorter labels as in the prototype (step numbers stay).
-- Equal axis modes keep equal scaling; "variable height" gets a maximum
-  height; ranges and sizes may differ from the current GUI. Made precise
+- Equal axis modes keep equal scaling; "variable height" is limited by
+  the window; ranges and sizes may differ from the current GUI. Made precise
   on 2026-11-06: in the equal modes the ranges are the data extent and the
   figure size adapts (see Goals); the beam plots show exactly the extent
   of their image.
@@ -282,7 +282,11 @@ The user chose A.
   only by the window, so for a deep venue it fills down to the window
   bottom while "Equal, fixed height" stays 500 px high. Figures narrower
   than their card are centered (all modes, pages 1 to 4, and the beam
-  plots).
+  plots). The available width must not depend on the figure's height:
+  the main area of the page always keeps the space of its scrollbar
+  (`scrollbar-gutter: stable`), and a toolbar higher than a low figure
+  gets room below it, so that the tab panels of pages 2 and 4 do not
+  scroll.
 - The venue points figure (step 28) is no longer zoomed with the beam
   plots. It is stretched (300 px high, a different aspect), so sharing its
   ranges would break the equal scaling of the beam plots; the shared

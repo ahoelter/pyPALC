@@ -139,8 +139,18 @@ export function render({ model, data, el, view }) {
       // a figure narrower than its container is centered in it
       style.marginLeft = style.marginRight = width ? 'auto' : '';
     }
-    // lay the figure out again if its size in Bokeh's last layout is not
-    // its size now; stop if that never settles
+    // a toolbar higher than a low figure sticks out below it: the
+    // container makes room for it, so that no area around it scrolls
+    // (a scrollbar there would narrow the available width)
+    const below = figure.el.scrollHeight > figure.el.offsetHeight ?
+      figure.el.scrollHeight + 'px' : '';
+    if (el.style.minHeight !== below) el.style.minHeight = below;
+    // lay the figure out again at once if its size in Bokeh's last layout
+    // is not its size now. The guard only stops these synchronous layouts
+    // if that never settles; Bokeh's ResizeObserver still lays the figure
+    // out after each size change. The available width does not depend on
+    // the figure's height: the main area of the page keeps the space of
+    // its scrollbar (MAIN_AREA_SX in app.py).
     const now = figure.el.getBoundingClientRect();
     if (figure.bbox.width === Math.floor(now.width) &&
         figure.bbox.height === Math.floor(now.height)) return;
@@ -189,7 +199,12 @@ class ScaledFigure(JSComponent):
       would be wider than the container, it gets the width of the
       container and less height.
 
-    A figure narrower than its container is centered in it.
+    A figure narrower than its container is centered in it. The width of
+    the container must not depend on the figure's height, else the size
+    could flip near a limit: the main area of the page keeps the space of
+    its scrollbar (``MAIN_AREA_SX`` in :mod:`~pypalc.gui.app`), and a
+    toolbar higher than a low figure gets room below it in the container,
+    so that the tab panels of pages 2 and 4 show no scrollbar.
 
     Only the browser knows the width of the container, the height of the
     window and the space the axes, the title and the toolbar take around
