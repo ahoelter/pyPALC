@@ -374,9 +374,7 @@ class AlgorithmPage:
         if self._layout is None:
             app = self.app
             self._venue_tab.objects = [
-                app.venue_axes_row(),
-                app.bokeh_pane(app.venue_figure,
-                               sizing_mode='stretch_width')]
+                app.venue_axes_row(), app.venue_pane()]
             self._spl_tab.objects = [
                 self.frequency_range_slider,
                 app.bokeh_pane(self.spl_over_distance_figure,

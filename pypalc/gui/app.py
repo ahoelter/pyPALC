@@ -64,9 +64,9 @@ from pypalc.gui.page_loudspeaker import LoudspeakerPage
 from pypalc.gui.page_results import ResultsPage
 from pypalc.gui.page_venue import VenuePage
 from pypalc.gui.setup_io import setup_from_app
-from pypalc.gui.ranges import (VENUE_MAX_HEIGHT, PlotRanges,
-                               add_venue_bounds, scale_venue_figure,
-                               set_figure_ranges, show_rays)
+from pypalc.gui.ranges import (AXIS_SCALINGS, VENUE_MAX_HEIGHT, PlotRanges,
+                               ScaledFigure, data_aspect, scale_venue_figure,
+                               show_rays)
 from pypalc.gui.style import LINK, MATERIAL_THEME, TEXT, TEXT_MUTED
 from pypalc.gui.widgets import message, watch
 
@@ -172,8 +172,8 @@ PAGE_LABELS = ('Help', '1 · Venue', '2 · Loudspeaker', '3 · Array',
 #: Labels of the axis modes of the venue figure (``venue_axes_select``), in
 #: the order of their index (see :func:`~.ranges.scale_venue_figure`).
 AXIS_MODES = ('Equal, variable height', 'Equal, fixed height', 'Stretched')
-#: Indices of the pages that show the venue figure.
-VENUE_FIGURE_PAGES = (1, 2, 3, 4)
+#: Name of the venue figure (pages 1 to 4).
+VENUE_FIGURE_NAME = 'venue_figure'
 #: Delay of :meth:`PalcApp.later` in ms.
 LATER_DELAY_MS = 120
 
@@ -233,13 +233,16 @@ class PalcApp:
             title="", x_axis_label="x in m", y_axis_label="y in m",
             toolbar_location="right",
             tools="box_zoom,pan,wheel_zoom,reset,tap,hover,save",
-            sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT)
-        """Venue slice figure (pages 1 to 4); it follows the width of the
-        window, its axis mode is set by :meth:`scale_venue_axes`. Its
-        glyphs are added by the venue page."""
+            sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT,
+            name=VENUE_FIGURE_NAME)
+        """Venue slice figure (pages 1 to 4, each in a :meth:`venue_pane`);
+        it follows the width of the window, its axis mode is set by
+        :meth:`scale_venue_axes`. Its glyphs are added by the venue
+        page."""
         self.venue_figure.toolbar.logo = None
-        # the venue ranges, which the equal axis modes cover
-        add_venue_bounds(self.venue_figure)
+        self.venue_panes: List[ScaledFigure] = []
+        """The containers of the venue figure, one per page that shows it
+        (:meth:`venue_pane`)."""
         # Pages use widgets and sources of pages built before them; the
         # results page comes before the algorithm page, whose download
         # button needs the homogeneity source.
@@ -305,6 +308,27 @@ class PalcApp:
                              align='center', margin=(0, 0, 0, 8))
         return pn.Row(label, self.venue_axes_select, margin=(0, 0, 8, 0))
 
+    def venue_pane(self) -> ScaledFigure:
+        """The venue figure in a new container that sizes it for the
+        selected axis mode (:class:`~.ranges.ScaledFigure`).
+
+        Each page that shows the figure gets its own container; all of
+        them follow the axis mode (:meth:`scale_venue_axes`).
+
+        Returns
+        -------
+        ScaledFigure
+        """
+        ranges = self.state.ranges
+        pane = ScaledFigure(
+            object=self.bokeh_pane(self.venue_figure,
+                                   sizing_mode='stretch_width'),
+            scaling=AXIS_SCALINGS[self.venue_axes_select.active],
+            data_aspect=data_aspect(ranges.venue_x, ranges.venue_y),
+            sizing_mode='stretch_width', margin=0)
+        self.venue_panes.append(pane)
+        return pane
+
     def bokeh_pane(self, model: LayoutDOM, **params) -> pn.pane.Bokeh:
         """A Bokeh figure or layout as a Panel pane, drawn with the theme of
         the document (not the one of Panel's design, which the pane would
@@ -332,8 +356,8 @@ class PalcApp:
         the selected page.
 
         Side effect: shows the selected page (:meth:`show_page`), which
-        fills :attr:`content` and, depending on the page, clears the
-        result visualization or renews the figure ranges.
+        fills :attr:`content` and, on page 1, clears the result
+        visualization.
 
         Returns
         -------
@@ -365,16 +389,10 @@ class PalcApp:
         """Show a page in the content area (legacy ``steps``).
 
         Called when the page tab changes. Showing page 1 clears the result
-        visualization in the venue figure.
-
-        A page with the venue figure (:data:`VENUE_FIGURE_PAGES`) gets new
-        ranges in the equal axis modes, and page 5 new ranges of its beam
-        plots: the browser draws the figure anew there, and a
-        ``DataRange1d`` would keep the bounds of the figure as drawn before
-        (BokehJS keeps them for every view of the figure), so that one
-        meter would no longer have the same length on both axes. The
-        ranges are renewed after the new page is in the content area, when
-        the view of the page before is removed.
+        visualization in the venue figure. The figures keep their ranges,
+        so a zoom stays (in the equal axis modes too: a zoom keeps the
+        aspect of the ranges, which is the aspect of the frame on every
+        page, see :class:`~.ranges.ScaledFigure`).
 
         Parameters
         ----------
@@ -388,12 +406,6 @@ class PalcApp:
         if index == 1:
             self.clear_result_figure()
         self.content.objects = [self.pages[index].layout()]
-        # after the swap: the view of the page that is left is gone then
-        # and cannot write its bounds into the new ranges
-        if index in VENUE_FIGURE_PAGES and self.venue_axes_select.active != 2:
-            self.scale_venue_axes()
-        elif index == 5:
-            self.pages[5].scale_beam_figures()
 
     def later(self, func: Callable[[], None]) -> None:
         """Run a function after the browser has shown the changes so far.
@@ -511,8 +523,10 @@ class PalcApp:
     def update_venue_ranges(self) -> None:
         """Fit the ranges of the venue figures to the drawn lines.
 
-        Updates the venue figure, the beam plots, the venue points figure
-        and the x-range of the SPL over distance figure.
+        Updates the venue figure, the venue points figure and the x-range
+        of the SPL over distance figure. The beam plots get the extent of
+        their image when it is computed
+        (:meth:`~.page_results.ResultsPage.scale_beam_figures`).
 
         Returns
         -------
@@ -525,24 +539,22 @@ class PalcApp:
         y_range = st.ranges.update_range('venue_y', [-2, 2], st.drawn_lines.line_start_y,
                                          st.drawn_lines.line_stop_y, st.config.top_y)
         self.scale_venue_axes()
-        set_figure_ranges(st.ranges, [results.beam_figure,
-                                      results.reference_beam_figure,
-                                      results.venue_points_figure],
-                          [True, True, False], x_range, y_range)
+        results.venue_points_figure.update(x_range=x_range, y_range=y_range)
         self.pages[4].spl_over_distance_figure.x_range = x_range
 
     def scale_venue_axes(self) -> None:
         """Scale the venue figure as selected (legacy ``scale_p_axis``).
 
-        The figure is shown with the new ranges and size where it is; the
-        page is not built again.
+        The figure gets new ranges over the venue ranges (a zoom is
+        reset) and is sized for the mode where it is shown; the page is
+        not built again.
 
         Returns
         -------
         None.
         """
-        scale_venue_figure(self.venue_figure, self.state.ranges,
-                           self.venue_axes_select)
+        scale_venue_figure(self.venue_figure, self.venue_panes,
+                           self.state.ranges, self.venue_axes_select)
 
     def _result_properties(self) -> list:
         """(model, property) pairs that showing a result writes

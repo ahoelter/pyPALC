@@ -190,8 +190,7 @@ class VenuePage:
                 self.check_venue_button, self.venue_error_info)
             figure_card = card(
                 'Venue slice', self.app.venue_axes_row(),
-                self.app.bokeh_pane(self.app.venue_figure,
-                                    sizing_mode='stretch_width'))
+                self.app.venue_pane())
             self._layout = page_row(
                 pn.Column(line_card, lines_card, margin=0), figure_card)
         return self._layout

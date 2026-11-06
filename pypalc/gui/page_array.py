@@ -146,8 +146,7 @@ class ArrayPage:
                 self._reference_table())
             figure_card = card(
                 'Venue slice', self.app.venue_axes_row(),
-                self.app.bokeh_pane(self.app.venue_figure,
-                                    sizing_mode='stretch_width'))
+                self.app.venue_pane())
             self._layout = page_row(
                 pn.Column(cabinets_card, discrete_card, reference_card,
                           margin=0), figure_card)

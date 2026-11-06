@@ -75,7 +75,8 @@ for another one). Run the tools from this folder:
   headers of its five CSV files, "Save Setup"), the running look of "PALC
   Run" during a run and during a load, dragging a target point, the rays on
   page 1, the equal scaling of the venue figure and of the beam plots
-  (pixels per meter on x and y), the axis labels of the venue figure, the
+  (pixels per meter on x and y, ranges that are the data extent or the
+  extent of the beam image, the size of the figure), the axis labels of the venue figure, the
   linked zoom of the beam plots, the toolbars, no horizontal scrolling of
   any page at the window width, that a value typed right before a click
   is not lost (with `--server-log`, the log file of the server, also that
@@ -101,9 +102,11 @@ After an upgrade of panel, panel-material-ui or bokeh, run
 `tools/browser_check.py` (at 1280 and 1920 px): the GUI relies on some
 private or internal APIs that the tests on the server cannot check
 (`FileDownload._sync_data` and its `_transfer` watcher, the document
-lock read by `pypalc.gui.widgets.locked`, `have_updated_interactively` of BokehJS
-ranges, the relayout through `min_border_left`, CSS on MUI, Bokeh and
-Tabulator class names).
+lock read by `pypalc.gui.widgets.locked`, the views of BokehJS that
+`pypalc.gui.ranges.ScaledFigure` measures and lays out in the browser
+(`view.get_child_view` of Panel's `JSComponent`, `bbox`, `frame.bbox` and
+`compute_layout` of a Bokeh plot view), CSS on MUI, Bokeh and Tabulator
+class names).
 
 ### Run without the GUI
 

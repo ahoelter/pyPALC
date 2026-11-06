@@ -128,9 +128,7 @@ class LoudspeakerPage:
             app = self.app
             self.tabs = pmui.Tabs(
                 ('Venue slice', pn.Column(
-                    app.venue_axes_row(),
-                    app.bokeh_pane(app.venue_figure,
-                                   sizing_mode='stretch_width'),
+                    app.venue_axes_row(), app.venue_pane(),
                     sizing_mode='stretch_width', margin=(8, 0, 0, 0))),
                 ('Directivity', app.bokeh_pane(
                     self.directivity_figure, sizing_mode='stretch_width',

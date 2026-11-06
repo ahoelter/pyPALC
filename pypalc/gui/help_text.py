@@ -86,10 +86,12 @@ _VENUE = (
      'audience lines. The gaps between the audience lines are processed. '
      'Afterwards the button reads <b>8. Venue is PALC compatible!</b>',
      '<b>Axes</b> of the venue figure (also on pages 2 to 4): <b>Equal, '
-     'variable height</b>: one meter has the same length on both axes, the '
-     'height of the figure follows its width; <b>Equal, fixed height</b>: '
-     'the same scaling at a fixed height; <b>Stretched</b>: the venue fills '
-     'the figure.'),
+     'variable height</b>: one meter has the same length on both axes; the '
+     'figure is as wide as in Stretched and its height follows (if it would '
+     'run below the window, it is narrower); <b>Equal, fixed height</b>: '
+     'the same scaling; the figure is as high as in Stretched and its width '
+     'follows (if it would be too wide, it is lower); <b>Stretched</b>: the '
+     'venue fills the figure.'),
 )
 
 _LOUDSPEAKER = (

@@ -57,18 +57,31 @@ show the final GUI.
   window width of 1280 px (a common laptop) and up. On wide screens the
   cards and figures use the space; on narrower ones they shrink or move
   below each other. The figures resize with the window, while the venue
-  figure keeps its three axis modes (user decision on how they behave):
-  - **Equal, variable height:** equal scaling (1 m on x looks as long as
-    1 m on y); the figure height follows the width, but only up to a
-    maximum height so the figure never runs below the window. Above that,
-    it behaves like "Equal, fixed height".
-  - **Equal, fixed height:** equal scaling at a fixed height; the whole
-    venue stays visible and one range widens to fill the figure.
-  - **Stretched:** the data fills the figure, as today.
+  figure keeps its three axis modes (user decision on how they behave,
+  made precise on 2026-11-06):
+  - **Stretched:** the figure fills the available width at its normal
+    height; the data fills the figure, as today.
+  - **Equal** (both modes): equal scaling, 1 m on x has the same length
+    on screen as 1 m on y. The axis ranges are the data extent (the venue
+    ranges with their usual margin), never widened; the size of the
+    figure adapts instead.
+  - **Equal, variable height:** the figure is as wide as in "Stretched";
+    its height is what makes the scaling equal. If the figure would then
+    run below the window (maximum height 500 px, less on low windows),
+    it gets that maximum height and becomes narrower, so the scaling
+    stays equal.
+  - **Equal, fixed height:** the figure is as high as in "Stretched"; its
+    width is what makes the scaling equal (so the length of 1 m on screen
+    depends on the venue). If the figure would then be wider than the
+    available width, it gets that width and becomes lower.
 
-  The page 5 figures keep equal scaling in the same way. The axis ranges
-  and figure sizes may differ from the current GUI; in the comparison with
-  the recorded data they are listed as intended changes.
+  The beam plots on page 5 show their image with equal scaling: their
+  initial x and y ranges are exactly the extent of the computed beam
+  image (where the beam plot calculation starts and ends, no margin
+  around the image), and the figure takes the shape of the image like
+  "Equal, variable height". The axis ranges and figure sizes may differ
+  from the current GUI; in the comparison with the recorded data they are
+  listed as intended changes.
 - **Everything keeps working:** drawing, tapping and removing audience
   lines; PALC venue proposal; loudspeaker and array settings including the
   measured directivity upload; the PALC run; dragging the target slope;
@@ -147,7 +160,10 @@ The user chose A.
 - Laptops and large monitors, both if possible.
 - Shorter labels as in the prototype (step numbers stay).
 - Equal axis modes keep equal scaling; "variable height" gets a maximum
-  height; ranges and sizes may differ from the current GUI.
+  height; ranges and sizes may differ from the current GUI. Made precise
+  on 2026-11-06: in the equal modes the ranges are the data extent and the
+  figure size adapts (see Goals); the beam plots show exactly the extent
+  of their image.
 - The new GUI replaces the Bokeh GUI when merged; the old one stays in the
   git history.
 
@@ -224,22 +240,44 @@ The user chose A.
 
 ## Decisions during implementation
 
-- Venue figure, "Equal" axis modes: the figure gets new ranges whenever a
-  page that shows it is opened, so a zoom is reset by a page switch
-  ("Stretched" keeps the zoom). BokehJS keeps the bounds of every view a
-  `DataRange1d` was used in, so without new ranges the scaling of one page
-  would be computed with the figure size of another and would not be
-  equal.
-- Beam plots (page 5): a zoom, pan or reset in one beam plot moves the
-  other one too, as before. They are linked in the browser (each copies its
-  ranges to the other after a tool action) instead of sharing range
-  objects, because a `DataRange1d` shared with a hidden, zero-size figure
-  would join its bounds and break the equal scaling. Their box zoom keeps
-  the aspect of the figure, so a zoom keeps the equal scaling.
+- Venue figure, "Equal" axis modes (user decision 2026-11-06, replacing
+  the earlier widened ranges): the ranges are the data extent
+  (`Range1d` over the venue ranges) and the figure is sized for equal
+  scaling as described in the Goals. Only the browser knows the available
+  width, the window height and the space the axes, title, toolbar and
+  color bar take around the frame, so the size is computed there: each
+  page shows the figure in a small Panel `JSComponent`
+  (`pypalc.gui.ranges.ScaledFigure`) that measures the borders around
+  the frame after each layout, sets the outer size of the figure to the
+  frame size for equal scaling plus these borders and lays it out again
+  (also on a resize of the window or its container and when a hidden tab
+  is shown). This is exact whatever the borders are (they change with the
+  tick labels), unlike a CSS aspect ratio of the whole figure or fixed
+  borders. The `match_aspect` ranges, the hidden bounds renderer and the
+  relayout through `min_border_left` are gone.
+- A zoom now stays when the page is switched, in every axis mode: the
+  ranges are no longer renewed on a page switch (the `DataRange1d`
+  problem below is gone with `Range1d`). A box zoom in the equal modes
+  keeps the aspect of the frame, and the frame has the aspect of the data
+  extent on every page, so a zoomed figure keeps its equal scaling on
+  another page too. A change of the axis mode or of the venue ranges
+  (new lines, array inputs) gives new ranges, which resets a zoom.
+- Beam plots (page 5, user decision 2026-11-06): their ranges are the
+  extent of the beam image (position and size of the image in its
+  source), renewed only when that extent changes, so a zoom stays on a
+  page switch and a new frequency; a reset returns to the image extent.
+  They are sized like "Equal, variable height" by the same component. A
+  zoom, pan or reset in one beam plot moves the other one too, as before;
+  they are linked in the browser (each copies its ranges to the other
+  after a tool action) instead of sharing range objects, so that each
+  figure keeps its own frame size. Their box zoom keeps the aspect of the
+  figure, so a zoom keeps the equal scaling.
 - The venue points figure (step 28) is no longer zoomed with the beam
   plots. It is stretched (300 px high, a different aspect), so sharing its
   ranges would break the equal scaling of the beam plots; the shared
   `Range1d` of the old GUI already distorted them on a box zoom.
-- The beam plots get new ranges whenever page 5 is opened, so their zoom
-  is reset by a page switch, for the same reason as the venue figure in
-  the "Equal" modes.
+- Superseded on 2026-11-06 (kept for the record): the equal modes and the
+  beam plots first used `DataRange1d` with `match_aspect` (one range
+  widened to fill the figure) and got new ranges whenever a page that
+  shows them was opened, which reset a zoom, because BokehJS keeps the
+  bounds of every view a `DataRange1d` was used in.

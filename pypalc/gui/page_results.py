@@ -2,9 +2,9 @@
 
 The figures of the steps 28 to 34 are in the tabs "Frequency responses",
 "Homogeneity", "Bar charts" and "Beam plots" of one card. The beam plots
-show the venue with equal scaling (:func:`~.ranges.set_figure_ranges`)
-and zoom together (:func:`link_ranges`); the other figures fill the width
-of the window.
+show their image with equal scaling, their ranges being the extent of the
+image (:meth:`ResultsPage.scale_beam_figures`), and zoom together
+(:func:`link_ranges`); the other figures fill the width of the window.
 
 author: Arne Hoelter
 """
@@ -16,15 +16,15 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 import panel as pn
 import panel_material_ui as pmui
-from bokeh.models import (BoxZoomTool, ColorBar, ColumnDataSource,
-                          CustomJS, LinearColorMapper)
+from bokeh.models import (ColorBar, ColumnDataSource, CustomJS,
+                          LinearColorMapper)
 from bokeh.palettes import Cividis256
 from bokeh.plotting import figure
 
 from pypalc.core.sound_field import beam_plot_spl
 from pypalc.gui import CALLBACK_ERRORS
-from pypalc.gui.ranges import (VENUE_MAX_HEIGHT, add_venue_bounds,
-                               scale_equally)
+from pypalc.gui.ranges import (VARIABLE_HEIGHT, VENUE_MAX_HEIGHT,
+                               ScaledFigure, data_aspect, set_data_ranges)
 from pypalc.gui.style import DASHED
 from pypalc.gui.widgets import GAP, caption, card, select, watch
 
@@ -50,13 +50,10 @@ PAIR_WIDTH = 420
 
 
 #: Copies the ranges of the figure ``source`` to the figure ``target`` in
-#: the browser. ``have_updated_interactively`` comes along: after a zoom or
-#: pan both keep the ranges (Bokeh does not compute them again), after a
-#: reset both compute them again for their size.
+#: the browser.
 _LINK_RANGES_JS = """
 for (const name of ['x_range', 'y_range']) {
     const from = source[name], to = target[name];
-    to.have_updated_interactively = from.have_updated_interactively;
     if (to.start !== from.start || to.end !== from.end)
         to.setv({start: from.start, end: from.end});
 }
@@ -69,17 +66,17 @@ def link_ranges(source, target) -> None:
     The tools and the reset of ``source`` fire ``rangesupdate`` (a pan
     only when it ends; ``pan``, fired after each step of the pan tool,
     moves ``target`` along while panning); the callback copies the ranges
-    to ``target``. The automatic computation of the ranges fires neither
-    event, so each figure keeps its own equal scaling. The callback reads
-    the ranges the figures have when it runs: renewed ranges
-    (:meth:`ResultsPage.scale_beam_figures`) stay linked. Shared range
-    objects would not do: BokehJS computes a ``DataRange1d`` over all
-    figures that share it, also a hidden one.
+    to ``target``; a reset returns both to the extent of the image (the
+    start and end of their ``Range1d``). The callback reads the ranges the
+    figures have when it runs: renewed ranges
+    (:meth:`ResultsPage.scale_beam_figures`) stay linked. Both figures
+    have the same ranges and the same aspect of their frames, so the
+    copied ranges keep the equal scaling.
 
     Parameters
     ----------
     source, target : figure
-        Two figures of the same size.
+        Two figures with the same extent.
 
     Returns
     -------
@@ -140,6 +137,11 @@ class ResultsPage:
             reference_spl_db=[np.zeros([100, 100])],
             x=[-2], y=[-2], dw=[4], dh=[4]))
         """SPL, position and size of the beam plots."""
+        self._beam_extent: Optional[tuple] = None
+        """x- and y-range of the beam plots: the extent of their image."""
+        self._beam_panes: list = []
+        """Containers of the beam plots that size them for equal scaling
+        (built with the layout)."""
         # venue points with the colors of the frequency responses
         self.venue_points_figure = figure(
             title="28. Venue slice positions", x_axis_label="x in m",
@@ -249,7 +251,8 @@ class ResultsPage:
                      mapper: LinearColorMapper,
                      lines_source: ColumnDataSource, patches: tuple):
         """Beam plot of one array: the SPL in the venue with the audience
-        lines and the array, equally scaled (:meth:`scale_beam_figures`).
+        lines and the array; its ranges are the extent of the image and it
+        is shown with equal scaling (:meth:`scale_beam_figures`).
 
         Parameters
         ----------
@@ -273,12 +276,9 @@ class ResultsPage:
             title=title, x_axis_label="x in m", y_axis_label="y in m",
             visible=False, tools="box_zoom,pan,wheel_zoom,reset,hover,save",
             tooltips=[("SPL in dB", "@" + image),
-                      ("(x in m, y in m)", "($x, $y)")])
+                      ("(x in m, y in m)", "($x, $y)")],
+            sizing_mode='stretch_width', height=VENUE_MAX_HEIGHT)
         beam_figure.toolbar.logo = None
-        # a box zoom keeps the equal scaling too
-        for tool in beam_figure.tools:
-            if isinstance(tool, BoxZoomTool):
-                tool.match_aspect = True
         beam_figure.add_layout(ColorBar(color_mapper=mapper, location=(0, 0),
                                         title="",
                                         title_text_font_style="normal"),
@@ -292,7 +292,6 @@ class ResultsPage:
                             source=self.app.cabinet_patches_source,
                             color="black")
         beam_figure.xaxis.axis_label_text_font_style = "normal"
-        add_venue_bounds(beam_figure)
         return beam_figure
 
     def layout(self) -> pn.Column:
@@ -312,6 +311,14 @@ class ResultsPage:
             def pane(model, **params):
                 return app.bokeh_pane(model, sizing_mode='stretch_width',
                                       **params)
+
+            def beam_pane(model):
+                scaled = ScaledFigure(
+                    object=pane(model), scaling=VARIABLE_HEIGHT,
+                    data_aspect=data_aspect(*self._beam_extent),
+                    sizing_mode='stretch_width', margin=0)
+                self._beam_panes.append(scaled)
+                return scaled
 
             def pair(left, right):
                 """Two figures side by side, one below the other on narrow
@@ -339,7 +346,8 @@ class ResultsPage:
                        caption('Beam plot of', align='center',
                                sizing_mode=None, margin=(2, 0, 2, 16)),
                        self.beam_checkbox, margin=0),
-                pane(self.beam_figure), pane(self.reference_beam_figure)]
+                beam_pane(self.beam_figure),
+                beam_pane(self.reference_beam_figure)]
             self._layout = pn.Column(
                 # the tabs name the figures: no header
                 card('Sound field', self.tabs, hide_header=True),
@@ -347,16 +355,31 @@ class ResultsPage:
         return self._layout
 
     def scale_beam_figures(self) -> None:
-        """Show the venue in the beam plots with equal scaling, the height
-        following the width (:func:`~.ranges.scale_equally`).
+        """Fit the ranges of the beam plots to the extent of their image
+        (position and size in :attr:`beam_source`, where the beam plot
+        calculation starts and ends) and show them with equal scaling as
+        "Equal, variable height" of the venue figure: the width of the
+        page, the height following up to :func:`~.ranges.max_height`
+        (:class:`~.ranges.ScaledFigure`).
+
+        The ranges are renewed only if the extent changed, so that a zoom
+        stays otherwise (a page switch, a new frequency).
 
         Returns
         -------
         None.
         """
+        data = self.beam_source.data
+        x_start, y_start = data['x'][0], data['y'][0]
+        extent = ([x_start, x_start + data['dw'][0]],
+                  [y_start, y_start + data['dh'][0]])
+        if extent == self._beam_extent:
+            return
+        self._beam_extent = extent
         for beam_figure in (self.beam_figure, self.reference_beam_figure):
-            scale_equally(beam_figure, self.app.state.ranges,
-                          variable_height=True)
+            set_data_ranges(beam_figure, *extent, equal=True)
+        for scaled in self._beam_panes:
+            scaled.data_aspect = data_aspect(*extent)
 
     # ------------------------------------------------------------------
     # Callbacks
@@ -455,6 +478,7 @@ class ResultsPage:
                         x=[rng.venue_x[0]], y=[rng.venue_y[0]],
                         dw=[rng.venue_x[1]-rng.venue_x[0]],
                         dh=[rng.venue_y[1]-rng.venue_y[0]]))
+            self.scale_beam_figures()
         except CALLBACK_ERRORS:
             logger.exception('Could not compute the beam plot')
 

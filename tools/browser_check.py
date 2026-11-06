@@ -61,11 +61,13 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from pypalc.core.settings import load_setup, load_setup_text  # noqa: E402
-from pypalc.gui.app import AXIS_MODES, PAGE_LABELS  # noqa: E402
+from pypalc.gui.app import (AXIS_MODES, PAGE_LABELS,  # noqa: E402
+                            VENUE_FIGURE_NAME)
 from pypalc.gui.downloads import (DOWNLOAD_COLUMNS,  # noqa: E402
                                   DOWNLOAD_FILE_NAMES, RESULTS_FILE_NAME,
                                   SETUP_FILE_NAME)
 from pypalc.gui.page_algorithm import RUN_LABEL, RUNNING_LABEL  # noqa: E402
+from pypalc.gui.ranges import max_height  # noqa: E402
 from pypalc.gui.setup_io import GAP_HANDLINGS, WEIGHTINGS  # noqa: E402
 
 #: Default setup file loaded by the load check.
@@ -146,6 +148,13 @@ RUNNING_BACKGROUND = 'rgb(139, 0, 0)'
 #: Largest allowed difference of the pixels per meter on the x and the y
 #: axis of an equally scaled figure, relative.
 EQUAL_TOLERANCE = 0.01
+#: Largest allowed difference in px of a size of an equally scaled figure
+#: from the size it must have (the width of "Stretched", the height of
+#: "Stretched", the largest height); the browser rounds sizes to whole px.
+SIZE_TOLERANCE = 1.5
+#: Largest allowed gap in px between the image of a beam plot and its
+#: frame.
+IMAGE_GAP = 1
 #: Smallest space in px left of and below the frame of the venue figure:
 #: its tick labels and axis titles are there (about 45 px), without them
 #: the frame fills the figure (a few px).
@@ -158,7 +167,10 @@ WEIGHTING_LABELS = {value: label for label, value in WEIGHTINGS.items()}
 #: document and all shadow roots; ``views`` lists the views of BokehJS (the
 #: models shown); ``text`` is the text of an element without its Material
 #: icon; ``fields`` maps the label of each shown input or select to its
-#: value; ``plotState`` measures a figure.
+#: value; ``plotState`` measures a figure: its frame (``width``,
+#: ``height``), ranges, outer size, the width of its container
+#: (``available``) and, for a beam plot, the extent of its image and the
+#: largest gap in px between the image and the frame.
 JS_HELPERS = r"""
 function deep(sel, root, out) {
     root = root || document; out = out || [];
@@ -194,8 +206,7 @@ function figureView(title) {
         v => v.model.title && v.model.title.text === title);
 }
 function venueView() {
-    return figureViews().find(v => v.model.renderers.some(
-        r => r.name === 'venue_bounds'));
+    return figureViews().find(v => v.model.name === VENUE_FIGURE_NAME);
 }
 function visible(e) { return e.getClientRects().length > 0; }
 function text(e) {
@@ -228,19 +239,43 @@ function isIdle() {
             return false;
     return true;
 }
+function imageExtent(m) {
+    const r = m.renderers.find(r => typeName(r.glyph) === 'Image');
+    if (!r) return null;
+    const d = r.data_source.data;
+    return [d.x[0], d.x[0] + d.dw[0], d.y[0], d.y[0] + d.dh[0]];
+}
 function plotState(v) {
     if (!v) return null;
     const m = v.model, f = v.frame.bbox, r = v.el.getBoundingClientRect();
     const num = x => (x == null || isNaN(x)) ? null : x;
+    const parent = v.el.parentElement;
+    const image = imageExtent(m);
+    let image_gap = null;
+    if (image) {
+        const xs = v.frame.x_scale, ys = v.frame.y_scale;
+        image_gap = Math.max(
+            Math.abs(xs.compute(image[0]) - f.left),
+            Math.abs(xs.compute(image[1]) - f.right),
+            Math.abs(ys.compute(image[2]) - f.bottom),
+            Math.abs(ys.compute(image[3]) - f.top));
+    }
     return {visible: m.visible && visible(v.el), width: f.width,
             height: f.height,
             x: [num(m.x_range.start), num(m.x_range.end)],
             y: [num(m.y_range.start), num(m.y_range.end)],
             left: f.left, below: v.bbox.height - f.bottom,
             bottom: r.bottom, window_height: window.innerHeight,
+            outer_width: r.width, outer_height: r.height,
+            available: parent ? parent.clientWidth : null,
+            image: image, image_gap: image_gap,
             range_ids: [m.x_range.id, m.y_range.id]};
 }
 """
+
+
+JS_HELPERS = JS_HELPERS.replace('VENUE_FIGURE_NAME',
+                                json.dumps(VENUE_FIGURE_NAME))
 
 
 def pixels_per_meter(state: dict) -> tuple:
@@ -1230,8 +1265,19 @@ class BrowserCheck:
         a tab, also after a round trip to the other tab during which an
         input gave the figure new ranges (:data:`HIDDEN_VENUE_INPUTS`; the
         input is set back with a second round trip, and the check fails if
-        the ranges were not renewed). In "Equal, variable height" the
-        figure must end inside the window. Screenshots of page 1 in every
+        the ranges were not renewed).
+
+        The figure is sized, its ranges are not widened: in the equal modes
+        the ranges are those of "Stretched" on the same page (the data
+        extent; measured first on pages 1 to 4, where the figure must be as
+        wide as its container). In "Equal, variable height" the figure is
+        as wide as its container (as in "Stretched") unless it has the
+        largest height (:func:`~pypalc.gui.ranges.max_height` of the
+        window), and it ends inside the window; in "Equal, fixed height" it
+        is as high as in "Stretched" unless it is as wide as its container.
+        The beam plots are sized as "Equal, variable height", their ranges
+        are the extent of their image and the image fills the frame (no gap
+        of more than :data:`IMAGE_GAP` px). Screenshots of page 1 in every
         axis mode (states ``axes_0`` to ``axes_2``); the mode is
         "Stretched" again afterwards.
 
@@ -1241,23 +1287,105 @@ class BrowserCheck:
             ``(ok, detail)``.
         """
         found, problems = [], []
+        stretched = {}
 
-        def measure(name, state, bottom=False):
+        def close(a, b):
+            return all(p is not None and q is not None and
+                       math.isclose(p, q, rel_tol=1e-9, abs_tol=1e-9)
+                       for p, q in zip(a, b))
+
+        def sized(name, state, mode, page, extent):
+            """The size and the ranges of an equally scaled figure."""
+            near = lambda a, b: abs(a - b) <= SIZE_TOLERANCE  # noqa: E731
+            width, height = state['outer_width'], state['outer_height']
+            available = state['available']
+            if extent:
+                if not close(state['x'] + state['y'],
+                             stretched[page]['x'] + stretched[page]['y']):
+                    problems.append('%s: ranges %s are not the data extent '
+                                    '%s' % (name, _fmt(state['x'] + state['y']),
+                                            _fmt(stretched[page]['x'] +
+                                                 stretched[page]['y'])))
+            if mode == 0:
+                limit = max_height(state['window_height'])
+                capped = near(height, limit)
+                if not (near(width, available) or capped) or \
+                        width > available + SIZE_TOLERANCE or \
+                        height > limit + SIZE_TOLERANCE:
+                    problems.append(
+                        '%s: %dx%d px, not as wide as its container (%d px) '
+                        'and not the largest height (%d px)'
+                        % (name, width, height, available, limit))
+                return 'width %s' % ('capped by the height %d px' % limit
+                                     if capped and not near(width, available)
+                                     else 'of its container %d px'
+                                     % available)
+            high = stretched[page]['outer_height']
+            capped = near(width, available)
+            if not (near(height, high) or capped) or \
+                    height > high + SIZE_TOLERANCE or \
+                    width > available + SIZE_TOLERANCE:
+                problems.append(
+                    '%s: %dx%d px, not as high as in Stretched (%d px) and '
+                    'not as wide as its container (%d px)'
+                    % (name, width, height, high, available))
+            return 'height %s' % ('capped by the width %d px' % available
+                                  if capped and not near(height, high)
+                                  else 'of Stretched %d px' % high)
+
+        def measure(name, state, mode=None, page=None, bottom=False,
+                    extent=True):
             if not state or not state['visible']:
                 problems.append('%s: figure not shown' % name)
                 return
             x, y = pixels_per_meter(state)
             diff = equal_difference(state)
-            found.append('%s %dx%d px, %.2f/%.2f px/m (%.2f %%)%s' % (
-                name, state['width'], state['height'], x, y, 100 * diff,
-                ', bottom %d of %d px' % (state['bottom'],
-                                          state['window_height'])
-                if bottom else ''))
+            size = sized(name, state, mode, page, extent) \
+                if mode is not None else ''
+            found.append('%s %dx%d px (frame %dx%d), %.2f/%.2f px/m '
+                         '(%.2f %%), %s%s' % (
+                             name, state['outer_width'],
+                             state['outer_height'], state['width'],
+                             state['height'], x, y, 100 * diff, size,
+                             ', bottom %d of %d px' % (
+                                 state['bottom'], state['window_height'])
+                             if bottom else ''))
             if not diff < EQUAL_TOLERANCE:
                 problems.append('%s: px/m differ by %.2f %%'
                                 % (name, 100 * diff))
             if bottom and state['bottom'] > state['window_height']:
                 problems.append('%s: figure ends below the window' % name)
+
+        def measure_beam(name, state):
+            measure(name, state, mode=0, extent=False)
+            if not state or not state['visible']:
+                return
+            image = state['image']
+            if image is None or not close(state['x'] + state['y'], image):
+                problems.append('%s: ranges %s are not the image extent %s'
+                                % (name, _fmt(state['x'] + state['y']),
+                                   image and _fmt(image)))
+            elif state['image_gap'] > IMAGE_GAP:
+                problems.append('%s: %.1f px between image and frame'
+                                % (name, state['image_gap']))
+            else:
+                found.append('%s: ranges = image extent %s, gap %.2g px'
+                             % (name, _fmt(image), state['image_gap']))
+
+        def measure_stretched(page):
+            state = self.venue_state()
+            if not state or not state['visible']:
+                problems.append('page %d Stretched: figure not shown' % page)
+                return
+            stretched[page] = state
+            found.append('page %d Stretched %dx%d px in %d px, %s' % (
+                page, state['outer_width'], state['outer_height'],
+                state['available'], _fmt(state['x'] + state['y'])))
+            if abs(state['outer_width'] - state['available']) > \
+                    SIZE_TOLERANCE:
+                problems.append('page %d Stretched: %d px wide in %d px'
+                                % (page, state['outer_width'],
+                                   state['available']))
 
         def change_hidden(page, mode, step):
             # change the input while the other tab hides the venue figure;
@@ -1285,36 +1413,46 @@ class BrowserCheck:
             state = self.venue_state()
             name = 'page %d mode %d %s=%s on tab %r' % (
                 page, mode, label.split('.')[0], shown, tab)
-            measure(name, state, bottom=mode == 0)
+            # set back, the ranges are the data extent of Stretched again
+            measure(name, state, mode=mode, page=page, bottom=mode == 0,
+                    extent=step == 1)
             if before and state and \
                     before['range_ids'] == state['range_ids']:
                 problems.append('%s: the venue figure got no new ranges, '
                                 'so the round trip checked nothing' % name)
 
+        def show_venue(page):
+            self.show_page(page)
+            if page in HIDDEN_VENUE_INPUTS:
+                self.show_tab(VENUE_TAB)
+
         old_inputs = {}
+        self.show_page(1)
+        self.set_axis_mode(2)
+        for page in (1, 2, 3, 4):
+            show_venue(page)
+            measure_stretched(page)
         self.show_page(1)
         for mode in (0, 1):
             self.set_axis_mode(mode)
-            measure('page 1 mode %d' % mode, self.venue_state(),
-                    bottom=mode == 0)
+            measure('page 1 mode %d' % mode, self.venue_state(), mode=mode,
+                    page=1, bottom=mode == 0)
             self.screenshot(1, 'axes_%d' % mode)
             for page in (2, 3, 4):
-                self.show_page(page)
-                if page in HIDDEN_VENUE_INPUTS:
-                    self.show_tab(VENUE_TAB)
+                show_venue(page)
                 measure('page %d mode %d' % (page, mode), self.venue_state(),
-                        bottom=mode == 0)
+                        mode=mode, page=page, bottom=mode == 0)
                 if page in HIDDEN_VENUE_INPUTS:
                     for step in (0, 1):
                         change_hidden(page, mode, step)
             self.show_page(1)
             measure('page 1 again mode %d' % mode, self.venue_state(),
-                    bottom=mode == 0)
+                    mode=mode, page=1, bottom=mode == 0)
         self.set_axis_mode(2)
         self.screenshot(1, 'axes_2')
         self.show_beam_plots()
         for title, state in zip(('PALC', 'reference'), self.beam_states()):
-            measure('beam plot %s' % title, state)
+            measure_beam('beam plot %s' % title, state)
         self.screenshot(5, 'beam_plots')
         self.show_page(1)
         self.show_page(5)
@@ -1322,7 +1460,7 @@ class BrowserCheck:
                                   for s in self.beam_states()),
                       'both beam plots', timeout=60)
         for title, state in zip(('PALC', 'reference'), self.beam_states()):
-            measure('beam plot %s after page 1' % title, state)
+            measure_beam('beam plot %s after page 1' % title, state)
         return not problems, '; '.join(found + problems)
 
     def tool_button(self, title: str, tool: str) -> tuple:
@@ -1377,9 +1515,10 @@ class BrowserCheck:
 
     def check_beam_link(self) -> tuple:
         """A zoom in one beam plot zooms the other one too, and a reset in
-        the other one resets both: the box zoom tool of the PALC plot
-        (mouse drag over a part of its frame), then the reset tool of the
-        reference plot, both clicked in their toolbars.
+        the other one resets both to the extent of the image: the box zoom
+        tool of the PALC plot (mouse drag over a part of its frame), then
+        the reset tool of the reference plot, both clicked in their
+        toolbars.
 
         Returns
         -------
@@ -1413,8 +1552,13 @@ class BrowserCheck:
                 _fmt(start[0]), _fmt(start[1]), _fmt(zoomed[0]),
                 _fmt(zoomed[1]), _fmt(after[0]), _fmt(after[1]))
         width = [r[1] - r[0] for r in (start[0], zoomed[0])]
+        image = [s['image'] for s in self.beam_states()]
+        detail += '; image extent %s' % ', '.join(
+            'none' if i is None else _fmt(i) for i in image)
         ok = (width[1] < 0.9 * width[0] and same(zoomed[0], zoomed[1])
-              and same(after[0], start[0]) and same(after[1], start[1]))
+              and same(after[0], start[0]) and same(after[1], start[1])
+              and all(i is not None and same(a, i)
+                      for a, i in zip(after, image)))
         return ok, detail
 
     def check_toolbars(self) -> tuple:

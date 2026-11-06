@@ -3,45 +3,54 @@
 The venue figure follows the width of the window. Its three axis modes
 (``app.venue_axes_select``):
 
-* 0, "Equal, variable height": equal scaling; the height follows the width
-  (aspect ratio of the venue) up to :data:`~pypalc.gui.ranges.VENUE_MAX_HEIGHT`.
-* 1, "Equal, fixed height": equal scaling at the fixed height; the whole
-  venue stays visible and one range widens to fill the figure.
+* 0, "Equal, variable height": equal scaling; the figure is as wide as in
+  "Stretched" and its height follows, up to a maximum height (then it is
+  narrower).
+* 1, "Equal, fixed height": equal scaling; the figure is as high as in
+  "Stretched" and its width follows, up to the available width (then it is
+  lower).
 * 2, "Stretched": the venue ranges fill the figure, as before the port.
 
-Equal scaling is done in the browser: both ranges are ``DataRange1d`` that
-cover the venue ranges (the data of the hidden bounds renderer) and the
-figure matches the aspect (``match_aspect``, ``aspect_scale`` 1), so Bokeh
-widens one range until one meter has the same length on both axes, for
-every size of the figure. The browser check (``tools/browser_check.py``,
-checks ``equal_axes`` and ``axis_labels``) measures that.
+In every mode the ranges are the data extent (the venue ranges with their
+margin), never widened. Equal scaling is done in the browser by the
+containers of the figure (:class:`~pypalc.gui.ranges.ScaledFigure`, one per
+page), which size the figure so that its frame has the aspect of the
+ranges. The browser check (``tools/browser_check.py``, checks
+``equal_axes`` and ``axis_labels``) measures that.
 """
 import panel_material_ui as pmui
 import pytest
 from bokeh.document import Document
-from bokeh.models import DataRange1d, Range1d
+from bokeh.models import BoxZoomTool, Range1d
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-from pypalc.gui.ranges import (VARIABLE_MAX_HEIGHT, VENUE_BOUNDS,
-                               VENUE_MAX_HEIGHT)
+from pypalc.gui.ranges import (FIXED_HEIGHT, MIN_MAX_HEIGHT, STRETCHED,
+                               VARIABLE_HEIGHT, VENUE_MAX_HEIGHT,
+                               WINDOW_MARGIN, ScaledFigure, max_height)
 from tests.gui_driver import read, write
 from tests.gui_steps import ROOT
+from tests.test_shell import rendered
 
 MODES = ['Equal, variable height', 'Equal, fixed height', 'Stretched']
+SCALINGS = [VARIABLE_HEIGHT, FIXED_HEIGHT, STRETCHED]
 
 
 @pytest.fixture
 def app():
-    """An app with the audience lines of case ``simple`` drawn."""
-    app = PalcApp(Document())
+    """A rendered app with the audience lines of case ``simple`` drawn and
+    every page built."""
+    app = rendered(PalcApp(Document()))
     setup = load_setup(ROOT / 'tests' / 'cases' / 'simple.yaml')
     app.pages[1].draw_lines(setup.venue.audience_lines)
+    for page in app.pages.values():
+        page.layout()
     return app
 
 
-def _bounds(app):
-    return app.venue_figure.select_one({'name': VENUE_BOUNDS})
+def _box_zoom(figure):
+    (tool,) = [tool for tool in figure.tools if isinstance(tool, BoxZoomTool)]
+    return tool
 
 
 def test_axes_select_is_material_button_group():
@@ -52,61 +61,63 @@ def test_axes_select_is_material_button_group():
     assert read(select, 'active') == 2
 
 
-@pytest.mark.parametrize('mode', [0, 1])
-def test_equal_modes_match_aspect(app, mode):
+def test_every_venue_page_shows_the_figure_in_a_scaled_container(app):
+    panes = app.venue_panes
+    assert len(panes) == 4
+    for pane in panes:
+        assert isinstance(pane, ScaledFigure)
+        assert pane.object.object is app.venue_figure
+        assert pane.sizing_mode == 'stretch_width'
+    for index in (1, 2, 3, 4):
+        layout = app.pages[index].layout()
+        assert sum(pane in layout.select(ScaledFigure)
+                   for pane in panes) == 1, index
+
+
+@pytest.mark.parametrize('mode', [0, 1, 2])
+def test_ranges_are_the_data_extent_in_every_mode(app, mode):
+    """The ranges are the venue ranges (data extent and its margin), not
+    widened for equal scaling: the figure is sized instead."""
     write(app.venue_axes_select, 'active', mode)
     figure, ranges = app.venue_figure, app.state.ranges
-    assert figure.match_aspect is True
-    assert figure.aspect_scale == 1
-    bounds = _bounds(app)
-    assert bounds is not None and not bounds.visible
-    assert list(bounds.data_source.data['x']) == list(ranges.venue_x)
-    assert list(bounds.data_source.data['y']) == list(ranges.venue_y)
-    for axis_range in (figure.x_range, figure.y_range):
-        assert isinstance(axis_range, DataRange1d)
-        # the venue ranges, widened in the browser to equal scaling
-        assert axis_range.renderers == [bounds]
-        assert axis_range.range_padding == 0
-    assert figure.sizing_mode == 'stretch_width'
-
-
-def test_stretched_fills_figure_with_venue_ranges(app):
-    write(app.venue_axes_select, 'active', 0)
-    write(app.venue_axes_select, 'active', 2)
-    figure, ranges = app.venue_figure, app.state.ranges
+    # the lines and the array (x 0 to 20, y 0 to 3) with a margin of 2 m
+    assert ranges.venue_x == [-2, 22] and ranges.venue_y == [-2, 5]
+    for axis_range, venue in ((figure.x_range, ranges.venue_x),
+                              (figure.y_range, ranges.venue_y)):
+        assert type(axis_range) is Range1d
+        assert [axis_range.start, axis_range.end] == venue
     assert figure.match_aspect is False
-    assert isinstance(figure.x_range, Range1d)
-    assert isinstance(figure.y_range, Range1d)
-    assert [figure.x_range.start, figure.x_range.end] == ranges.venue_x
-    assert [figure.y_range.start, figure.y_range.end] == ranges.venue_y
+    # the figure itself has the size of "Stretched"; the browser sizes it
     assert figure.sizing_mode == 'stretch_width'
     assert figure.height == VENUE_MAX_HEIGHT
     assert figure.aspect_ratio is None and figure.max_height is None
-
-
-def test_variable_height_follows_width_up_to_maximum(app):
-    write(app.venue_axes_select, 'active', 0)
-    figure, ranges = app.venue_figure, app.state.ranges
-    width = ranges.venue_x[1] - ranges.venue_x[0]
-    height = ranges.venue_y[1] - ranges.venue_y[0]
-    assert figure.aspect_ratio == pytest.approx(width / height)
-    assert figure.max_height == VENUE_MAX_HEIGHT
-    assert figure.height is None
-    # without a percentage, so that the card around the figure is sized to
-    # the capped height (Bokeh's own rule is min(max_height, 100%)); at
-    # most VENUE_MAX_HEIGHT, less on low windows
-    assert figure.styles['max-height'] == VARIABLE_MAX_HEIGHT == \
-        'min(500px, max(200px, calc(100vh - 210px)))'
-    assert figure.styles['width'] == '100%'
-
-
-def test_fixed_height(app):
-    write(app.venue_axes_select, 'active', 0)
-    write(app.venue_axes_select, 'active', 1)
-    figure = app.venue_figure
-    assert figure.height == VENUE_MAX_HEIGHT
-    assert figure.aspect_ratio is None and figure.max_height is None
+    assert figure.frame_width is None and figure.frame_height is None
     assert figure.styles == {}
+    for pane in app.venue_panes:
+        assert pane.scaling == SCALINGS[mode]
+        assert pane.data_aspect == pytest.approx(24 / 7)
+    # a box zoom keeps the equal scaling; in "Stretched" it is free
+    assert _box_zoom(figure).match_aspect is (mode != 2)
+
+
+def test_maximum_height_of_variable_height():
+    assert (VENUE_MAX_HEIGHT, MIN_MAX_HEIGHT, WINDOW_MARGIN) == \
+        (500, 200, 210)
+    assert max_height(800) == 500
+    assert max_height(714) == 500  # 1280 x 800
+    assert max_height(682) == 472  # 1366 x 768
+    assert max_height(300) == 200
+
+
+def test_scaled_figure_code_has_the_constants():
+    code = ScaledFigure._esm
+    for name in ('STRETCHED', 'VARIABLE_HEIGHT', 'FIXED_HEIGHT',
+                 'VENUE_MAX_HEIGHT', 'MIN_MAX_HEIGHT', 'WINDOW_MARGIN'):
+        assert name not in code
+    for text in ("'stretched'", "'variable_height'", 'Math.min(500',
+                 'Math.max(\n        200', 'innerHeight - 210',
+                 'h = 500 - border_y'):
+        assert text in code, text
 
 
 def test_new_line_keeps_axis_mode(app):
@@ -120,67 +131,33 @@ def test_new_line_keeps_axis_mode(app):
         write(widget, 'value', value)
     venue.save_line()
     ranges = app.state.ranges
-    assert ranges.venue_x[1] == 32 and ranges.venue_y[1] == 11
-    assert list(_bounds(app).data_source.data['x']) == list(ranges.venue_x)
-    assert isinstance(app.venue_figure.x_range, DataRange1d)
-    assert app.venue_figure.aspect_ratio == pytest.approx(
-        (ranges.venue_x[1] - ranges.venue_x[0])
-        / (ranges.venue_y[1] - ranges.venue_y[0]))
+    assert ranges.venue_x == [-2, 32] and ranges.venue_y == [-2, 11]
+    figure = app.venue_figure
+    assert [figure.x_range.start, figure.x_range.end] == [-2, 32]
+    assert [figure.y_range.start, figure.y_range.end] == [-2, 11]
+    for pane in app.venue_panes:
+        assert pane.scaling == VARIABLE_HEIGHT
+        assert pane.data_aspect == pytest.approx(34 / 13)
 
 
-@pytest.mark.parametrize('mode', [0, 1])
-def test_showing_a_venue_page_renews_equal_ranges(app, mode):
-    """BokehJS keeps the bounds of every view of a figure in a DataRange1d;
-    a page that draws the figure anew gets new ranges, so that the new
-    view alone sets the scaling."""
+@pytest.mark.parametrize('mode', [0, 1, 2])
+def test_showing_a_page_keeps_the_ranges(app, mode):
+    """A page switch keeps the ranges, so a zoom stays: in the equal modes
+    a zoom keeps the aspect of the ranges, which is the aspect of the frame
+    on every page."""
     write(app.venue_axes_select, 'active', mode)
-    for page in (4, 2, 3, 1):
-        x_range, y_range = app.venue_figure.x_range, app.venue_figure.y_range
-        write(app.page_select, 'active', page)
-        assert app.venue_figure.x_range is not x_range, page
-        assert app.venue_figure.y_range is not y_range, page
-        assert isinstance(app.venue_figure.x_range, DataRange1d)
-        assert app.venue_figure.match_aspect
-
-
-def test_showing_a_page_keeps_stretched_ranges(app):
-    x_range = app.venue_figure.x_range
+    x_range, y_range = app.venue_figure.x_range, app.venue_figure.y_range
     for page in (4, 2, 3, 5, 0, 1):
         write(app.page_select, 'active', page)
         assert app.venue_figure.x_range is x_range, page
+        assert app.venue_figure.y_range is y_range, page
 
 
-@pytest.mark.parametrize('mode', [0, 1])
-def test_ranges_are_renewed_after_the_page_is_swapped(app, mode):
-    """The new ranges are set after the content shows the new page, so the
-    view of the page that is left cannot write its bounds into them."""
-    write(app.venue_axes_select, 'active', mode)
-    events = []
-    app.content.param.watch(lambda event: events.append('swap'), 'objects')
-    scale = app.scale_venue_axes
-
-    def logged_scale():
-        events.append('ranges')
-        scale()
-    app.scale_venue_axes = logged_scale
-    for page in (4, 2, 3, 1):
-        events.clear()
-        write(app.page_select, 'active', page)
-        assert events == ['swap', 'ranges'], page
-
-
-@pytest.mark.parametrize('mode', [0, 1])
-def test_new_equal_ranges_are_laid_out(app, mode):
-    """BokehJS lays out a shown figure with new ranges only if a layout
-    property changes (else its axes lose their labels): every renewal of
-    the equal ranges changes the left border, between None and the same
-    border."""
-    figure = app.venue_figure
-    write(app.venue_axes_select, 'active', mode)
-    borders = []
-    for _ in range(3):
-        before = figure.min_border_left
-        app.scale_venue_axes()
-        assert figure.min_border_left != before
-        borders.append(figure.min_border_left)
-    assert set(borders) == {None, figure.min_border}
+def test_a_mode_change_gives_new_ranges(app):
+    """A new mode resets a zoom (new ranges over the data extent)."""
+    for mode in (0, 1, 2, 0):
+        x_range = app.venue_figure.x_range
+        write(app.venue_axes_select, 'active', mode)
+        assert app.venue_figure.x_range is not x_range
+        assert [app.venue_figure.x_range.start,
+                app.venue_figure.x_range.end] == app.state.ranges.venue_x

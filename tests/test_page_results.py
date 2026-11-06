@@ -1,6 +1,7 @@
 """Page 5 (sound field) in Material widgets: the frequency of the beam
 plots, the beam plot selection, the tabs of the figures, the responsive
-figures with equal scaling of the beam plots and the venue point tap."""
+figures, the beam plots with the extent of their image as ranges and
+equal scaling, and the venue point tap."""
 import contextlib
 import io
 
@@ -9,12 +10,11 @@ import panel as pn
 import panel_material_ui as pmui
 import pytest
 from bokeh.document import Document
-from bokeh.models import BoxZoomTool, CustomJS, DataRange1d, Range1d
+from bokeh.models import BoxZoomTool, CustomJS, Range1d
 
 from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
-from pypalc.gui.ranges import (VARIABLE_MAX_HEIGHT, VENUE_MAX_HEIGHT,
-                               venue_bounds)
+from pypalc.gui.ranges import VARIABLE_HEIGHT, VENUE_MAX_HEIGHT, ScaledFigure
 from tests.baseline_cases import case_path
 from tests.gui_driver import read, write
 from tests.test_gui_equivalence import drive
@@ -85,47 +85,71 @@ def test_layout_card_tabs_and_figures():
     assert page.beam_checkbox in widgets
 
 
-def test_beam_figures_are_equally_scaled(ran):
+def _image_extent(page):
+    data = page.beam_source.data
+    x, y = data['x'][0], data['y'][0]
+    return [x, x + data['dw'][0]], [y, y + data['dh'][0]]
+
+
+def test_beam_ranges_are_the_extent_of_the_image(ran):
+    """The ranges of both beam plots are where the beam plot calculation
+    starts and ends (the image), without a margin; the figures are sized
+    for equal scaling as "Equal, variable height"."""
     page = ran.pages[5]
     ranges = ran.state.ranges
-    width = ranges.venue_x[1] - ranges.venue_x[0]
-    height = ranges.venue_y[1] - ranges.venue_y[0]
+    write(page.beam_checkbox, 'active', [0, 1])
+    x, y = _image_extent(page)
+    # the image covers the venue ranges
+    assert x == pytest.approx(ranges.venue_x) and \
+        y == pytest.approx(ranges.venue_y)
     for figure in _beam_figures(page):
-        bounds = venue_bounds(figure)
-        assert bounds is not None and not bounds.visible
-        assert list(bounds.data_source.data['x']) == list(ranges.venue_x)
-        assert list(bounds.data_source.data['y']) == list(ranges.venue_y)
-        assert figure.match_aspect is True and figure.aspect_scale == 1
-        for axis_range in (figure.x_range, figure.y_range):
-            assert isinstance(axis_range, DataRange1d)
-            assert axis_range.renderers == [bounds]
-            assert axis_range.range_padding == 0
-        # height follows the width up to the maximum (as "Equal, variable
-        # height" of the venue figure)
-        assert figure.aspect_ratio == pytest.approx(width / height)
-        assert figure.max_height == VENUE_MAX_HEIGHT
-        assert figure.styles['max-height'] == VARIABLE_MAX_HEIGHT
-        assert figure.height is None
-    # each figure has its own ranges (BokehJS computes them per figure)
+        for axis_range, extent in ((figure.x_range, x), (figure.y_range, y)):
+            assert type(axis_range) is Range1d
+            assert [axis_range.start, axis_range.end] == extent
+        assert figure.match_aspect is False
+        assert figure.sizing_mode == 'stretch_width'
+        assert figure.height == VENUE_MAX_HEIGHT
+        assert figure.styles == {}
+    # each figure has its own ranges (linked in the browser)
     beam, reference = _beam_figures(page)
     assert beam.x_range is not reference.x_range
+    panes = list(_shown(ran).select(ScaledFigure))
+    assert [pane.object.object for pane in panes] == _beam_figures(page)
+    for pane in panes:
+        assert pane.scaling == VARIABLE_HEIGHT
+        assert pane.data_aspect == pytest.approx(
+            (x[1] - x[0]) / (y[1] - y[0]))
     # the venue points are stretched over the venue ranges
     points = page.venue_points_figure
     assert isinstance(points.x_range, Range1d)
     assert [points.x_range.start, points.x_range.end] == ranges.venue_x
     assert [points.y_range.start, points.y_range.end] == ranges.venue_y
     assert not points.match_aspect
+    write(page.beam_checkbox, 'active', [])
 
 
-def test_showing_page_5_renews_the_beam_ranges(ran):
+def test_beam_ranges_follow_a_new_image_extent(ran):
+    """New ranges only for a new extent: a page switch or a new frequency
+    keeps them (and a zoom)."""
     page = ran.pages[5]
+    write(page.beam_checkbox, 'active', [0])
+    before = page.beam_figure.x_range
     _shown(ran, 1)
-    before = [(f.x_range, f.y_range) for f in _beam_figures(page)]
     _shown(ran)
-    after = [(f.x_range, f.y_range) for f in _beam_figures(page)]
-    for (x0, y0), (x1, y1) in zip(before, after):
-        assert x1 is not x0 and y1 is not y0
-        assert isinstance(x1, DataRange1d) and isinstance(y1, DataRange1d)
+    write(page.beam_frequency_select, 'value', '125')
+    assert page.beam_figure.x_range is before
+    data = dict(page.beam_source.data)
+    data.update(x=[-5.0], dw=[30.0])
+    page.beam_source.data = data
+    page.scale_beam_figures()
+    assert [page.beam_figure.x_range.start,
+            page.beam_figure.x_range.end] == [-5.0, 25.0]
+    assert [page.reference_beam_figure.x_range.start,
+            page.reference_beam_figure.x_range.end] == [-5.0, 25.0]
+    write(page.beam_frequency_select, 'value', '63')
+    write(page.beam_checkbox, 'active', [])
+    assert [page.beam_figure.x_range.start,
+            page.beam_figure.x_range.end] == _image_extent(page)[0]
 
 
 def test_beam_plots_follow_the_selection(ran):
@@ -169,9 +193,8 @@ def test_a_new_result_resets_the_beam_selection(ran):
 def test_beam_plots_zoom_together():
     """A zoom, pan or reset in one beam plot is copied to the other in the
     browser (``rangesupdate``, which the tools and the reset fire, and
-    ``pan`` while panning; not the automatic computation of the ranges);
-    the code reads the ranges the figures have when it runs, so renewed
-    ranges stay linked."""
+    ``pan`` while panning); the code reads the ranges the figures have
+    when it runs, so renewed ranges stay linked."""
     page = PalcApp(Document()).pages[5]
     beam, reference = _beam_figures(page)
     for source, target in ((beam, reference), (reference, beam)):
@@ -179,7 +202,6 @@ def test_beam_plots_zoom_together():
         assert source.js_event_callbacks['pan'] == [callback]
         assert isinstance(callback, CustomJS)
         assert callback.args == {'source': source, 'target': target}
-        assert 'have_updated_interactively' in callback.code
         assert 'x_range' in callback.code and 'y_range' in callback.code
         # a box zoom keeps the equal scaling
         (box_zoom,) = [tool for tool in source.tools
