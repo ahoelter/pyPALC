@@ -117,6 +117,8 @@ def test_beam_ranges_are_the_extent_of_the_image(ran):
     assert [pane.object.object for pane in panes] == _beam_figures(page)
     for pane in panes:
         assert pane.scaling == VARIABLE_HEIGHT
+        # at most the height of the venue figure (and the window limit)
+        assert pane.largest_height == VENUE_MAX_HEIGHT
         assert pane.data_aspect == pytest.approx(
             (x[1] - x[0]) / (y[1] - y[0]))
     # the venue points are stretched over the venue ranges

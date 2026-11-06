@@ -66,20 +66,23 @@ show the final GUI.
     ranges with their usual margin), never widened; the size of the
     figure adapts instead.
   - **Equal, variable height:** the figure is as wide as in "Stretched";
-    its height is what makes the scaling equal. If the figure would then
-    run below the window (maximum height 500 px, less on low windows),
-    it gets that maximum height and becomes narrower, so the scaling
-    stays equal.
-  - **Equal, fixed height:** the figure is as high as in "Stretched"; its
-    width is what makes the scaling equal (so the length of 1 m on screen
-    depends on the venue). If the figure would then be wider than the
-    available width, it gets that width and becomes lower.
+    its height is what makes the scaling equal, also higher than in
+    "Stretched". The only limit is the window: if the figure would run
+    below the window (window height less 210 px, at least 200 px), it
+    gets that height and becomes narrower, so the scaling stays equal.
+  - **Equal, fixed height:** the figure is as high as in "Stretched"
+    (500 px, less if the window limit is lower); its width is what makes
+    the scaling equal (so the length of 1 m on screen depends on the
+    venue). If the figure would then be wider than the available width,
+    it gets that width and becomes lower.
+  - A figure narrower than the available width is centered in its card.
 
   The beam plots on page 5 show their image with equal scaling: their
   initial x and y ranges are exactly the extent of the computed beam
   image (where the beam plot calculation starts and ends, no margin
   around the image), and the figure takes the shape of the image like
-  "Equal, variable height". The axis ranges and figure sizes may differ
+  "Equal, variable height", at most 500 px high (and within the window
+  limit), centered when narrower. The axis ranges and figure sizes may differ
   from the current GUI; in the comparison with the recorded data they are
   listed as intended changes.
 - **Everything keeps working:** drawing, tapping and removing audience
@@ -266,12 +269,20 @@ The user chose A.
   extent of the beam image (position and size of the image in its
   source), renewed only when that extent changes, so a zoom stays on a
   page switch and a new frequency; a reset returns to the image extent.
-  They are sized like "Equal, variable height" by the same component. A
+  They are sized like "Equal, variable height" by the same component,
+  but at most 500 px high (as the venue figure in "Stretched"). A
   zoom, pan or reset in one beam plot moves the other one too, as before;
   they are linked in the browser (each copies its ranges to the other
   after a tool action) instead of sharing range objects, so that each
   figure keeps its own frame size. Their box zoom keeps the aspect of the
   figure, so a zoom keeps the equal scaling.
+- Height limits (user decision 2026-11-06, after the first version had
+  capped "Equal, variable height" at 500 px, which made both equal modes
+  look the same on most windows): "Equal, variable height" is limited
+  only by the window, so for a deep venue it fills down to the window
+  bottom while "Equal, fixed height" stays 500 px high. Figures narrower
+  than their card are centered (all modes, pages 1 to 4, and the beam
+  plots).
 - The venue points figure (step 28) is no longer zoomed with the beam
   plots. It is stretched (300 px high, a different aspect), so sharing its
   ranges would break the equal scaling of the beam plots; the shared

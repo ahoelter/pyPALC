@@ -316,6 +316,7 @@ class ResultsPage:
                 scaled = ScaledFigure(
                     object=pane(model), scaling=VARIABLE_HEIGHT,
                     data_aspect=data_aspect(*self._beam_extent),
+                    largest_height=VENUE_MAX_HEIGHT,
                     sizing_mode='stretch_width', margin=0)
                 self._beam_panes.append(scaled)
                 return scaled
@@ -359,7 +360,9 @@ class ResultsPage:
         (position and size in :attr:`beam_source`, where the beam plot
         calculation starts and ends) and show them with equal scaling as
         "Equal, variable height" of the venue figure: the width of the
-        page, the height following up to :func:`~.ranges.max_height`
+        page, the height following up to :data:`~.ranges.VENUE_MAX_HEIGHT`
+        and the window limit (:func:`~.ranges.window_limit`); a narrower
+        figure is centered
         (:class:`~.ranges.ScaledFigure`).
 
         The ranges are renewed only if the extent changed, so that a zoom

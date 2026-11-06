@@ -17,17 +17,16 @@ from bokeh.models import BoxZoomTool, Range1d
 from panel.custom import Child, JSComponent
 
 #: Height in px of the venue figure in the axis modes "Stretched" and
-#: "Equal, fixed height" (the latter lower only if the window is too narrow
-#: for its width), and the largest height of a figure in "Equal, variable
-#: height" (low enough that the figure ends inside a 1280 x 800 window).
+#: "Equal, fixed height" (the latter lower if the window is too low, see
+#: :func:`fixed_height`, or too narrow for its width), and the largest
+#: height of the beam plots.
 VENUE_MAX_HEIGHT = 500
-#: Space in px of the window above and below a figure in "Equal, variable
-#: height" (header, page tabs, the tabs of pages 2 and 4, card margins):
-#: its largest height is also the window height less this space
-#: (:func:`max_height`), so that it ends inside smaller windows such as
-#: 1366 x 768 and 1280 x 720 too.
+#: Space in px of the window above and below an equally scaled figure
+#: (header, page tabs, the tabs of pages 2 and 4, card margins): it is at
+#: most the window height less this space (:func:`window_limit`), so that
+#: it ends inside the window.
 WINDOW_MARGIN = 210
-#: Smallest value of that largest height in px, for very low windows.
+#: Smallest value of that limit in px, for very low windows.
 MIN_MAX_HEIGHT = 200
 #: Scalings of :class:`ScaledFigure`: the figure fills the width of its
 #: container at the height :data:`VENUE_MAX_HEIGHT` with the data
@@ -42,11 +41,12 @@ FIXED_HEIGHT = 'fixed_height'
 AXIS_SCALINGS = (VARIABLE_HEIGHT, FIXED_HEIGHT, STRETCHED)
 
 
-def max_height(window_height):
+def window_limit(window_height):
     """
-    Largest height in px of a figure in "Equal, variable height" in a
-    window of the given height (what :class:`ScaledFigure` computes in the
-    browser).
+    Largest height in px of an equally scaled figure in a window of the
+    given height, so that it ends inside the window (what
+    :class:`ScaledFigure` computes in the browser): the limit of "Equal,
+    variable height".
 
     Parameters
     ----------
@@ -56,12 +56,30 @@ def max_height(window_height):
     Returns
     -------
     float
-        :data:`VENUE_MAX_HEIGHT`, at most the window height less
-        :data:`WINDOW_MARGIN`, at least :data:`MIN_MAX_HEIGHT`.
+        The window height less :data:`WINDOW_MARGIN`, at least
+        :data:`MIN_MAX_HEIGHT`.
 
     """
-    return min(VENUE_MAX_HEIGHT,
-               max(MIN_MAX_HEIGHT, window_height - WINDOW_MARGIN))
+    return max(MIN_MAX_HEIGHT, window_height - WINDOW_MARGIN)
+
+
+def fixed_height(window_height):
+    """
+    Height in px of a figure in "Equal, fixed height" in a window of the
+    given height, if the window is wide enough.
+
+    Parameters
+    ----------
+    window_height : float
+        Inner height of the browser window in px.
+
+    Returns
+    -------
+    float
+        :data:`VENUE_MAX_HEIGHT`, at most :func:`window_limit`.
+
+    """
+    return min(VENUE_MAX_HEIGHT, window_limit(window_height))
 
 
 #: Browser code of :class:`ScaledFigure`. ``fit`` measures the borders of
@@ -91,18 +109,21 @@ export function render({ model, data, el, view }) {
       // the borders around the frame in the last layout, in px
       const border_x = outer.width - frame.width;
       const border_y = outer.height - frame.height;
-      const max_height = Math.min(VENUE_MAX_HEIGHT, Math.max(
-        MIN_MAX_HEIGHT, window.innerHeight - WINDOW_MARGIN));
+      // the figure ends inside the window
+      let limit = Math.max(MIN_MAX_HEIGHT,
+                           window.innerHeight - WINDOW_MARGIN);
       let w, h;  // size of the frame, w / h = aspect
       if (scaling === 'VARIABLE_HEIGHT') {
+        if (model.largest_height != null)
+          limit = Math.min(limit, model.largest_height);
         w = available - border_x;
         h = w / aspect;
-        if (h + border_y > max_height) {
-          h = max_height - border_y;
+        if (h + border_y > limit) {
+          h = limit - border_y;
           w = h * aspect;
         }
       } else {
-        h = VENUE_MAX_HEIGHT - border_y;
+        h = Math.min(VENUE_MAX_HEIGHT, limit) - border_y;
         w = h * aspect;
         if (w + border_x > available) {
           w = available - border_x;
@@ -115,6 +136,8 @@ export function render({ model, data, el, view }) {
     if (style.width !== width || style.height !== height) {
       style.width = width;
       style.height = height;
+      // a figure narrower than its container is centered in it
+      style.marginLeft = style.marginRight = width ? 'auto' : '';
     }
     // lay the figure out again if its size in Bokeh's last layout is not
     // its size now; stop if that never settles
@@ -126,7 +149,10 @@ export function render({ model, data, el, view }) {
     calm = setTimeout(() => { layouts = 0; }, 1000);
     figure.compute_layout();
   }
-  model.on(['scaling', 'data_aspect'], () => { layouts = 0; fit(); });
+  model.on(['scaling', 'data_aspect', 'largest_height'], () => {
+    layouts = 0;
+    fit();
+  });
   model.on('after_layout', fit);
   model.on('resize', fit);
   window.addEventListener('resize', fit);
@@ -155,11 +181,15 @@ class ScaledFigure(JSComponent):
     axes:
 
     * :data:`VARIABLE_HEIGHT`: the width of the container; the height
-      follows. If the figure would be higher than :func:`max_height` (of
-      the window), it gets that height and less width.
-    * :data:`FIXED_HEIGHT`: the height :data:`VENUE_MAX_HEIGHT`; the width
-      follows. If the figure would be wider than the container, it gets the
-      width of the container and less height.
+      follows. If the figure would run below the window (higher than
+      :func:`window_limit`, or than ``largest_height`` if given), it gets
+      that height and less width.
+    * :data:`FIXED_HEIGHT`: the height :data:`VENUE_MAX_HEIGHT` (less on
+      low windows, :func:`fixed_height`); the width follows. If the figure
+      would be wider than the container, it gets the width of the
+      container and less height.
+
+    A figure narrower than its container is centered in it.
 
     Only the browser knows the width of the container, the height of the
     window and the space the axes, the title and the toolbar take around
@@ -179,6 +209,10 @@ class ScaledFigure(JSComponent):
     data_aspect : float
         Width / height of the data extent in m / m (the ranges of the
         figure).
+    largest_height : int or None
+        Largest height in px in :data:`VARIABLE_HEIGHT` besides the window
+        limit (the beam plots: :data:`VENUE_MAX_HEIGHT`); None: only the
+        window limit.
     """
 
     object = Child(doc="Pane of the figure.")
@@ -188,6 +222,10 @@ class ScaledFigure(JSComponent):
 
     data_aspect = param.Number(default=1.0, bounds=(0, None),
                                doc="Width / height of the data extent.")
+
+    largest_height = param.Integer(default=None, allow_None=True,
+                                   bounds=(1, None),
+                                   doc="Largest height in variable height.")
 
     _esm = _SCALED_FIGURE_JS
 
@@ -355,11 +393,13 @@ def scale_venue_figure(venue_figure, panes, ranges, axes_select):
     :data:`AXIS_SCALINGS` and :class:`ScaledFigure`):
 
     * 0, "Equal, variable height": equal scaling; the figure is as wide as
-      in "Stretched" and its height follows, up to :func:`max_height`
-      (then it is narrower).
+      in "Stretched" and its height follows, up to the window limit
+      (:func:`window_limit`, so that it ends inside the window; then it is
+      narrower).
     * 1, "Equal, fixed height": equal scaling; the figure is as high as in
-      "Stretched" (:data:`VENUE_MAX_HEIGHT`) and its width follows, up to
-      the width of its container (then it is lower).
+      "Stretched" (:data:`VENUE_MAX_HEIGHT`, less on low windows,
+      :func:`fixed_height`) and its width follows, up to the width of its
+      container (then it is lower).
     * 2, "Stretched": the venue ranges fill the figure (the width of its
       container, height :data:`VENUE_MAX_HEIGHT`).
 

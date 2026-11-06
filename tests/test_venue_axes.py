@@ -4,11 +4,13 @@ The venue figure follows the width of the window. Its three axis modes
 (``app.venue_axes_select``):
 
 * 0, "Equal, variable height": equal scaling; the figure is as wide as in
-  "Stretched" and its height follows, up to a maximum height (then it is
-  narrower).
+  "Stretched" and its height follows, up to the window limit (it ends
+  inside the window; then it is narrower).
 * 1, "Equal, fixed height": equal scaling; the figure is as high as in
-  "Stretched" and its width follows, up to the available width (then it is
-  lower).
+  "Stretched" (less on low windows) and its width follows, up to the
+  available width (then it is lower).
+
+A figure narrower than its card is centered in it.
 * 2, "Stretched": the venue ranges fill the figure, as before the port.
 
 In every mode the ranges are the data extent (the venue ranges with their
@@ -27,7 +29,8 @@ from pypalc.core.settings import load_setup
 from pypalc.gui.app import PalcApp
 from pypalc.gui.ranges import (FIXED_HEIGHT, MIN_MAX_HEIGHT, STRETCHED,
                                VARIABLE_HEIGHT, VENUE_MAX_HEIGHT,
-                               WINDOW_MARGIN, ScaledFigure, max_height)
+                               WINDOW_MARGIN, ScaledFigure, fixed_height,
+                               window_limit)
 from tests.gui_driver import read, write
 from tests.gui_steps import ROOT
 from tests.test_shell import rendered
@@ -68,6 +71,8 @@ def test_every_venue_page_shows_the_figure_in_a_scaled_container(app):
         assert isinstance(pane, ScaledFigure)
         assert pane.object.object is app.venue_figure
         assert pane.sizing_mode == 'stretch_width'
+        # only the window limits "Equal, variable height"
+        assert pane.largest_height is None
     for index in (1, 2, 3, 4):
         layout = app.pages[index].layout()
         assert sum(pane in layout.select(ScaledFigure)
@@ -100,13 +105,19 @@ def test_ranges_are_the_data_extent_in_every_mode(app, mode):
     assert _box_zoom(figure).match_aspect is (mode != 2)
 
 
-def test_maximum_height_of_variable_height():
+def test_height_limits():
+    """"Equal, variable height" is limited by the window only; "Equal,
+    fixed height" has the height of "Stretched", less on low windows."""
     assert (VENUE_MAX_HEIGHT, MIN_MAX_HEIGHT, WINDOW_MARGIN) == \
         (500, 200, 210)
-    assert max_height(800) == 500
-    assert max_height(714) == 500  # 1280 x 800
-    assert max_height(682) == 472  # 1366 x 768
-    assert max_height(300) == 200
+    assert window_limit(994) == 784  # 1920 x 1080
+    assert window_limit(714) == 504  # 1280 x 800
+    assert window_limit(682) == 472  # 1366 x 768
+    assert window_limit(300) == 200
+    assert fixed_height(994) == 500
+    assert fixed_height(714) == 500
+    assert fixed_height(682) == 472
+    assert fixed_height(300) == 200
 
 
 def test_scaled_figure_code_has_the_constants():
@@ -114,9 +125,10 @@ def test_scaled_figure_code_has_the_constants():
     for name in ('STRETCHED', 'VARIABLE_HEIGHT', 'FIXED_HEIGHT',
                  'VENUE_MAX_HEIGHT', 'MIN_MAX_HEIGHT', 'WINDOW_MARGIN'):
         assert name not in code
-    for text in ("'stretched'", "'variable_height'", 'Math.min(500',
-                 'Math.max(\n        200', 'innerHeight - 210',
-                 'h = 500 - border_y'):
+    for text in ("'stretched'", "'variable_height'", 'Math.max(200,',
+                 'innerHeight - 210', 'Math.min(limit, model.largest_height)',
+                 'h = Math.min(500, limit) - border_y',
+                 "style.marginLeft = style.marginRight = width ? 'auto'"):
         assert text in code, text
 
 

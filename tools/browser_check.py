@@ -67,7 +67,8 @@ from pypalc.gui.downloads import (DOWNLOAD_COLUMNS,  # noqa: E402
                                   DOWNLOAD_FILE_NAMES, RESULTS_FILE_NAME,
                                   SETUP_FILE_NAME)
 from pypalc.gui.page_algorithm import RUN_LABEL, RUNNING_LABEL  # noqa: E402
-from pypalc.gui.ranges import max_height  # noqa: E402
+from pypalc.gui.ranges import (VENUE_MAX_HEIGHT,  # noqa: E402
+                               window_limit)
 from pypalc.gui.setup_io import GAP_HANDLINGS, WEIGHTINGS  # noqa: E402
 
 #: Default setup file loaded by the load check.
@@ -250,6 +251,7 @@ function plotState(v) {
     const m = v.model, f = v.frame.bbox, r = v.el.getBoundingClientRect();
     const num = x => (x == null || isNaN(x)) ? null : x;
     const parent = v.el.parentElement;
+    const p = parent ? parent.getBoundingClientRect() : null;
     const image = imageExtent(m);
     let image_gap = null;
     if (image) {
@@ -268,6 +270,7 @@ function plotState(v) {
             bottom: r.bottom, window_height: window.innerHeight,
             outer_width: r.width, outer_height: r.height,
             available: parent ? parent.clientWidth : null,
+            gaps: p ? [r.left - p.left, p.right - r.right] : null,
             image: image, image_gap: image_gap,
             range_ids: [m.x_range.id, m.y_range.id]};
 }
@@ -1272,12 +1275,16 @@ class BrowserCheck:
         extent; measured first on pages 1 to 4, where the figure must be as
         wide as its container). In "Equal, variable height" the figure is
         as wide as its container (as in "Stretched") unless it has the
-        largest height (:func:`~pypalc.gui.ranges.max_height` of the
-        window), and it ends inside the window; in "Equal, fixed height" it
-        is as high as in "Stretched" unless it is as wide as its container.
-        The beam plots are sized as "Equal, variable height", their ranges
-        are the extent of their image and the image fills the frame (no gap
-        of more than :data:`IMAGE_GAP` px). Screenshots of page 1 in every
+        largest height (:func:`~pypalc.gui.ranges.window_limit` of the
+        window; it may be higher than in "Stretched"); in "Equal, fixed
+        height" it is as high as in "Stretched" (at most that window limit)
+        unless it is as wide as its container. In both it ends inside the
+        window, and a figure narrower than its container is centered in it.
+        The beam plots are sized as "Equal, variable height" with a
+        largest height of at most
+        :data:`~pypalc.gui.ranges.VENUE_MAX_HEIGHT`, their ranges are the
+        extent of their image and the image fills the frame (no gap of more
+        than :data:`IMAGE_GAP` px). Screenshots of page 1 in every
         axis mode (states ``axes_0`` to ``axes_2``); the mode is
         "Stretched" again afterwards.
 
@@ -1294,11 +1301,17 @@ class BrowserCheck:
                        math.isclose(p, q, rel_tol=1e-9, abs_tol=1e-9)
                        for p, q in zip(a, b))
 
-        def sized(name, state, mode, page, extent):
-            """The size and the ranges of an equally scaled figure."""
+        def sized(name, state, mode, page, extent, largest=None):
+            """The size, the position and the ranges of an equally scaled
+            figure."""
             near = lambda a, b: abs(a - b) <= SIZE_TOLERANCE  # noqa: E731
             width, height = state['outer_width'], state['outer_height']
             available = state['available']
+            left, right = state['gaps']
+            if width < available - SIZE_TOLERANCE and \
+                    abs(left - right) > SIZE_TOLERANCE:
+                problems.append('%s: not centered (%d px left, %d px '
+                                'right)' % (name, left, right))
             if extent:
                 if not close(state['x'] + state['y'],
                              stretched[page]['x'] + stretched[page]['y']):
@@ -1307,7 +1320,9 @@ class BrowserCheck:
                                             _fmt(stretched[page]['x'] +
                                                  stretched[page]['y'])))
             if mode == 0:
-                limit = max_height(state['window_height'])
+                limit = window_limit(state['window_height'])
+                if largest is not None:
+                    limit = min(limit, largest)
                 capped = near(height, limit)
                 if not (near(width, available) or capped) or \
                         width > available + SIZE_TOLERANCE or \
@@ -1320,7 +1335,8 @@ class BrowserCheck:
                                      if capped and not near(width, available)
                                      else 'of its container %d px'
                                      % available)
-            high = stretched[page]['outer_height']
+            high = min(stretched[page]['outer_height'],
+                       window_limit(state['window_height']))
             capped = near(width, available)
             if not (near(height, high) or capped) or \
                     height > high + SIZE_TOLERANCE or \
@@ -1334,13 +1350,13 @@ class BrowserCheck:
                                   else 'of Stretched %d px' % high)
 
         def measure(name, state, mode=None, page=None, bottom=False,
-                    extent=True):
+                    extent=True, largest=None):
             if not state or not state['visible']:
                 problems.append('%s: figure not shown' % name)
                 return
             x, y = pixels_per_meter(state)
             diff = equal_difference(state)
-            size = sized(name, state, mode, page, extent) \
+            size = sized(name, state, mode, page, extent, largest) \
                 if mode is not None else ''
             found.append('%s %dx%d px (frame %dx%d), %.2f/%.2f px/m '
                          '(%.2f %%), %s%s' % (
@@ -1357,7 +1373,8 @@ class BrowserCheck:
                 problems.append('%s: figure ends below the window' % name)
 
         def measure_beam(name, state):
-            measure(name, state, mode=0, extent=False)
+            measure(name, state, mode=0, extent=False,
+                    largest=VENUE_MAX_HEIGHT)
             if not state or not state['visible']:
                 return
             image = state['image']
@@ -1414,7 +1431,7 @@ class BrowserCheck:
             name = 'page %d mode %d %s=%s on tab %r' % (
                 page, mode, label.split('.')[0], shown, tab)
             # set back, the ranges are the data extent of Stretched again
-            measure(name, state, mode=mode, page=page, bottom=mode == 0,
+            measure(name, state, mode=mode, page=page, bottom=True,
                     extent=step == 1)
             if before and state and \
                     before['range_ids'] == state['range_ids']:
@@ -1436,18 +1453,18 @@ class BrowserCheck:
         for mode in (0, 1):
             self.set_axis_mode(mode)
             measure('page 1 mode %d' % mode, self.venue_state(), mode=mode,
-                    page=1, bottom=mode == 0)
+                    page=1, bottom=True)
             self.screenshot(1, 'axes_%d' % mode)
             for page in (2, 3, 4):
                 show_venue(page)
                 measure('page %d mode %d' % (page, mode), self.venue_state(),
-                        mode=mode, page=page, bottom=mode == 0)
+                        mode=mode, page=page, bottom=True)
                 if page in HIDDEN_VENUE_INPUTS:
                     for step in (0, 1):
                         change_hidden(page, mode, step)
             self.show_page(1)
             measure('page 1 again mode %d' % mode, self.venue_state(),
-                    mode=mode, page=1, bottom=mode == 0)
+                    mode=mode, page=1, bottom=True)
         self.set_axis_mode(2)
         self.screenshot(1, 'axes_2')
         self.show_beam_plots()

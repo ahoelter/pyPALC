@@ -91,7 +91,7 @@ _VENUE = (
      'run below the window, it is narrower); <b>Equal, fixed height</b>: '
      'the same scaling; the figure is as high as in Stretched and its width '
      'follows (if it would be too wide, it is lower); <b>Stretched</b>: the '
-     'venue fills the figure.'),
+     'venue fills the figure. A narrower figure is centered.'),
 )
 
 _LOUDSPEAKER = (
