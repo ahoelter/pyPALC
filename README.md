@@ -66,7 +66,7 @@ Firefox and geckodriver (the default geckodriver path is
 `/snap/bin/geckodriver`, which matches snap Firefox; pass `--geckodriver`
 for another one). Run the tools from this folder:
 
-- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--width 1280] [--height H] [--setup FILE] [--two-tabs] [--download-dir DIR] [--clean]`:
+- `python tools/browser_check.py --url http://localhost:5006/pyPALC --out shots [--width 1280] [--height H] [--setup FILE] [--two-tabs] [--download-dir DIR] [--clean] [--server-log LOG]`:
   checks a running app (`panel serve pyPALC` from the parent folder) in a
   headless Firefox window of the given size (default 1280 x 800, from a
   width of 1920 px on 1080 px high): screenshots of every page before and
@@ -77,8 +77,10 @@ for another one). Run the tools from this folder:
   page 1, the equal scaling of the venue figure and of the beam plots
   (pixels per meter on x and y), the axis labels of the venue figure, the
   linked zoom of the beam plots, the toolbars, no horizontal scrolling of
-  any page at the window width and, with `--two-tabs`, that two browser
-  windows do not share a session. Writes `shots/*.png` (the whole page),
+  any page at the window width, that a value typed right before a click
+  is not lost (with `--server-log`, the log file of the server, also that
+  no exception is logged meanwhile) and, with `--two-tabs`, that two
+  browser windows do not share a session. Writes `shots/*.png` (the whole page),
   `shots/report.json` and the downloaded files to `shots/downloads`;
   exits with 1 if a check failed. `shots` and a given download folder
   (`--download-dir`; by default the browser downloads into a new temporary
@@ -98,7 +100,8 @@ for another one). Run the tools from this folder:
 After an upgrade of panel, panel-material-ui or bokeh, run
 `tools/browser_check.py` (at 1280 and 1920 px): the GUI relies on some
 private or internal APIs that the tests on the server cannot check
-(`FileDownload._sync_data`, `have_updated_interactively` of BokehJS
+(`FileDownload._sync_data` and its `_transfer` watcher, the document
+lock read by `pypalc.gui.widgets.locked`, `have_updated_interactively` of BokehJS
 ranges, the relayout through `min_border_left`, CSS on MUI, Bokeh and
 Tabulator class names).
 

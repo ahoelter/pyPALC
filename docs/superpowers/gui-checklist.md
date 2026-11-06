@@ -70,6 +70,10 @@ These were not walked in a browser; they are noted from the legacy
   `download_results`, `download_setup`
 - [ ] The numbers equal the headless runner (`python -m pypalc run`) for
   the same setup — verified by `tests/test_gui_equivalence.py` (13 cases)
+- [ ] A value typed right before a click is not lost (the click runs
+  after the value is stored, no error in the server log) — browser_check:
+  `fast_input`; every callback registration is pinned by
+  `tests/test_locked_callbacks.py`
 - [ ] Two browser tabs do not share state: a line drawn in one tab does not
   appear in the other, a new tab starts clean — browser_check:
   `two_tabs` (run with `--two-tabs`; also pinned by
@@ -200,6 +204,7 @@ running server in a headless Firefox window (`--width`, default 1280 x
 | `toolbars` | no toolbar hides tools in an overflow menu, in every screenshot and in every tab of pages 4 and 5 |
 | `axis_labels` | the venue figure keeps its tick labels and axis titles (space left of and below its frame) after axis mode changes and, in "Equal, fixed height", after an input on pages 2 and 3 |
 | `no_horizontal_overflow` | no page scrolls horizontally at the window width (document and the Material main area, which scrolls by itself) |
+| `fast_input` | in a new window, types "5. End y in m" and at once clicks "Save Current Audience Line" with the mouse (pressed and released at once, within the 50 ms debounce of the input), five times with different values, removing each line again: every line is saved and ends at the typed y; with `--server-log LOG` (the log file of the server) no exception may be logged meanwhile |
 | `two_tabs` | with `--two-tabs`: a line drawn in one window (venue inputs and "Save Current Audience Line") does not appear in a second window, and a new window starts without lines |
 
 ## Walkthrough log

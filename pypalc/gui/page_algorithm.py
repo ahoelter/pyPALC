@@ -41,7 +41,8 @@ from pypalc.gui.ranges import VENUE_MAX_HEIGHT
 from pypalc.gui.setup_io import apply_setup
 from pypalc.gui.style import RUNNING, SUCCESS, TEXT, TEXT_MUTED
 from pypalc.gui.widgets import (GAP, button, caption, card, download,
-                                page_row, select, slider, table, text_input)
+                                on_click, page_row, select, slider, table,
+                                text_input, watch)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -328,34 +329,33 @@ class AlgorithmPage:
         """Connect the widgets with their callbacks."""
         app = self.app
 
-        def watch(widget, callback: Callable) -> None:
+        def watch_value(widget, callback: Callable) -> None:
             """Call ``callback(attr, old, new)`` on changes of the value."""
-            widget.param.watch(lambda event: callback(
+            watch(widget, lambda event: callback(
                 'value', event.old, event.new), 'value')
         for widget in (self.palc_variant_select, self.gap_handling_select,
                        self.soft_margin_slider, self.tolerance_slider,
                        self.fixed_angle_input, self.frequency_range_slider):
-            watch(widget, app.store_value)
-        watch(self.weighting_select, self.choose_weighting)
-        watch(self.hinges_select, self.choose_hinges)
-        watch(self.weighting_nu_slider, self.store_nu)
-        self.weighting_nu_slider.param.watch(
-            lambda event: self.show_nu(), 'value')
-        self.nu_plus_button.on_click(lambda event: self.increase_nu())
-        self.nu_minus_button.on_click(lambda event: self.decrease_nu())
-        watch(self.nu_step_select, self.set_nu_step)
-        watch(self.use_fixed_angle_select, self.choose_fixed_angle)
-        self.start_toggle.param.watch(
-            lambda event: self.start_toggled(event.new), 'value')
-        self.clear_results_button.on_click(
-            lambda event: app.clear_result_figure())
+            watch_value(widget, app.store_value)
+        watch_value(self.weighting_select, self.choose_weighting)
+        watch_value(self.hinges_select, self.choose_hinges)
+        watch_value(self.weighting_nu_slider, self.store_nu)
+        watch(self.weighting_nu_slider, lambda event: self.show_nu(), 'value')
+        on_click(self.nu_plus_button, lambda event: self.increase_nu())
+        on_click(self.nu_minus_button, lambda event: self.decrease_nu())
+        watch_value(self.nu_step_select, self.set_nu_step)
+        watch_value(self.use_fixed_angle_select, self.choose_fixed_angle)
+        watch(self.start_toggle,
+              lambda event: self.start_toggled(event.new), 'value')
+        on_click(self.clear_results_button,
+                 lambda event: app.clear_result_figure())
         self.target_source.on_change('data', self.snap_target)
         self.target_reference_source.on_change('data', self.snap_target)
         self.results_source.on_change(
             'data', lambda attr, old, new: setattr(
                 self.results_table, 'value', self._angles_frame()))
-        self.load_setup_input.param.watch(
-            lambda event: self.load_selected(event.new), 'value')
+        watch(self.load_setup_input,
+              lambda event: self.load_selected(event.new), 'value')
 
     def layout(self) -> pn.FlexBox:
         """Body of the page below the header.

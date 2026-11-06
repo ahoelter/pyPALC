@@ -22,7 +22,8 @@ from pypalc.core.sound_field import (cabinet_directivity,
                                      parse_measured_directivity)
 from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
 from pypalc.gui.ranges import VENUE_MAX_HEIGHT
-from pypalc.gui.widgets import caption, card, page_row, select, text_input
+from pypalc.gui.widgets import (caption, card, page_row, select,
+                                text_input, watch)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -106,9 +107,9 @@ class LoudspeakerPage:
         # callbacks
         for widget in (self.aperture_input, self.cabinet_height_input,
                        self.directivity_select):
-            widget.param.watch(lambda event: app.store_value(
+            watch(widget, lambda event: app.store_value(
                 'value', event.old, event.new), 'value')
-        self.directivity_upload.param.watch(lambda event: (
+        watch(self.directivity_upload, lambda event: (
             self.upload_directivity('value', event.old, event.new)), 'value')
 
     def layout(self) -> pn.FlexBox:

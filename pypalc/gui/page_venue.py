@@ -22,8 +22,8 @@ from pypalc.core.settings import AudienceLine
 from pypalc.core.venue import slope_and_intercept
 from pypalc.gui import skipped_while_applying_setup
 from pypalc.gui.style import DASHED
-from pypalc.gui.widgets import (button, caption, card, message, page_row,
-                                text_input)
+from pypalc.gui.widgets import (button, caption, card, message, on_click,
+                                page_row, text_input, watch)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -99,14 +99,14 @@ class VenuePage:
         # callbacks
         for widget in (self.start_x_input, self.start_y_input,
                        self.end_x_input, self.end_y_input):
-            widget.param.watch(lambda event: self.update_point(
+            watch(widget, lambda event: self.update_point(
                 'value', event.old, event.new), 'value')
-        self.save_line_button.on_click(lambda event: self.save_line())
-        self.remove_line_button.on_click(lambda event: self.remove_line())
-        self.insert_line_button.on_click(lambda event: self.insert_line())
-        self.remove_selected_line_button.on_click(
-            lambda event: self.remove_selected_line())
-        self.check_venue_button.on_click(lambda event: app.check_venue())
+        on_click(self.save_line_button, lambda event: self.save_line())
+        on_click(self.remove_line_button, lambda event: self.remove_line())
+        on_click(self.insert_line_button, lambda event: self.insert_line())
+        on_click(self.remove_selected_line_button,
+                 lambda event: self.remove_selected_line())
+        on_click(self.check_venue_button, lambda event: app.check_venue())
 
     def _build_venue_figure(self) -> None:
         """Add the glyphs to the venue figure of the app."""

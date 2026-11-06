@@ -7,9 +7,9 @@ loading a setup through the file input, the running look of "PALC Run",
 the downloads (file names and CSV headers), dragging the target slope, that
 page 1 removes the rays of a result, the equal scaling and the axis labels
 of the figures, the linked beam plots, that every toolbar shows all its
-tools and that no page scrolls horizontally at the window width. With
-``--two-tabs`` it also checks that two browser windows on one server do
-not share a session.
+tools, that no page scrolls horizontally at the window width and that a
+value typed right before a click is not lost. With ``--two-tabs`` it also
+checks that two browser windows on one server do not share a session.
 
 The page is a Material page of Panel: its content scrolls inside the
 ``.main-content`` element, never the document, so horizontal overflow is
@@ -23,7 +23,7 @@ Usage (from the repository root, with selenium installed)::
     python tools/browser_check.py --url http://localhost:5006/pyPALC \\
         --out shots [--width 1280] [--height H] [--two-tabs] \\
         [--setup tests/cases/gap_soft_margin_target_slope.yaml] \\
-        [--download-dir DIR] [--clean]
+        [--download-dir DIR] [--clean] [--server-log LOG]
 
 Writes ``OUT/<page>_<state>.png`` (page e.g. ``1_venue``), ``OUT/report.json``
 (a list of ``{"name": str, "ok": bool, "detail": str}``, one entry per
@@ -90,6 +90,7 @@ DOWNLOAD_ANGLES_LABEL = 'Download PALC Angles'
 DOWNLOAD_RESULTS_LABEL = 'Download Results'
 SAVE_SETUP_LABEL = 'Save Setup'
 SAVE_LINE_LABEL = '6. Save Current Audience Line'
+REMOVE_LINE_LABEL = '7. Remove Last Audience Line'
 #: Tabs of page 4 and 5 and the buttons of the beam plots.
 PAGE_TABS = {4: ['Venue slice', 'SPL over distance'],
              5: ['Frequency responses', 'Homogeneity', 'Bar charts',
@@ -105,6 +106,13 @@ BEAM_TITLES = ['34. Beam plot: PALC (SPL in dB)',
 TWO_TABS_LINE = {'1. Start x in m': '2', '4. Start y in m': '0',
                  '2. End x in m': '10', '5. End y in m': '1',
                  '3. Discretization in points per m': '5'}
+#: The input the fast input check types into right before it clicks
+#: "Save Current Audience Line", and the values it types; the other inputs
+#: of the line are those of :data:`TWO_TABS_LINE`.
+FAST_INPUT_LABEL = '5. End y in m'
+FAST_INPUT_VALUES = ('1.5', '2.5', '3.5', '4.5', '5.5')
+#: Lines of a server log that show an exception in a callback.
+SERVER_LOG_ERRORS = ('Traceback', 'Error thrown from callback')
 #: Inputs of pages 2 and 3 the axis label check changes: page -> (label,
 #: value). The array height changes the venue ranges, so the venue figure
 #: gets new ranges.
@@ -294,12 +302,17 @@ class BrowserCheck:
         Seconds the page must stay unchanged before it counts as shown.
     timeout : float
         Seconds to wait for a page, a calculation or a download.
+    server_log : Path, optional
+        Log file of the server; the fast input check then also checks that
+        no exception was logged while it ran.
     """
 
     def __init__(self, driver, url: str, out: Path, download_dir: Path,
                  setup: Path, window: tuple = (WIDTH, HEIGHT),
-                 settle: float = 1.5, timeout: float = 180.0) -> None:
+                 settle: float = 1.5, timeout: float = 180.0,
+                 server_log: Optional[Path] = None) -> None:
         self.driver = driver
+        self.server_log = server_log
         self.url = url
         self.out = out
         self.download_dir = download_dir
@@ -535,6 +548,28 @@ class BrowserCheck:
         None.
         """
         from selenium.webdriver.common.keys import Keys
+        element = self.input_element(label)
+        element.click()
+        element.send_keys(Keys.CONTROL, 'a')
+        element.send_keys(value, Keys.ENTER)
+
+    def input_element(self, label: str):
+        """The shown input with this label, scrolled into view.
+
+        Parameters
+        ----------
+        label : str
+            Label of the input.
+
+        Returns
+        -------
+        selenium.webdriver.remote.webelement.WebElement
+
+        Raises
+        ------
+        RuntimeError
+            If no such input is shown.
+        """
         element = self.js("""
             for (const e of deep('.MuiFormControl-root')) {
                 const l = e.querySelector('label');
@@ -545,9 +580,46 @@ class BrowserCheck:
         if element is None:
             raise RuntimeError('no input %r' % label)
         self.js("arguments[0].scrollIntoView({block: 'center'});", element)
+        return element
+
+    def type_and_click(self, label: str, value: str, button: str) -> None:
+        """Type a value into an input and at once click a button with the
+        mouse, without Enter, as a fast user does.
+
+        The mouse button is pressed on the button and released at once:
+        the press leaves the input, which sends the value to the server
+        right before the click; the server still waits for its debounce
+        (50 ms) when the click arrives. (Selenium's ``WebElement.click``
+        is not used: in Firefox the browser then sends the click before
+        the value, which no real click does.)
+
+        Parameters
+        ----------
+        label : str
+            Label of the input.
+        value : str
+            New text.
+        button : str
+            Label of the button.
+
+        Returns
+        -------
+        None.
+        """
+        from selenium.webdriver.common.action_chains import ActionChains
+        from selenium.webdriver.common.keys import Keys
+        target = self.js('const b = button(arguments[0]); if (b) '
+                         'b.scrollIntoView({block: "center"}); return b;',
+                         button)
+        if target is None:
+            raise RuntimeError('no button %r' % button)
+        element = self.input_element(label)
         element.click()
         element.send_keys(Keys.CONTROL, 'a')
-        element.send_keys(value, Keys.ENTER)
+        element.send_keys(value)
+        # no wait: within the debounce
+        ActionChains(self.driver, duration=0).move_to_element(target) \
+            .click_and_hold().release().perform()
 
     def step_slider(self, label: str, key: str) -> str:
         """Move the shown slider with this label one step with an arrow
@@ -1519,6 +1591,84 @@ class BrowserCheck:
               second == [0, 0, 0] and start_x == '0' and third == [0, 0, 0])
         return ok, detail
 
+    def server_log_size(self) -> Optional[int]:
+        """Size of the server log in bytes, None without a log."""
+        if self.server_log is None:
+            return None
+        return self.server_log.stat().st_size
+
+    def server_log_errors(self, start: Optional[int]) -> List[str]:
+        """Lines of the server log written since ``start`` (a size of
+        :meth:`server_log_size`) that show an exception."""
+        if self.server_log is None or start is None:
+            return []
+        with open(self.server_log, 'rb') as log:
+            log.seek(start)
+            text = log.read().decode('utf-8', 'replace')
+        return [line.strip() for line in text.splitlines()
+                if any(error in line for error in SERVER_LOG_ERRORS)]
+
+    def check_fast_input(self) -> tuple:
+        """A value typed right before a click is not lost.
+
+        Opens the app in a new window, enters the line of
+        :data:`TWO_TABS_LINE` but its end y, then for each value of
+        :data:`FAST_INPUT_VALUES` types the value into "5. End y in m" and
+        at once clicks "Save Current Audience Line" with the mouse
+        (:meth:`type_and_click`), waits for the saved line and removes it
+        again. Each saved line must end at the typed y. With a server log
+        (``--server-log``), no exception may be logged meanwhile. The
+        window is closed afterwards.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        main_window = self.driver.current_window_handle
+        start = self.server_log_size()
+        saved = []
+        try:
+            self.open_window()
+            for label, value in TWO_TABS_LINE.items():
+                if label != FAST_INPUT_LABEL:
+                    self.enter(label, value)
+            self.wait_settled()
+            for value in FAST_INPUT_VALUES:
+                self.type_and_click(FAST_INPUT_LABEL, value, SAVE_LINE_LABEL)
+                try:
+                    self.wait_for(lambda: sum(self.line_counts()) > 0,
+                                  'the saved line', timeout=10)
+                except TimeoutError:
+                    saved.append(None)
+                    continue
+                saved.append(self.js("""
+                    const s = liveSources().find(m =>
+                        Object.keys(m.data).sort().join() === 'lines_x,lines_y'
+                        && Array.from(m.data.lines_y).length > 0);
+                    const y = Array.from(s.data.lines_y[0]);
+                    return y[y.length - 1];"""))
+                self.click(REMOVE_LINE_LABEL)
+                self.wait_for(lambda: sum(self.line_counts()) == 0,
+                              'the removed line', timeout=10)
+                self.wait_settled()
+        finally:
+            for handle in self.driver.window_handles:
+                if handle != main_window:
+                    self.driver.switch_to.window(handle)
+                    self.driver.close()
+            self.driver.switch_to.window(main_window)
+        errors = self.server_log_errors(start)
+        typed = [float(value) for value in FAST_INPUT_VALUES]
+        ok = saved == typed and not errors
+        detail = 'typed end y %s, saved line ends at y %s; server log: %s' % (
+            ', '.join(FAST_INPUT_VALUES),
+            ', '.join('none' if y is None else '%g' % y for y in saved),
+            'not given' if self.server_log is None else
+            '%d error lines%s' % (len(errors), (' (%s)' % errors[0])
+                                  if errors else ''))
+        return ok, detail
+
     def open_app(self) -> str:
         """Load the app in the current window and wait until it is drawn.
 
@@ -1573,6 +1723,7 @@ class BrowserCheck:
                 self.add(name, False, 'skipped: the setup did not load')
         self.run_check('no_horizontal_overflow',
                        self.check_no_horizontal_overflow)
+        self.run_check('fast_input', self.check_fast_input)
         if two_tabs:
             self.run_check('two_tabs', self.check_two_tabs)
         return self.results
@@ -1730,6 +1881,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument('--two-tabs', action='store_true',
                         help='also check that two browser windows on one '
                         'server do not share a session (check two_tabs)')
+    parser.add_argument('--server-log', type=Path, default=None,
+                        help='log file of the server; the check fast_input '
+                        'then also fails on an exception logged while it '
+                        'runs')
     args = parser.parse_args(argv)
     height = args.height if args.height is not None else \
         WIDE_HEIGHT if args.width >= WIDE else HEIGHT
@@ -1757,7 +1912,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     download_dir.mkdir(parents=True, exist_ok=True)
     check = BrowserCheck(None, args.url, out, download_dir,
                          args.setup.resolve(), window=window,
-                         settle=args.settle, timeout=args.timeout)
+                         settle=args.settle, timeout=args.timeout,
+                         server_log=args.server_log)
     try:
         # inside the try: the download folder is removed and a report is
         # written also if Firefox or geckodriver do not start

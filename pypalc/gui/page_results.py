@@ -26,7 +26,7 @@ from pypalc.gui import CALLBACK_ERRORS
 from pypalc.gui.ranges import (VENUE_MAX_HEIGHT, add_venue_bounds,
                                scale_equally)
 from pypalc.gui.style import DASHED
-from pypalc.gui.widgets import GAP, caption, card, select
+from pypalc.gui.widgets import GAP, caption, card, select, watch
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -212,9 +212,9 @@ class ResultsPage:
         """Tabs of the figures."""
         self.scale_beam_figures()
         # callbacks
-        self.beam_frequency_select.param.watch(lambda event: (
+        watch(self.beam_frequency_select, lambda event: (
             self.update_beam_plot('value', event.old, event.new)), 'value')
-        self.beam_checkbox.param.watch(lambda event: (
+        watch(self.beam_checkbox, lambda event: (
             self.update_beam_plot('active', event.old, event.new)), 'active')
 
     @staticmethod

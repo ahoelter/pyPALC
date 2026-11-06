@@ -8,11 +8,16 @@ error or note text (:func:`message`), plus the layout of a page with a
 side column and a main area (:func:`page_row`). Every function returns a
 new object: Panel objects belong to one session.
 
+Every callback of the app that Panel calls (widget watchers and button
+clicks) is registered through :func:`watch` or :func:`on_click`, which run
+it while the session holds the lock of its document (:func:`locked`).
+
 author: Arne Hoelter
 """
 from __future__ import annotations
 
-from typing import Any, Callable
+import functools
+from typing import Any, Callable, Optional
 
 import panel as pn
 import panel_material_ui as pmui
@@ -27,6 +32,118 @@ SIDE_WIDTH = 380
 #: Smallest width of the main area of a page before it moves below the
 #: side column, in px.
 MAIN_MIN_WIDTH = 560
+
+
+#: Attribute that :func:`locked` sets on the callbacks it returns.
+LOCKED_MARK = '_pypalc_locked'
+
+
+def _unlocked_document() -> Optional[Any]:
+    """The served document if the calling code runs without its lock.
+
+    Bokeh lets a session's document change only while the session holds
+    the lock of the document: its locked callbacks set the session's
+    ``_pending_writes`` to a list that collects the changes to send, and
+    a change outside of them raises "_pending_writes should be non-None
+    when we have a document lock". Panel calls widget callbacks from such
+    a locked callback, except when a browser event (a click, Enter)
+    arrives while a value change of a widget is still waiting for its
+    debounce (panel 1.10.0, ``Syncable._server_event``): it then runs the
+    waiting change and the event in a callback without the lock.
+
+    Returns
+    -------
+    bokeh.document.Document or None
+        The document of the current session if the session does not hold
+        its lock; None if it holds it or no session is served (tests,
+        building a session), where changes are allowed.
+    """
+    doc = pn.state.curdoc
+    session = getattr(getattr(doc, 'session_context', None), 'session', None)
+    # an unknown session (another Bokeh version) counts as locked: the
+    # callbacks then run at once, as Panel calls them
+    if session is None or not hasattr(session, '_pending_writes'):
+        return None
+    return doc if session._pending_writes is None else None
+
+
+def locked(callback: Callable[..., Any]) -> Callable[..., None]:
+    """A callback that runs while the session holds the document lock.
+
+    Called while the session holds the lock (or without a served
+    session), the returned function calls ``callback`` at once, so that
+    callbacks that set widgets run the watchers of those widgets in
+    order, as before. Called without the lock (see
+    :func:`_unlocked_document`), it schedules the call as a next tick
+    callback of the document, which Bokeh runs with the lock; the next
+    tick callbacks run in the order they were added, so a value typed
+    right before a click is stored before the click is handled.
+
+    Panel's ``panel.io.document.unlocked()`` is not used instead: it holds
+    the document while the callback runs and then sends the changes
+    without calling the Python ``on_change`` callbacks of the changed
+    Bokeh models, which the app relies on (``snap_target`` when a result
+    is shown, the tables that follow ``results_source`` and
+    ``reference_angles_source``).
+
+    Parameters
+    ----------
+    callback : callable
+        The callback; its return value is ignored.
+
+    Returns
+    -------
+    callable
+        The function to register, marked with :data:`LOCKED_MARK`.
+    """
+    @functools.wraps(callback)
+    def run(*args: Any, **kwargs: Any) -> None:
+        doc = _unlocked_document()
+        if doc is None:
+            callback(*args, **kwargs)
+        else:
+            doc.add_next_tick_callback(lambda: callback(*args, **kwargs))
+    setattr(run, LOCKED_MARK, True)
+    return run
+
+
+def watch(widget: Any, callback: Callable[[Any], Any], *names: str,
+          **params: Any) -> Any:
+    """Watch parameters of a widget with a :func:`locked` callback.
+
+    Parameters
+    ----------
+    widget : param.Parameterized
+        The widget.
+    callback : callable
+        Called with the event of the change.
+    *names : str
+        Watched parameters, e.g. ``'value'``.
+    **params
+        Further arguments of ``widget.param.watch``.
+
+    Returns
+    -------
+    param.parameterized.Watcher
+    """
+    return widget.param.watch(locked(callback), list(names), **params)
+
+
+def on_click(widget: Any, callback: Callable[[Any], Any]) -> Any:
+    """Call a :func:`locked` callback when a button is clicked.
+
+    Parameters
+    ----------
+    widget : panel_material_ui.Button
+        The button.
+    callback : callable
+        Called with the click event.
+
+    Returns
+    -------
+    param.parameterized.Watcher
+    """
+    return widget.on_click(locked(callback))
 
 
 def card(title: str, *objects: Any, **params: Any) -> pmui.Card:
@@ -290,6 +407,18 @@ def download(label: str, filename: str, callback: Callable[[], Any],
                                          % clicks[0], 1)
         later(lambda: widget.param.update(data=None))
     widget._sync_data = sync_data
+    # A click raises ``_clicks``, whose watcher calls ``_transfer`` (a
+    # ``param.depends`` method of FileDownload). It is replaced by a
+    # locked one, so that a value typed right before the click is stored
+    # before the file is made.
+    transfers = [watcher for watcher in widget.param.watchers['_clicks']
+                 ['value'] if getattr(watcher.fn, 'keywords', {}).get(
+                     'function') == widget._transfer]
+    if len(transfers) != 1:
+        raise RuntimeError('FileDownload calls _transfer differently than '
+                           'in panel 1.10.0')
+    widget.param.unwatch(transfers[0])
+    watch(widget, lambda event: widget._transfer(), '_clicks')
     return widget
 
 
@@ -325,7 +454,7 @@ def message(**params: Any) -> pmui.Alert:
         text = event.new or ''
         alert.param.update(severity=_severity(text),
                            visible=bool(text.strip()))
-    alert.param.watch(show, 'object')
+    watch(alert, show, 'object')
     return alert
 
 

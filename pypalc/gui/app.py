@@ -68,7 +68,7 @@ from pypalc.gui.ranges import (VENUE_MAX_HEIGHT, PlotRanges,
                                add_venue_bounds, scale_venue_figure,
                                set_figure_ranges, show_rays)
 from pypalc.gui.style import LINK, MATERIAL_THEME, TEXT, TEXT_MUTED
-from pypalc.gui.widgets import message
+from pypalc.gui.widgets import message, watch
 
 logger = logging.getLogger(__name__)
 
@@ -250,10 +250,10 @@ class PalcApp:
             self.pages[index] = page_class(self)
         self.pages = {key: self.pages[key] for key in sorted(self.pages)}
         self.content = pn.Column(sizing_mode='stretch_width', margin=(8, 0))
-        self.page_select.param.watch(
-            lambda event: self.show_page(event.new), 'active')
-        self.venue_axes_select.param.watch(
-            lambda event: self.scale_venue_axes(), 'active')
+        watch(self.page_select, lambda event: self.show_page(event.new),
+              'active')
+        watch(self.venue_axes_select, lambda event: self.scale_venue_axes(),
+              'active')
         self.scale_venue_axes()
         # values the legacy GUI stores at start-up
         self.state.config.store_config('aperture_angles',

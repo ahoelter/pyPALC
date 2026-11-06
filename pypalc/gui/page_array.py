@@ -20,8 +20,8 @@ from bokeh.models import ColumnDataSource
 
 from pypalc.core.geometry import reference_tilt_angles_deg
 from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
-from pypalc.gui.widgets import caption, card, page_row, select, table, \
-    text_input
+from pypalc.gui.widgets import (caption, card, page_row, select, table,
+                                text_input, watch)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -86,25 +86,25 @@ class ArrayPage:
         # callbacks
         for widget in (self.top_x_input, self.top_y_input,
                        self.cabinet_count_input, self.cabinet_gap_input):
-            widget.param.watch(lambda event: app.store_value(
+            watch(widget, lambda event: app.store_value(
                 'value', event.old, event.new), 'value')
-        self.use_discrete_angles_select.param.watch(
-            lambda event: self.choose_discrete_angles(
-                'value', event.old, event.new), 'value')
-        self.discrete_angles_input.param.watch(
-            lambda event: self.read_discrete_angles(
-                'value', event.old, event.new), 'value')
-        self.discrete_angles_input.param.watch(
-            lambda event: self.reference_input_changed(
-                'value', event.old, event.new), 'value')
-        self.reference_type_select.param.watch(
-            lambda event: self.choose_reference_type(
-                'value', event.old, event.new), 'value')
+        watch(self.use_discrete_angles_select,
+              lambda event: self.choose_discrete_angles(
+                  'value', event.old, event.new), 'value')
+        watch(self.discrete_angles_input,
+              lambda event: self.read_discrete_angles(
+                  'value', event.old, event.new), 'value')
+        watch(self.discrete_angles_input,
+              lambda event: self.reference_input_changed(
+                  'value', event.old, event.new), 'value')
+        watch(self.reference_type_select,
+              lambda event: self.choose_reference_type(
+                  'value', event.old, event.new), 'value')
         for widget in (self.reference_start_input,
                        self.reference_step_stop_input,
                        self.reference_discrete_angles_select,
                        self.reference_user_angles_input):
-            widget.param.watch(lambda event: self.reference_input_changed(
+            watch(widget, lambda event: self.reference_input_changed(
                 'value', event.old, event.new), 'value')
 
     def layout(self) -> pn.FlexBox:
