@@ -149,6 +149,12 @@ These were not walked in a browser; they are noted from the legacy
   upload on page 2 shows no file name (a browser file input cannot be
   filled by the server); the directivity plot shows the loaded data —
   needs browser
+- [ ] "Load Setup" on page 1 (card "Setup file", below "Lines and venue")
+  loads the same setups as the one on page 4: a valid file lands on page 5
+  with the same tilt angles, an invalid file shows its error on page 1
+  (the same message pane as on pages 2 to 4) — browser_check: `load_page1`
+  and `load_page1_error`; pinned on the server by
+  `tests/test_load_setup_page1.py`
 - [ ] Choosing the same file again in "Load Setup" loads it again — needs
   browser (pinned on the server by
   `test_load_same_file_again_loads_again`)
@@ -205,6 +211,8 @@ running server in a headless Firefox window (`--width`, default 1280 x
 |---|---|
 | `screenshots_fresh` | screenshot of every page of a new session (the whole page) |
 | `load` | loads a setup through the "Load Setup" file input (default `tests/cases/gap_soft_margin_target_slope.yaml`); the app must switch to page 5, and page 4 must show the setup's gap handling, weighting and hinges and "26. PALC Run" ready again |
+| `load_page1` | loads the setup of `load` again through the "Load Setup" input of page 1; the app must switch to page 5 with results |
+| `load_page1_error` | loads `tests/cases/measured.yaml` (invalid in the GUI) through the input of page 1; page 1 must show "Error: setup file invalid ..." and stay on page 1 |
 | `screenshots_loaded` | screenshot of every page after loading |
 | `download_angles` | "Download PALC Angles" saves `tilt_angles.csv` once, with the header of the headless export and a row per cabinet |
 | `download_results` | "Download Results" saves `pypalc_results.zip` with the five files of `README.md` ("CSV header changes"), each with its header and at least one row |

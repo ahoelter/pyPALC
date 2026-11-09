@@ -193,6 +193,14 @@ def caption(text: str, **params: Any) -> pn.pane.HTML:
         **{'sizing_mode': 'stretch_width', 'margin': (2, 8), **params})
 
 
+def setup_file_input() -> pmui.FileInput:
+    """File input "Load Setup" (pages 1 and 4), accepting YAML files."""
+    return pmui.FileInput(
+        label='Load Setup', uploaded_label='Load Setup',
+        accept='.yaml,.yml', color='primary', variant='outlined',
+        icon='upload_file', sizing_mode='stretch_width', margin=(4, 8))
+
+
 def text_input(label: str, value: str, **params: Any) -> pmui.TextInput:
     """An outlined text input that stretches to the width of its container.
 

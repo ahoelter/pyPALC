@@ -23,7 +23,7 @@ from pypalc.core.venue import slope_and_intercept
 from pypalc.gui import skipped_while_applying_setup
 from pypalc.gui.style import DASHED
 from pypalc.gui.widgets import (button, caption, card, message, on_click,
-                                page_row, text_input, watch)
+                                page_row, setup_file_input, text_input, watch)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -79,6 +79,9 @@ class VenuePage:
         """Creates the PALC compatible venue (also shown on page 4)."""
         self.venue_error_info = message()
         """Error text of the page (``object``); hidden while empty."""
+        self.load_setup_input = setup_file_input()
+        """Upload of a setup file, loaded by page 4
+        (:meth:`.PageAlgorithm.load_selected`)."""
         self._layout: Optional[pn.viewable.Viewable] = None
         # sources
         x_init = np.array([0, 0]).astype(float)
@@ -168,7 +171,7 @@ class VenuePage:
         Returns
         -------
         panel.FlexBox
-            The cards "Audience line" and "Lines and venue" beside (or, on
+            The cards "Audience line", "Lines and venue" and "Setup file" beside (or, on
             narrow windows, above) the card "Venue slice".
         """
         if self._layout is None:
@@ -188,11 +191,17 @@ class VenuePage:
                         'it or to remove it.'),
                 pmui.Divider(margin=(8, 8, 0, 8)),
                 self.check_venue_button, self.venue_error_info)
+            setup_card = card(
+                'Setup file',
+                caption('Load a saved or example setup (examples folder). '
+                        'It restores all pages, runs the calculation and '
+                        'shows 5 · Sound Field.'),
+                self.load_setup_input, self.app.config_error_info)
             figure_card = card(
                 'Venue slice', self.app.venue_axes_row(),
                 self.app.venue_pane())
             self._layout = page_row(
-                pn.Column(line_card, lines_card, margin=0), figure_card)
+                pn.Column(line_card, lines_card, setup_card, margin=0), figure_card)
         return self._layout
 
     # ------------------------------------------------------------------

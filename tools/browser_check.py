@@ -138,7 +138,7 @@ ANGLES_FILE = DOWNLOAD_FILE_NAMES['results']
 DOWNLOAD_FILES = (ANGLES_FILE, RESULTS_FILE_NAME, SETUP_FILE_NAME)
 #: States of the screenshots (``OUT/<page>_<state>.png``); one per axis
 #: mode of the venue figure (``axes_0`` ...).
-SCREENSHOT_STATES = ('fresh', 'loaded', 'running', 'dragged', 'beam_plots',
+SCREENSHOT_STATES = ('fresh', 'loaded', 'load_error', 'running', 'dragged', 'beam_plots',
                      'axes_0', 'axes_1', 'axes_2', 'tabs_1', 'tabs_2',
                      'tabs_3')
 #: Name of the report in OUT and of the copy of the downloads in OUT.
@@ -1073,6 +1073,63 @@ class BrowserCheck:
         if problems:
             detail += '; ' + '; '.join(problems)
         return not problems, detail
+
+    def page1_setup_input(self):
+        """The "Load Setup" file input of page 1 (page 1 is shown), or None."""
+        self.show_page(1)
+        inputs = self.js("""return deep('input[type=file]').filter(
+            e => e.accept.indexOf('.yaml') >= 0);""")
+        return inputs[0] if len(inputs) == 1 else None
+
+    def check_load_page1(self) -> tuple:
+        """Load the setup again through the "Load Setup" input of
+        page 1: the app must switch to page 5, which shows results.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        field = self.page1_setup_input()
+        if field is None:
+            return False, 'no single setup file input on page 1'
+        start = time.time()
+        field.send_keys(str(self.setup))
+        self.wait_for(lambda: self.active_page() == 5,
+                      'page 5 after loading on page 1', timeout=self.timeout)
+        self.wait_settled()
+        figures = self.js("return figureViews().length;")
+        alerts = self.js("""return deep('.MuiAlert-message').map(
+            e => e.textContent.trim()).filter(t => t);""")
+        ok = figures > 0 and not alerts
+        return ok, 'switched to page 5 after %.1fs; %d figures; alerts %r' \
+            % (time.time() - start, figures, alerts)
+
+    def check_load_page1_error(self) -> tuple:
+        """An invalid setup (``tests/cases/measured.yaml``) loaded through
+        page 1's input shows its error on page 1, which stays shown.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        # a directivity given as a path is invalid in the GUI (the snap
+        # browser cannot read files outside the home folder: no temp file)
+        bad = REPO / 'tests' / 'cases' / 'measured.yaml'
+        field = self.page1_setup_input()
+        if field is None:
+            return False, 'no single setup file input on page 1'
+        field.send_keys(str(bad))
+        find = """return deep('.MuiAlert-message').map(
+            e => e.textContent.trim()).filter(t => t);"""
+        self.wait_for(lambda: self.js(find), 'error on page 1', timeout=60)
+        self.wait_settled()
+        alerts = self.js(find)
+        self.screenshot(1, 'load_error')
+        ok = (self.active_page() == 1 and any(
+            a.startswith('Error: setup file invalid') for a in alerts))
+        return ok, 'page %s; alerts %r' % (self.active_page(), alerts)
 
     def check_loaded_screenshots(self) -> tuple:
         """Screenshots of the other pages after loading (state
@@ -2044,6 +2101,8 @@ class BrowserCheck:
                                                   + self.window), flush=True)
         self.run_check('screenshots_fresh', self.check_fresh_screenshots)
         after_load = [
+            ('load_page1', self.check_load_page1),
+            ('load_page1_error', self.check_load_page1_error),
             ('screenshots_loaded', self.check_loaded_screenshots),
             ('download_angles', self.check_download_angles),
             ('download_results', self.check_download_results),

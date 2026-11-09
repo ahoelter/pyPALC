@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import TYPE_CHECKING, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -41,8 +41,8 @@ from pypalc.gui.ranges import VENUE_MAX_HEIGHT
 from pypalc.gui.setup_io import apply_setup
 from pypalc.gui.style import RUNNING, SUCCESS, TEXT, TEXT_MUTED
 from pypalc.gui.widgets import (GAP, button, caption, card, download,
-                                on_click, page_row, select, slider, table,
-                                text_input, watch)
+                                on_click, page_row, select, setup_file_input, slider,
+                                table, text_input, watch)
 
 if TYPE_CHECKING:
     from .app import PalcApp
@@ -253,12 +253,10 @@ class AlgorithmPage:
             icon='save')
         """Downloads the setup as a YAML file
         (:func:`~.downloads.setup_yaml`)."""
-        self.load_setup_input = pmui.FileInput(
-            label='Load Setup', uploaded_label='Load Setup',
-            accept='.yaml,.yml', color='primary', variant='outlined',
-            icon='upload_file', sizing_mode='stretch_width', margin=(4, 8))
+        self.load_setup_input = setup_file_input()
         """Upload of a setup file; loading it restores the setup, runs the
-        calculation and shows page 5."""
+        calculation and shows page 5. Page 1 has a second input
+        (:attr:`.PageVenue.load_setup_input`) with the same effect."""
 
     def _setup_file(self) -> Optional[io.StringIO]:
         """The file of "Save Setup", None if the setup cannot be saved."""
@@ -355,7 +353,12 @@ class AlgorithmPage:
             'data', lambda attr, old, new: setattr(
                 self.results_table, 'value', self._angles_frame()))
         watch(self.load_setup_input,
-              lambda event: self.load_selected(event.new), 'value')
+              lambda event: self.load_selected(event.new,
+                                               self.load_setup_input),
+              'value')
+        watch(app.pages[1].load_setup_input,
+              lambda event: self.load_selected(
+                  event.new, app.pages[1].load_setup_input), 'value')
 
     def layout(self) -> pn.FlexBox:
         """Body of the page below the header.
@@ -864,8 +867,9 @@ class AlgorithmPage:
     # Setup files
     # ------------------------------------------------------------------
 
-    def load_selected(self, data: Optional[bytes]) -> None:
-        """Load a setup file selected in "Load Setup" (:meth:`load_setup`)
+    def load_selected(self, data: Optional[bytes], source: Any) -> None:
+        """Load a setup file selected in "Load Setup" of page 1 or 4
+        (:meth:`load_setup`)
         with the running look (:meth:`run_later`); ignored while a
         calculation runs.
 
@@ -876,6 +880,8 @@ class AlgorithmPage:
         ----------
         data : bytes or None
             Content of the file.
+        source : panel_material_ui.FileInput
+            The input that delivered it, emptied afterwards.
 
         Returns
         -------
@@ -885,9 +891,9 @@ class AlgorithmPage:
             try:
                 self.load_setup(data)
             finally:
-                self.load_setup_input.value = None
+                source.value = None
         if data and not self.run_later(load):
-            self.load_setup_input.value = None
+            source.value = None
 
     def load_setup(self, data: bytes) -> None:
         """Load a setup file ("Load Setup").

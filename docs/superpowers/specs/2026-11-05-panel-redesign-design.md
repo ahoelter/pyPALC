@@ -243,6 +243,15 @@ The user chose A.
 
 ## Decisions during implementation
 
+- "Load Setup" on page 1 (user request 2026-11-09): page 1 has a second
+  file input, the same as page 4's (`widgets.setup_file_input`), in the
+  card "Setup file" below "Lines and venue", so that an example setup can
+  be loaded without going to page 4. Both inputs call
+  `PageAlgorithm.load_selected`, which empties the input that delivered the
+  file; the run indicator and the "ignored while a calculation runs" rule
+  are shared. `app.config_error_info` is also placed in that card, so that
+  the error of a load started on page 1 shows there.
+
 - Venue figure, "Equal" axis modes (user decision 2026-11-06, replacing
   the earlier widened ranges): the ranges are the data extent
   (`Range1d` over the venue ranges) and the figure is sized for equal

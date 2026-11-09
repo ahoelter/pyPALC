@@ -36,7 +36,7 @@ def test_layout_has_the_cards_of_the_prototype():
     app = rendered(PalcApp(Document()))
     view = app.pages[1].layout()
     assert _cards(view) == ['Audience line', 'Lines and venue',
-                            'Venue slice']
+                            'Setup file', 'Venue slice']
     assert app.venue_axes_select in view.select(pmui.RadioButtonGroup)
     figures = [pane.object for pane in view.select(pn.pane.Bokeh)]
     assert figures == [app.venue_figure]

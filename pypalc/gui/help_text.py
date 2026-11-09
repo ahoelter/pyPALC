@@ -37,8 +37,9 @@ _GENERAL = (
      'Array</b>, <b>4 · Algorithm</b> and <b>5 · Sound Field</b> in the '
      'header lead through an optimization; its steps are numbered 1 to '
      '34. '
-     '<b>Load Setup</b> on page <b>4 · Algorithm</b> restores a saved '
-     'setup, runs it and shows <b>5 · Sound Field</b>.'),
+     '<b>Load Setup</b> on page <b>1 · Venue</b> or <b>4 · Algorithm</b> '
+     'restores a saved or example setup, runs it and shows <b>5 · Sound '
+     'Field</b>.'),
     ('Based on the following publications:',
      '<b>[1] Straube, F.; Schultz, F.; Bonillo, D.A.; Weinzierl, S. (2018): '
      '“An Analytical Approach for Optimizing the Curving of Line Source '
@@ -207,7 +208,7 @@ _ALGORITHM = (
      'target slope as the file pypalc_setup.yaml (uploaded measured '
      'loudspeaker data is embedded); it also runs headless with \'python '
      '-m pypalc run\'. <b>Load Setup</b> reads such a file, restores '
-     'everything and runs the calculation.'),
+     'everything and runs the calculation; it is also on page 1.'),
 )
 
 _SOUND_FIELD = (

@@ -70,7 +70,7 @@ for another one). Run the tools from this folder:
   checks a running app (`panel serve pyPALC` from the parent folder) in a
   headless Firefox window of the given size (default 1280 x 800, from a
   width of 1920 px on 1080 px high): screenshots of every page before and
-  after loading a setup, loading through the "Load Setup" file input, the
+  after loading a setup, loading through the "Load Setup" file input of page 4 and of page 1 (also an invalid file), the
   downloads ("Download PALC Angles", the zip of "Download Results" with the
   headers of its five CSV files, "Save Setup"), the running look of "PALC
   Run" during a run and during a load, dragging a target point, the rays on
