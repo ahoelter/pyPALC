@@ -19,6 +19,7 @@ from tests.baseline_cases import case_path
 from tests.gui_driver import read, write
 from tests.test_gui_equivalence import drive
 from tests.test_shell import rendered
+from tests.test_venue_axes import assert_default_ticks, assert_equal_ticks
 
 TABS = ['Frequency responses', 'Homogeneity', 'Bar charts', 'Beam plots']
 
@@ -121,8 +122,12 @@ def test_beam_ranges_are_the_extent_of_the_image(ran):
         assert pane.largest_height == VENUE_MAX_HEIGHT
         assert pane.data_aspect == pytest.approx(
             (x[1] - x[0]) / (y[1] - y[0]))
+    # both axes of each beam plot have the same tick spacing
+    for figure in _beam_figures(page):
+        assert_equal_ticks(figure)
     # the venue points are stretched over the venue ranges
     points = page.venue_points_figure
+    assert_default_ticks(points)
     assert isinstance(points.x_range, Range1d)
     assert [points.x_range.start, points.x_range.end] == ranges.venue_x
     assert [points.y_range.start, points.y_range.end] == ranges.venue_y

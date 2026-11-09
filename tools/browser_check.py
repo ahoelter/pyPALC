@@ -170,8 +170,9 @@ WEIGHTING_LABELS = {value: label for label, value in WEIGHTINGS.items()}
 #: icon; ``fields`` maps the label of each shown input or select to its
 #: value; ``plotState`` measures a figure: its frame (``width``,
 #: ``height``), ranges, outer size, the width of its container
-#: (``available``) and, for a beam plot, the extent of its image and the
-#: largest gap in px between the image and the frame.
+#: (``available``), the ticks its axes draw (``axisTicks``) and, for a beam
+#: plot, the extent of its image and the largest gap in px between the image
+#: and the frame.
 JS_HELPERS = r"""
 function deep(sel, root, out) {
     root = root || document; out = out || [];
@@ -246,6 +247,19 @@ function imageExtent(m) {
     const d = r.data_source.data;
     return [d.x[0], d.x[0] + d.dw[0], d.y[0], d.y[0] + d.dh[0]];
 }
+function axisTicks(v) {
+    // the major and minor ticks each axis view draws (within its range)
+    // and the type and id of its ticker
+    const out = {};
+    for (const c of (v.children ? v.children() : [])) {
+        if (!c.model || !c.model.ticker || c.tick_coords == null) continue;
+        const d = c.dimension, t = c.tick_coords;
+        out[d === 0 ? 'x' : 'y'] = {
+            major: Array.from(t.major[d]), minor: Array.from(t.minor[d]),
+            ticker: typeName(c.model.ticker), ticker_id: c.model.ticker.id};
+    }
+    return out;
+}
 function plotState(v) {
     if (!v) return null;
     const m = v.model, f = v.frame.bbox, r = v.el.getBoundingClientRect();
@@ -272,7 +286,7 @@ function plotState(v) {
             available: parent ? parent.clientWidth : null,
             gaps: p ? [r.left - p.left, p.right - r.right] : null,
             image: image, image_gap: image_gap,
-            range_ids: [m.x_range.id, m.y_range.id]};
+            range_ids: [m.x_range.id, m.y_range.id], ticks: axisTicks(v)};
 }
 """
 
@@ -300,6 +314,82 @@ def pixels_per_meter(state: dict) -> tuple:
         return size / (rng[1] - rng[0])
     return (per_meter(state['width'], state['x']),
             per_meter(state['height'], state['y']))
+
+
+def tick_spacing(ticks: list) -> Optional[float]:
+    """The distance of evenly spaced ticks.
+
+    Parameters
+    ----------
+    ticks : list of float
+        Tick positions in data units, ascending.
+
+    Returns
+    -------
+    float or None
+        The distance; None for fewer than two ticks or uneven distances.
+    """
+    steps = [b - a for a, b in zip(ticks, ticks[1:])]
+    if not steps or any(not math.isclose(step, steps[0], rel_tol=1e-6)
+                        for step in steps):
+        return None
+    return steps[0]
+
+
+def tick_problems(state: dict, equal: bool) -> tuple:
+    """Check the ticks an equally scaled or a stretched figure draws.
+
+    Parameters
+    ----------
+    state : dict
+        Result of the JavaScript ``plotState``.
+    equal : bool
+        True: both axes share one ticker (``CustomJSTicker``,
+        :func:`~pypalc.gui.ranges.equal_ticker`) and draw at least two major
+        ticks with the same spacing in data units on x and y, and minor
+        ticks with the same spacing too. False ("Stretched"): each axis has
+        Bokeh's default ``BasicTicker``, the spacing is not forced.
+
+    Returns
+    -------
+    tuple
+        ``(text, problems)``: the ticks as text and a list of problems.
+    """
+    ticks, problems = state.get('ticks') or {}, []
+    if set(ticks) != {'x', 'y'}:
+        return 'no ticks', ['axes not found']
+    spacing = {}
+    for name in ('x', 'y'):
+        axis = ticks[name]
+        spacing[name] = [tick_spacing(axis['major']),
+                         tick_spacing(axis['minor'])]
+        if equal and len(axis['major']) < 2:
+            problems.append('%d major tick(s) on %s'
+                            % (len(axis['major']), name))
+    def num(value):
+        return '-' if value is None else '%.4g' % value
+
+    def describe(name):
+        major = ticks[name]['major'] or [None]
+        return '%s %s..%s by %s' % (name, num(major[0]), num(major[-1]),
+                                    num(spacing[name][0]))
+    text = 'ticks %s, %s (%s)' % (describe('x'), describe('y'),
+                                  ticks['x']['ticker'])
+    types = {ticks[name]['ticker'] for name in ('x', 'y')}
+    if equal:
+        if types != {'CustomJSTicker'} or \
+                ticks['x']['ticker_id'] != ticks['y']['ticker_id']:
+            problems.append('tickers %s, not one shared CustomJSTicker'
+                            % sorted(types))
+        for kind, index in (('major', 0), ('minor', 1)):
+            x, y = spacing['x'][index], spacing['y'][index]
+            if x is None or y is None or \
+                    not math.isclose(x, y, rel_tol=1e-6):
+                problems.append('%s tick spacing x %s, y %s'
+                                % (kind, x, y))
+    elif types != {'BasicTicker'}:
+        problems.append('tickers %s, not BasicTicker' % sorted(types))
+    return text, problems
 
 
 def equal_difference(state: dict) -> float:
@@ -1286,9 +1376,17 @@ class BrowserCheck:
         largest height of at most
         :data:`~pypalc.gui.ranges.VENUE_MAX_HEIGHT`, their ranges are the
         extent of their image and the image fills the frame (no gap of more
-        than :data:`IMAGE_GAP` px). Screenshots of page 1 in every
-        axis mode (states ``axes_0`` to ``axes_2``); the mode is
-        "Stretched" again afterwards.
+        than :data:`IMAGE_GAP` px).
+
+        Ticks (:func:`tick_problems`): wherever the equal scaling is
+        measured, both axes share one ticker and draw at least two major
+        ticks with the same spacing in data units on x and y, minor ticks
+        too; also after a box zoom on page 1 in each equal mode and in the
+        PALC beam plot (then reset), and the two beam plots draw the same
+        ticks. In "Stretched" each axis has Bokeh's default ticker.
+
+        Screenshots of page 1 in every axis mode (states ``axes_0`` to
+        ``axes_2``); the mode is "Stretched" again afterwards.
 
         Returns
         -------
@@ -1378,8 +1476,14 @@ class BrowserCheck:
             if not diff < EQUAL_TOLERANCE:
                 problems.append('%s: px/m differ by %.2f %%'
                                 % (name, 100 * diff))
+            measure_ticks(name, state, equal=True)
             if bottom and state['bottom'] > state['window_height']:
                 problems.append('%s: figure ends below the window' % name)
+
+        def measure_ticks(name, state, equal):
+            text, more = tick_problems(state, equal)
+            found.append('%s: %s' % (name, text))
+            problems.extend('%s: %s' % (name, p) for p in more)
 
         def measure_beam(name, state):
             measure(name, state, mode=0, extent=False,
@@ -1407,6 +1511,7 @@ class BrowserCheck:
             found.append('page %d Stretched %dx%d px in %d px, %s' % (
                 page, state['outer_width'], state['outer_height'],
                 state['available'], _fmt(state['x'] + state['y'])))
+            measure_ticks('page %d Stretched' % page, state, equal=False)
             if abs(state['outer_width'] - state['available']) > \
                     SIZE_TOLERANCE:
                 problems.append('page %d Stretched: %d px wide in %d px'
@@ -1474,12 +1579,43 @@ class BrowserCheck:
             self.show_page(1)
             measure('page 1 again mode %d' % mode, self.venue_state(),
                     mode=mode, page=1, bottom=True)
+            # the ticks follow a zoom (the next mode resets it)
+            before = self.venue_state()
+            self.box_zoom('venueView()')
+            state = self.venue_state()
+            measure('page 1 mode %d after a box zoom' % mode, state)
+            if before and state and not \
+                    state['x'][1] - state['x'][0] < \
+                    0.9 * (before['x'][1] - before['x'][0]):
+                problems.append('page 1 mode %d: the box zoom did not zoom'
+                                % mode)
         self.set_axis_mode(2)
         self.screenshot(1, 'axes_2')
+        measure_ticks('page 1 Stretched again', self.venue_state(),
+                      equal=False)
         self.show_beam_plots()
         for title, state in zip(('PALC', 'reference'), self.beam_states()):
             measure_beam('beam plot %s' % title, state)
         self.screenshot(5, 'beam_plots')
+
+        def same_beam_ticks(name):
+            # the linked beam plots draw the same ticks
+            states = self.beam_states()
+            if all(states):
+                palc, reference = [
+                    [s['ticks'].get(axis, {}).get(kind) for axis in 'xy'
+                     for kind in ('major', 'minor')] for s in states]
+                if palc != reference:
+                    problems.append('%s: the beam plots draw different '
+                                    'ticks' % name)
+            return states
+        same_beam_ticks('beam plots')
+        # the ticks follow a box zoom in one beam plot, in both
+        self.box_zoom('figureView(arguments[0])', BEAM_TITLES[0])
+        for title, state in zip(('PALC', 'reference'),
+                                same_beam_ticks('beam plots zoomed')):
+            measure('beam plot %s after a box zoom' % title, state)
+        self.mouse(self.tool_button(BEAM_TITLES[0], 'Reset'))
         self.show_page(1)
         self.show_page(5)
         self.wait_for(lambda: all(s and s['visible'] and s['width'] > 0
@@ -1489,15 +1625,19 @@ class BrowserCheck:
             measure_beam('beam plot %s after page 1' % title, state)
         return not problems, '; '.join(found + problems)
 
-    def tool_button(self, title: str, tool: str) -> tuple:
+    def tool_button(self, title: Optional[str], tool: str,
+                    view: str = 'figureView(arguments[0])') -> tuple:
         """Scroll a toolbar button of a figure into view.
 
         Parameters
         ----------
-        title : str
-            Title of the figure.
+        title : str or None
+            Title of the figure (``arguments[0]`` of ``view``).
         tool : str
             Start of the button's tooltip, e.g. ``'Reset'``.
+        view : str, optional
+            JavaScript expression of the figure's view; by default the
+            figure with the title.
 
         Returns
         -------
@@ -1506,14 +1646,47 @@ class BrowserCheck:
         """
         return tuple(self.js("""
             const v = views().find(
-                v => v.model === figureView(arguments[0]).model.toolbar);
+                v => v.model === (%s).model.toolbar);
             const root = v.shadow_el || v.el.shadowRoot;
             const b = Array.from(root.querySelectorAll('[title]')).find(
                 e => e.title.startsWith(arguments[1]));
             b.scrollIntoView({block: 'center'});
             const r = b.getBoundingClientRect();
-            return [r.left + r.width / 2, r.top + r.height / 2];""",
+            return [r.left + r.width / 2, r.top + r.height / 2];""" % view,
                              title, tool))
+
+    def box_zoom(self, view: str, title: Optional[str] = None) -> None:
+        """Zoom into a part of the frame of a figure with its box zoom tool
+        (clicked in its toolbar unless active, then a mouse drag over the
+        frame).
+
+        Parameters
+        ----------
+        view : str
+            JavaScript expression of the figure's view, e.g.
+            ``'venueView()'`` or ``'figureView(arguments[0])'``.
+        title : str or None, optional
+            ``arguments[0]`` of ``view``.
+
+        Returns
+        -------
+        None.
+        """
+        # a click on an active tool deactivates it
+        if not self.js("""
+                return (%s).model.toolbar.tools.find(
+                    t => typeName(t) === 'BoxZoomTool').active;""" % view,
+                       title):
+            self.mouse(self.tool_button(title, 'Box Zoom', view))
+        x, y, w, h = self.js("""
+            const v = %s;
+            v.el.scrollIntoView({block: 'center'});
+            const r = v.el.getBoundingClientRect(), b = v.frame.bbox;
+            return [r.left + b.left, r.top + b.top, b.width, b.height];"""
+                             % view, title)
+        self.mouse(*[(x + (0.3 + 0.06 * k) * w, y + (0.3 + 0.04 * k) * h)
+                     for k in range(6)])
+        self.wait_settled()
 
     def mouse(self, *points: tuple) -> None:
         """Press the mouse at the first point, move it through the others
@@ -1561,15 +1734,7 @@ class BrowserCheck:
                        math.isclose(p, q, rel_tol=1e-9, abs_tol=1e-9)
                        for p, q in zip(a, b))
         start = ranges()
-        self.mouse(self.tool_button(BEAM_TITLES[0], 'Box Zoom'))
-        x, y, w, h = self.js("""
-            const v = figureView(arguments[0]);
-            v.el.scrollIntoView({block: 'center'});
-            const r = v.el.getBoundingClientRect(), b = v.frame.bbox;
-            return [r.left + b.left, r.top + b.top, b.width, b.height];""",
-                             BEAM_TITLES[0])
-        self.mouse(*[(x + (0.3 + 0.06 * k) * w, y + (0.3 + 0.04 * k) * h)
-                     for k in range(6)])
+        self.box_zoom('figureView(arguments[0])', BEAM_TITLES[0])
         zoomed = ranges()
         self.mouse(self.tool_button(BEAM_TITLES[1], 'Reset'))
         after = ranges()

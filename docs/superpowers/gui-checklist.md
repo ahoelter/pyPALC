@@ -93,7 +93,10 @@ These were not walked in a browser; they are noted from the legacy
   height" as wide as "Stretched" unless at the window limit (it may be
   higher than "Stretched"); "fixed height" as high as "Stretched" (at
   most the window limit) unless as wide as its container; both inside
-  the window and centered when narrower; a screenshot in each mode),
+  the window and centered when narrower; in the equal modes x and y
+  have the same major and minor tick spacing, also after a box zoom,
+  while "Stretched" keeps Bokeh's default tickers; a screenshot in each
+  mode),
   `axis_labels`
   (labels kept after a mode change and after inputs on pages 2 and 3)
 - [ ] The directivity plot updates on directivity change; "Measured
@@ -111,7 +114,9 @@ These were not walked in a browser; they are noted from the legacy
   `download_setup`
 - [ ] Beam plot buttons and frequency select — partly browser_check:
   `equal_axes` (both beam plots shown, equal scaling, ranges = the
-  extent of the image, no gap between image and frame), `beam_link` (a
+  extent of the image, no gap between image and frame, the same tick
+  spacing on x and y and the same ticks in both plots, also after a box
+  zoom), `beam_link` (a
   zoom and a reset move both plots, the reset back to the image extent);
   the frequency select needs browser
 - [ ] SFP venue tap highlights the responses of the tapped points — needs
@@ -206,7 +211,7 @@ running server in a headless Firefox window (`--width`, default 1280 x
 | `running_indicator` | "PALC Run" is dark red (`rgb(139, 0, 0)`) and reads "Running..." while the calculation runs and while the setup of `load` loaded, and is green and ready afterwards |
 | `drag` | moves a target point as the PointDrawTool does; the server snaps it to the distance grid and moves the optimization region |
 | `rays_cleared` | page 4 shows the rays of the result, page 1 afterwards shows none |
-| `equal_axes` | the venue figure in "Equal, variable height" and "Equal, fixed height" on pages 1 to 4 and page 1 again, on pages 2 and 4 also after a round trip to the other tab during which an input there ("9. Aperture angle", "23. Tolerance") gave the figure new ranges, and both beam plots on page 5 (again after page 1): pixels per meter on x and y differ by less than 1 %; the ranges of the venue figure are those of "Stretched" on the same page (the data extent, measured first, where the figure is as wide as its container), and its container is as wide as there (the main area keeps the space of its scrollbar), set back after the round trips too; in "Equal, variable height" the figure is as wide as its container (as "Stretched") unless it has the largest height (the window height less 210 px, at least 200 px; it may be higher than "Stretched"); in "Equal, fixed height" it is as high as in "Stretched" (at most that window limit) unless it is as wide as its container; in both it ends inside the window and, when narrower than its container, is centered in it; the beam plots are sized as "Equal, variable height" with at most 500 px height, their ranges are the extent of their image and the image fills the frame (gap at most 1 px); screenshots of page 1 in all three axis modes |
+| `equal_axes` | the venue figure in "Equal, variable height" and "Equal, fixed height" on pages 1 to 4 and page 1 again, on pages 2 and 4 also after a round trip to the other tab during which an input there ("9. Aperture angle", "23. Tolerance") gave the figure new ranges, and both beam plots on page 5 (again after page 1): pixels per meter on x and y differ by less than 1 %; the ranges of the venue figure are those of "Stretched" on the same page (the data extent, measured first, where the figure is as wide as its container), and its container is as wide as there (the main area keeps the space of its scrollbar), set back after the round trips too; in "Equal, variable height" the figure is as wide as its container (as "Stretched") unless it has the largest height (the window height less 210 px, at least 200 px; it may be higher than "Stretched"); in "Equal, fixed height" it is as high as in "Stretched" (at most that window limit) unless it is as wide as its container; in both it ends inside the window and, when narrower than its container, is centered in it; the beam plots are sized as "Equal, variable height" with at most 500 px height, their ranges are the extent of their image and the image fills the frame (gap at most 1 px); wherever the equal scaling is measured, both axes share one ticker and draw at least two major ticks with the same spacing in data units on x and y (minor ticks too), also after a box zoom on page 1 in each equal mode and in the PALC beam plot, and both beam plots draw the same ticks; in "Stretched" each axis has Bokeh's default ticker; screenshots of page 1 in all three axis modes |
 | `beam_link` | a box zoom (mouse drag) in the PALC beam plot zooms the reference beam plot too, the reset tool of the reference plot resets both to the extent of the image |
 | `toolbars` | no toolbar hides tools in an overflow menu, in every screenshot and in every tab of pages 4 and 5 |
 | `axis_labels` | the venue figure keeps its tick labels and axis titles (space left of and below its frame) after axis mode changes and, in "Equal, fixed height", after an input on pages 2 and 3 |

@@ -363,7 +363,9 @@ class ResultsPage:
         page, the height following up to :data:`~.ranges.VENUE_MAX_HEIGHT`
         and the window limit (:func:`~.ranges.window_limit`); a narrower
         figure is centered
-        (:class:`~.ranges.ScaledFigure`).
+        (:class:`~.ranges.ScaledFigure`). Both axes have the same tick
+        spacing (:func:`~.ranges.equal_ticker`), and as both plots have
+        the same ranges, they draw the same ticks.
 
         The ranges are renewed only if the extent changed, so that a zoom
         stays otherwise (a page switch, a new frequency).

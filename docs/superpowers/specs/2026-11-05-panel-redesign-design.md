@@ -287,6 +287,23 @@ The user chose A.
   (`scrollbar-gutter: stable`), and a toolbar higher than a low figure
   gets room below it, so that the tab panels of pages 2 and 4 do not
   scroll.
+- Tick spacing (user decision 2026-11-09): in both "Equal" axis modes
+  of the venue figure and in the beam plots, x and y have the same major
+  tick interval (1, 2 or 5 times a power of ten) and the same minor
+  ticks, e.g. major ticks 0, 1, 2, 3 on both axes. Both axes of such a
+  figure share one Bokeh `CustomJSTicker`
+  (`pypalc.gui.ranges.equal_ticker`) whose code reads both ranges of the
+  figure when the ticks are drawn, so the spacing follows a zoom, a pan,
+  a reset, a resize and new ranges without the server. The interval is
+  the one Bokeh's `BasicTicker` would give the longer axis (about six
+  intervals; with equal scaling it is the axis with more pixels); while
+  the shorter axis would show fewer than two major ticks, the next
+  smaller value is taken, as long as the ticks stay at least 40 px apart
+  (frame size from the figure's last layout, `inner_width` /
+  `inner_height`). `set_data_ranges` swaps the tickers with the axis
+  mode: the shared one in the equal modes, Bokeh's default `BasicTicker`
+  per axis in "Stretched" (and in the venue points figure, which is
+  stretched).
 - The venue points figure (step 28) is no longer zoomed with the beam
   plots. It is stretched (300 px high, a different aspect), so sharing its
   ranges would break the equal scaling of the beam plots; the shared

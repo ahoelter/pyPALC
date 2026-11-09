@@ -105,8 +105,11 @@ private or internal APIs that the tests on the server cannot check
 lock read by `pypalc.gui.widgets.locked`, the views of BokehJS that
 `pypalc.gui.ranges.ScaledFigure` measures and lays out in the browser
 (`view.get_child_view` of Panel's `JSComponent`, `bbox`, `frame.bbox` and
-`compute_layout` of a Bokeh plot view), CSS on MUI, Bokeh and Tabulator
-class names).
+`compute_layout` of a Bokeh plot view), the frame size that a Bokeh plot
+view writes to its model (`inner_width`, `inner_height`, read by
+`pypalc.gui.ranges.equal_ticker` in the browser; the check reads the
+drawn ticks through `tick_coords` and `dimension` of the axis views), CSS
+on MUI, Bokeh and Tabulator class names).
 
 ### Run without the GUI
 

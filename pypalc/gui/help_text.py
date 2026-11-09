@@ -86,7 +86,8 @@ _VENUE = (
      'audience lines. The gaps between the audience lines are processed. '
      'Afterwards the button reads <b>8. Venue is PALC compatible!</b>',
      '<b>Axes</b> of the venue figure (also on pages 2 to 4): <b>Equal, '
-     'variable height</b>: one meter has the same length on both axes; the '
+     'variable height</b>: one meter has the same length on both axes and '
+     'both have the same tick spacing; the '
      'figure is as wide as in Stretched and its height follows (if it would '
      'run below the window, it is narrower); <b>Equal, fixed height</b>: '
      'the same scaling; the figure is as high as in Stretched and its width '

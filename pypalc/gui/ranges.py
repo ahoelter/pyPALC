@@ -3,9 +3,11 @@
 :class:`PlotRanges` (formerly ``Plot_ranges`` in ``fun/PALC_classes.py``)
 and the helpers :func:`show_rays` and :func:`scale_venue_figure` (formerly
 ``venue_slice2CDS`` and ``get_p_axis_rng`` in ``fun/gui_helper.py``), the
-latter with the axis modes of the responsive venue figure, and
+latter with the axis modes of the responsive venue figure,
 :class:`ScaledFigure`, which sizes a figure in the browser so that one
-meter has the same length on both axes (venue figure and beam plots).
+meter has the same length on both axes (venue figure and beam plots), and
+:func:`equal_ticker`, which gives both axes of such a figure the same tick
+spacing.
 
 author: Arne Hoelter
 """
@@ -13,7 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 import param
-from bokeh.models import BoxZoomTool, Range1d
+from bokeh.models import BasicTicker, BoxZoomTool, CustomJSTicker, Range1d
 from panel.custom import Child, JSComponent
 
 #: Height in px of the venue figure in the axis modes "Stretched" and
@@ -245,6 +247,101 @@ class ScaledFigure(JSComponent):
     _esm = _SCALED_FIGURE_JS
 
 
+#: Number of major tick intervals on the longer axis of an equally scaled
+#: figure and of minor intervals per major one, as Bokeh's ``BasicTicker``
+#: (``desired_num_ticks``, ``num_minor_ticks``).
+DESIRED_TICKS = 6
+MINOR_TICKS = 5
+#: Smallest distance in px of two major ticks of an equally scaled figure
+#: when the interval is made smaller to give the shorter axis two ticks.
+MIN_TICK_PX = 40
+
+#: Browser code of :func:`equal_ticker` (before the return of the major or
+#: the minor ticks). ``interval`` is computed from both ranges of the
+#: figure, so both axes get the same one: the interval Bokeh's
+#: ``BasicTicker`` would give the longer axis (1, 2 or 5 times a power of
+#: ten, about DESIRED_TICKS intervals); while the shorter axis would show
+#: fewer than two major ticks, the next smaller of these values, as long as
+#: the ticks stay at least MIN_TICK_PX apart (in px of the frame from the
+#: figure's last layout, ``inner_width`` / ``inner_height``; before it,
+#: when BokehJS throws on reading them, no smaller value). ``ticks`` gives the
+#: multiples of a step within the axis range (BokehJS drops the ones outside
+#: it).
+_EQUAL_TICKS_JS = """
+const xr = plot.x_range, yr = plot.y_range;
+const sx = Math.abs(xr.end - xr.start), sy = Math.abs(yr.end - yr.start);
+const long = Math.max(sx, sy);
+const short = sx < sy ? xr : yr;
+// px per m of the longer axis (the same on the shorter one); BokehJS
+// throws on reading the frame size before the figure's first layout
+let ppm = NaN;
+try {
+  ppm = sx >= sy ? plot.inner_width / sx : plot.inner_height / sy;
+} catch (error) {}
+function count(range, step) {
+  const lo = Math.min(range.start, range.end);
+  const hi = Math.max(range.start, range.end);
+  return Math.floor(hi / step + 1e-9) - Math.ceil(lo / step - 1e-9) + 1;
+}
+function ticks(range, step) {
+  if (!(step > 0 && isFinite(step)) || count(range, step) > 1000) return [];
+  const lo = Math.min(range.start, range.end);
+  const first = Math.ceil(lo / step - 1e-9);
+  const out = [];
+  for (let k = 0; k < count(range, step); k++) out.push((first + k) * step);
+  return out;
+}
+let interval = NaN;
+if (long > 0 && isFinite(long)) {
+  // the interval of Bokeh's AdaptiveTicker for the longer axis
+  const magnitude = 10 ** Math.floor(Math.log10(long / DESIRED_TICKS));
+  let error = Infinity;
+  for (const mantissa of [0.5, 1, 2, 5, 10]) {
+    const e = Math.abs(DESIRED_TICKS - long / (mantissa * magnitude));
+    if (e < error) {
+      error = e;
+      interval = mantissa * magnitude;
+    }
+  }
+  while (count(short, interval) < 2) {
+    // the next smaller of 1, 2, 5 times a power of ten
+    const power = 10 ** Math.floor(Math.log10(interval) + 1e-9);
+    const mantissa = interval / power;
+    const next = (mantissa > 4.5 ? 2 : mantissa > 1.5 ? 1 : 0.5) * power;
+    if (!(next * ppm >= MIN_TICK_PX)) break;
+    interval = next;
+  }
+}
+"""
+for _name in ('DESIRED_TICKS', 'MIN_TICK_PX'):
+    _EQUAL_TICKS_JS = _EQUAL_TICKS_JS.replace(_name, str(globals()[_name]))
+
+
+def equal_ticker(figure):
+    """
+    A ticker for both axes of an equally scaled figure: they get the same
+    major and minor tick spacing, computed in the browser from both ranges
+    of the figure (:data:`_EQUAL_TICKS_JS`), so it follows a zoom, a pan, a
+    reset, a resize and new ranges.
+
+    Parameters
+    ----------
+    figure : figure
+        The figure whose ranges and frame size set the spacing.
+
+    Returns
+    -------
+    CustomJSTicker
+        A new ticker for both axes of ``figure``.
+
+    """
+    return CustomJSTicker(
+        args=dict(plot=figure),
+        major_code=_EQUAL_TICKS_JS + 'return ticks(cb_data.range, interval);',
+        minor_code=_EQUAL_TICKS_JS +
+        'return ticks(cb_data.range, interval / %d);' % MINOR_TICKS)
+
+
 def set_data_ranges(figure, x, y, equal):
     """
     Gives a figure new ranges over the data extent (a zoom is reset).
@@ -258,7 +355,9 @@ def set_data_ranges(figure, x, y, equal):
     equal : bool
         If True, the figure is equally scaled (:class:`ScaledFigure`): its
         box zoom keeps the aspect of the frame, so a zoom keeps the equal
-        scaling. If False, the box zoom draws any box.
+        scaling, and both axes share an :func:`equal_ticker` (kept if they
+        have one). If False, the box zoom draws any box and each axis has
+        Bokeh's default ``BasicTicker``.
 
     Returns
     -------
@@ -269,6 +368,12 @@ def set_data_ranges(figure, x, y, equal):
     for tool in figure.tools:
         if isinstance(tool, BoxZoomTool):
             tool.match_aspect = equal
+    if equal != isinstance(figure.xaxis[0].ticker, CustomJSTicker):
+        if equal:
+            figure.xaxis.ticker = figure.yaxis.ticker = equal_ticker(figure)
+        else:
+            figure.xaxis.ticker = BasicTicker()
+            figure.yaxis.ticker = BasicTicker()
 
 
 def data_aspect(x, y):
@@ -417,6 +522,10 @@ def scale_venue_figure(venue_figure, panes, ranges, axes_select):
       container (then it is lower).
     * 2, "Stretched": the venue ranges fill the figure (the width of its
       container, height :data:`VENUE_MAX_HEIGHT`).
+
+    In the equal modes both axes have the same tick spacing
+    (:func:`equal_ticker`); "Stretched" has Bokeh's default tickers
+    (:func:`set_data_ranges`).
 
     Parameters
     ----------
