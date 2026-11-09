@@ -252,68 +252,81 @@ class ScaledFigure(JSComponent):
 #: (``desired_num_ticks``, ``num_minor_ticks``).
 DESIRED_TICKS = 6
 MINOR_TICKS = 5
-#: Smallest distance in px of two major ticks of an equally scaled figure
-#: when the interval is made smaller to give the shorter axis two ticks.
-MIN_TICK_PX = 40
+#: Smallest distance in px of two major ticks of an equally scaled figure:
+#: a finer interval is made coarser. Tick labels such as "-10" or "22.5"
+#: are about 30 px wide at Bokeh's 11 px font, so they keep a clear gap.
+MIN_TICK_PX = 60
+#: Smallest distance in px when the interval is made finer again to give
+#: the shorter axis two major ticks.
+FALLBACK_TICK_PX = 40
 
 #: Browser code of :func:`equal_ticker` (before the return of the major or
 #: the minor ticks). ``interval`` is computed from both ranges of the
-#: figure, so both axes get the same one: the interval Bokeh's
-#: ``BasicTicker`` would give the longer axis (1, 2 or 5 times a power of
-#: ten, about DESIRED_TICKS intervals); while the shorter axis would show
-#: fewer than two major ticks, the next smaller of these values, as long as
-#: the ticks stay at least MIN_TICK_PX apart (in px of the frame from the
-#: figure's last layout, ``inner_width`` / ``inner_height``; before it,
-#: when BokehJS throws on reading them, no smaller value). ``ticks`` gives the
-#: multiples of a step within the axis range (BokehJS drops the ones outside
-#: it).
+#: figure, so both axes get the same one: of the intervals Bokeh's
+#: ``BasicTicker`` would give each axis on its own (1, 2 or 5 times a power
+#: of ten, about DESIRED_TICKS intervals), the finer one; then the next
+#: coarser of these values while the ticks are less than MIN_TICK_PX apart,
+#: and the next finer one while the shorter axis would show fewer than two
+#: major ticks, as long as they stay at least FALLBACK_TICK_PX apart. The
+#: px are those of the frame from the figure's last layout
+#: (``inner_width`` / ``inner_height``; before it, when BokehJS throws on
+#: reading them, the finer interval stays). ``ticks`` gives the multiples
+#: of a step within the axis range, rounded to 12 digits, so that a tick at
+#: an end of the range is not lost to rounding (BokehJS draws only the ticks
+#: within the range).
 _EQUAL_TICKS_JS = """
 const xr = plot.x_range, yr = plot.y_range;
 const sx = Math.abs(xr.end - xr.start), sy = Math.abs(yr.end - yr.start);
-const long = Math.max(sx, sy);
 const short = sx < sy ? xr : yr;
-// px per m of the longer axis (the same on the shorter one); BokehJS
-// throws on reading the frame size before the figure's first layout
+// px per m (the same on both axes); BokehJS throws on reading the frame
+// size before the figure's first layout
 let ppm = NaN;
 try {
   ppm = sx >= sy ? plot.inner_width / sx : plot.inner_height / sy;
 } catch (error) {}
-function count(range, step) {
+const round = value => Number(value.toPrecision(12));
+function ticks(range, step) {
   const lo = Math.min(range.start, range.end);
   const hi = Math.max(range.start, range.end);
-  return Math.floor(hi / step + 1e-9) - Math.ceil(lo / step - 1e-9) + 1;
-}
-function ticks(range, step) {
-  if (!(step > 0 && isFinite(step)) || count(range, step) > 1000) return [];
-  const lo = Math.min(range.start, range.end);
-  const first = Math.ceil(lo / step - 1e-9);
+  if (!(step > 0 && isFinite(step)) || (hi - lo) / step > 1000) return [];
   const out = [];
-  for (let k = 0; k < count(range, step); k++) out.push((first + k) * step);
+  for (let k = Math.ceil(lo / step) - 1; k <= Math.floor(hi / step) + 1;
+       k++) {
+    const tick = round(k * step);
+    if (tick >= lo && tick <= hi) out.push(tick);
+  }
   return out;
 }
-let interval = NaN;
-if (long > 0 && isFinite(long)) {
-  // the interval of Bokeh's AdaptiveTicker for the longer axis
-  const magnitude = 10 ** Math.floor(Math.log10(long / DESIRED_TICKS));
-  let error = Infinity;
+// the interval of Bokeh's AdaptiveTicker for a span
+function bokeh(span) {
+  if (!(span > 0 && isFinite(span))) return Infinity;
+  const magnitude = 10 ** Math.floor(Math.log10(span / DESIRED_TICKS));
+  let best = Infinity, error = Infinity;
   for (const mantissa of [0.5, 1, 2, 5, 10]) {
-    const e = Math.abs(DESIRED_TICKS - long / (mantissa * magnitude));
+    const e = Math.abs(DESIRED_TICKS - span / (mantissa * magnitude));
     if (e < error) {
       error = e;
-      interval = mantissa * magnitude;
+      best = round(mantissa * magnitude);
     }
   }
-  while (count(short, interval) < 2) {
-    // the next smaller of 1, 2, 5 times a power of ten
-    const power = 10 ** Math.floor(Math.log10(interval) + 1e-9);
-    const mantissa = interval / power;
-    const next = (mantissa > 4.5 ? 2 : mantissa > 1.5 ? 1 : 0.5) * power;
-    if (!(next * ppm >= MIN_TICK_PX)) break;
-    interval = next;
-  }
+  return best;
+}
+// the next coarser (up) or finer of 1, 2, 5 times a power of ten
+function next(step, up) {
+  const power = 10 ** Math.floor(Math.log10(step) + 1e-9);
+  const mantissa = step / power;
+  return round(power * (up ? (mantissa < 1.5 ? 2 : mantissa < 3.5 ? 5 : 10)
+                           : (mantissa > 4.5 ? 2 : mantissa > 1.5 ? 1 : 0.5)));
+}
+let interval = Math.min(bokeh(sx), bokeh(sy));
+if (isFinite(interval) && ppm > 0 && isFinite(ppm)) {
+  while (interval * ppm < MIN_TICK_PX) interval = next(interval, true);
+  while (ticks(short, interval).length < 2 &&
+         next(interval, false) * ppm >= FALLBACK_TICK_PX)
+    interval = next(interval, false);
 }
 """
-for _name in ('DESIRED_TICKS', 'MIN_TICK_PX'):
+for _name in ('DESIRED_TICKS', 'FALLBACK_TICK_PX', 'MIN_TICK_PX'):
     _EQUAL_TICKS_JS = _EQUAL_TICKS_JS.replace(_name, str(globals()[_name]))
 
 

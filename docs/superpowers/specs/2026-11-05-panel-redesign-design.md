@@ -294,13 +294,21 @@ The user chose A.
   figure share one Bokeh `CustomJSTicker`
   (`pypalc.gui.ranges.equal_ticker`) whose code reads both ranges of the
   figure when the ticks are drawn, so the spacing follows a zoom, a pan,
-  a reset, a resize and new ranges without the server. The interval is
-  the one Bokeh's `BasicTicker` would give the longer axis (about six
-  intervals; with equal scaling it is the axis with more pixels); while
-  the shorter axis would show fewer than two major ticks, the next
-  smaller value is taken, as long as the ticks stay at least 40 px apart
-  (frame size from the figure's last layout, `inner_width` /
-  `inner_height`). `set_data_ranges` swaps the tickers with the axis
+  a reset, a resize and new ranges without the server. Interval rule
+  (controller ruling 2026-11-09, after a first version that used the
+  interval of the longer axis and so showed only 0 and 5 on y for the
+  wide venue): of the intervals Bokeh's `BasicTicker` would give each
+  axis on its own (about six intervals), the finer one; then the next
+  coarser value while the ticks are less than 60 px apart (labels such as
+  "-10" or "22.5" are about 30 px wide at Bokeh's 11 px font); then, while
+  the shorter axis would show fewer than two major ticks, the next finer
+  value as long as the ticks stay at least 40 px apart. The px come from
+  the frame of the figure's last layout (`inner_width` / `inner_height`;
+  before the first layout the finer interval stays). The wide venue at
+  1920 px gets 2 m on both axes. Tick positions are rounded to 12 digits,
+  so that a tick at an end of the range is not lost to floating point
+  (BokehJS draws only ticks within the range). `set_data_ranges` swaps the
+  tickers with the axis
   mode: the shared one in the equal modes, Bokeh's default `BasicTicker`
   per axis in "Stretched" (and in the venue points figure, which is
   stretched).

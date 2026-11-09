@@ -67,8 +67,8 @@ from pypalc.gui.downloads import (DOWNLOAD_COLUMNS,  # noqa: E402
                                   DOWNLOAD_FILE_NAMES, RESULTS_FILE_NAME,
                                   SETUP_FILE_NAME)
 from pypalc.gui.page_algorithm import RUN_LABEL, RUNNING_LABEL  # noqa: E402
-from pypalc.gui.ranges import (VENUE_MAX_HEIGHT,  # noqa: E402
-                               window_limit)
+from pypalc.gui.ranges import (FALLBACK_TICK_PX,  # noqa: E402
+                               VENUE_MAX_HEIGHT, window_limit)
 from pypalc.gui.setup_io import GAP_HANDLINGS, WEIGHTINGS  # noqa: E402
 
 #: Default setup file loaded by the load check.
@@ -346,8 +346,9 @@ def tick_problems(state: dict, equal: bool) -> tuple:
     equal : bool
         True: both axes share one ticker (``CustomJSTicker``,
         :func:`~pypalc.gui.ranges.equal_ticker`) and draw at least two major
-        ticks with the same spacing in data units on x and y, and minor
-        ticks with the same spacing too. False ("Stretched"): each axis has
+        ticks with the same spacing in data units on x and y, at least
+        :data:`~pypalc.gui.ranges.FALLBACK_TICK_PX` apart, and minor ticks
+        with the same spacing too. False ("Stretched"): each axis has
         Bokeh's default ``BasicTicker``, the spacing is not forced.
 
     Returns
@@ -387,6 +388,10 @@ def tick_problems(state: dict, equal: bool) -> tuple:
                     not math.isclose(x, y, rel_tol=1e-6):
                 problems.append('%s tick spacing x %s, y %s'
                                 % (kind, x, y))
+        px = spacing['x'][0] and spacing['x'][0] * pixels_per_meter(state)[0]
+        text += ', %s px apart' % ('%.0f' % px if px else '-')
+        if px and px < FALLBACK_TICK_PX - 1:
+            problems.append('major ticks %.0f px apart' % px)
     elif types != {'BasicTicker'}:
         problems.append('tickers %s, not BasicTicker' % sorted(types))
     return text, problems

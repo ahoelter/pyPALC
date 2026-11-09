@@ -26,6 +26,7 @@ import json
 import math
 import shutil
 import subprocess
+from fractions import Fraction
 
 import panel_material_ui as pmui
 import pytest
@@ -38,7 +39,8 @@ from pypalc.gui.app import PalcApp
 from pypalc.gui.ranges import (FIXED_HEIGHT, MIN_MAX_HEIGHT, STRETCHED,
                                VARIABLE_HEIGHT, VENUE_MAX_HEIGHT,
                                WINDOW_MARGIN, ScaledFigure, DESIRED_TICKS,
-                               MIN_TICK_PX, MINOR_TICKS, equal_ticker,
+                               FALLBACK_TICK_PX, MIN_TICK_PX, MINOR_TICKS,
+                               equal_ticker,
                                fixed_height, set_data_ranges, window_limit)
 from tests.gui_driver import read, write
 from tests.gui_steps import ROOT
@@ -243,7 +245,10 @@ def test_mode_changes_swap_the_tickers(app):
 def _browser_ticks(ticker, x, y, size):
     """Major and minor ticks the browser code of ``ticker`` gives on both
     axes of a figure with the ranges ``x``, ``y`` and the frame size
-    ``size`` (``None``: before the first layout), run with node."""
+    ``size`` (``None``: before the first layout), run with node in strict
+    mode, as BokehJS runs it."""
+    node = shutil.which('node')
+    assert node, 'node is needed to run the browser code of the ticker'
     script = """
     const [major_code, minor_code, x, y, size] = %s;
     // BokehJS throws on reading the frame size before the first layout
@@ -255,64 +260,72 @@ def _browser_ticks(ticker, x, y, size):
                   y_range: {start: y[0], end: y[1]},
                   get inner_width() { return frame(0); },
                   get inner_height() { return frame(1); }};
+    const strict = code => '"use strict";\\n' + code;
     const out = {};
     for (const [name, range] of [['x', plot.x_range], ['y', plot.y_range]]) {
       const cb_data = {start: range.start, end: range.end, range: range,
                        cross_loc: NaN};
-      const major = new Function('cb_data', 'plot', major_code)(
+      const major = new Function('cb_data', 'plot', strict(major_code))(
         cb_data, plot);
-      const minor = new Function('cb_data', 'plot', minor_code)(
+      const minor = new Function('cb_data', 'plot', strict(minor_code))(
         Object.assign({major_ticks: major}, cb_data), plot);
       out[name] = [major, minor];
     }
     console.log(JSON.stringify(out));
     """ % json.dumps([ticker.major_code, ticker.minor_code, x, y, size])
-    done = subprocess.run(['node', '-e', script], capture_output=True,
-                          text=True, check=True)
+    done = subprocess.run([node, '-e', script], capture_output=True,
+                          text=True)
+    assert done.returncode == 0, done.stderr
     return json.loads(done.stdout)
 
 
-def _spacing(ticks):
-    steps = {round(b - a, 9) for a, b in zip(ticks, ticks[1:])}
-    assert len(steps) == 1, ticks
-    return steps.pop()
+def _multiples(extent, spacing):
+    """All multiples of ``spacing`` within ``extent``, exact (as the
+    nearest floats of the decimal values)."""
+    step = Fraction(str(spacing))
+    low, high = (Fraction(str(value)) for value in extent)
+    return [float(k * step) for k in range(math.ceil(low / step),
+                                           math.floor(high / step) + 1)]
 
 
-@pytest.mark.skipif(shutil.which('node') is None, reason='needs node')
 @pytest.mark.parametrize('x, y, size, major, minor', [
-    # the longer axis gets the interval of Bokeh's BasicTicker (about six
-    # ticks); the shorter one has two ticks with it
-    ([-2, 22], [-2, 5], (1000, 292), 5, 1),
-    ([-2, 5], [-2, 22], (292, 1000), 5, 1),
-    # the shorter axis would get one tick: a smaller interval, as long as
-    # the ticks stay at least MIN_TICK_PX apart
+    # of the intervals of Bokeh's BasicTicker for each axis (about six
+    # ticks), the finer one (1 m for y), made coarser while the ticks are
+    # less than MIN_TICK_PX apart
+    ([-2, 22], [-2, 5], (1000, 292), 2, 0.4),
+    ([-2, 5], [-2, 22], (292, 1000), 2, 0.4),
     ([0, 30], [0, 4], (1200, 160), 2, 0.4),
     ([0.5, 30.5], [0.5, 4.5], (1200, 160), 2, 0.4),
+    # the wide venue at 1920 px in "Equal, fixed height"
+    ([-2, 22], [-2, 6], (1340, 447), 2, 0.4),
+    # far apart enough: the finer interval
+    ([-2, 22], [-2, 6], (2400, 800), 1, 0.2),
+    # coarser up to 5 m, then the shorter axis would have one tick, but a
+    # finer interval would put the ticks less than FALLBACK_TICK_PX apart
     ([0, 100], [0, 3], (1200, 36), 5, 1),
-    # before the first layout (no frame size): Bokeh's interval
-    ([0, 30], [0, 4], None, 5, 1),
-    # small and zoomed ranges
+    # the shorter axis gets two ticks with a finer interval than
+    # MIN_TICK_PX allows (50 m: 120 px; 20 m: 48 px)
+    ([0, 100], [0, 30], (240, 72), 20, 4),
+    # before the first layout (no frame size): the finer interval
+    ([0, 30], [0, 4], None, 0.5, 0.1),
+    # small and zoomed ranges; ticks at the ends of the ranges (3 * 0.1 is
+    # 0.30000000000000004 in floating point)
     ([0.1, 0.4], [0.2, 0.35], (600, 300), 0.05, 0.01),
+    ([0, 0.6], [0, 0.3], (600, 300), 0.1, 0.02),
+    ([0, 2.2], [0.3, 0.9], (1100, 300), 0.2, 0.04),
 ])
 def test_equal_ticks_in_the_browser(x, y, size, major, minor):
     """The browser code gives both axes the same major and minor tick
-    spacing, multiples of it within the ranges."""
+    spacing: every multiple of it within the ranges, ends included."""
     figure = new_figure()
     set_data_ranges(figure, x, y, equal=True)
     ticks = _browser_ticks(figure.xaxis[0].ticker, x, y, size)
     for name, extent in (('x', x), ('y', y)):
         majors, minors = ticks[name]
-        assert majors and minors
-        for values, spacing in ((majors, major), (minors, minor)):
-            for value in values:
-                assert extent[0] - 1e-9 <= value <= extent[1] + 1e-9
-                assert value / spacing == pytest.approx(
-                    round(value / spacing), abs=1e-6)
-            if len(values) > 1:
-                assert _spacing(values) == pytest.approx(spacing)
-        # all multiples of the spacing in the range
-        assert len(majors) == math.floor(extent[1] / major + 1e-9) - \
-            math.ceil(extent[0] / major - 1e-9) + 1
+        assert majors == _multiples(extent, major), name
+        assert minors == _multiples(extent, minor), name
+        for value in majors + minors:
+            assert extent[0] <= value <= extent[1]
 
 
 def test_equal_ticker_is_new_per_figure():
@@ -332,11 +345,16 @@ def test_equal_ticker_is_new_per_figure():
 def test_equal_ticker_code_has_the_constants():
     """The density is Bokeh's: the numbers of ticks of its BasicTicker."""
     default = BasicTicker()
-    assert (DESIRED_TICKS, MINOR_TICKS, MIN_TICK_PX) == \
-        (default.desired_num_ticks, default.num_minor_ticks, 40)
+    assert (DESIRED_TICKS, MINOR_TICKS) == \
+        (default.desired_num_ticks, default.num_minor_ticks)
+    assert (MIN_TICK_PX, FALLBACK_TICK_PX) == (60, 40)
     ticker = equal_ticker(new_figure())
     for code in (ticker.major_code, ticker.minor_code):
-        for name in ('DESIRED_TICKS', 'MIN_TICK_PX', 'MINOR_TICKS'):
+        for name in ('DESIRED_TICKS', 'MIN_TICK_PX', 'FALLBACK_TICK_PX',
+                     'MINOR_TICKS'):
             assert name not in code
-        assert 'Math.abs(6 - long' in code and 'next * ppm >= 40' in code
+        for text in ('Math.abs(6 - span', 'interval * ppm < 60',
+                     'next(interval, false) * ppm >= 40',
+                     'Math.min(bokeh(sx), bokeh(sy))'):
+            assert text in code, text
     assert ticker.minor_code.endswith('interval / 5);')
