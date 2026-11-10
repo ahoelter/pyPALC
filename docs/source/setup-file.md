@@ -29,7 +29,9 @@ reads it into a {class}`~pypalc.core.settings.Setup` (see {doc}`tutorial`).
   `pypalc run` alike. The first invalid setting is reported with its key,
   for example `setup error at algorithm.tolerance: must be between 0.05
   and 5, got 10`. A venue that cannot be built is reported when the setup
-  is computed.
+  is computed. Two more errors appear only then: an empty `user_defined`
+  reference (reported with the key `reference_array`) and unreadable
+  measured data; both are still a `setup error` (exit code 2).
 
 The file with every default value, as
 {func}`~pypalc.core.settings.dump_setup` writes it:

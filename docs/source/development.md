@@ -186,8 +186,12 @@ trusted publisher and creates the project.
 5. Check the upload in a fresh environment:
 
    ```bash
-   pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pypalc
+   pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "pypalc[gui]"
    ```
+
+   Then start `pypalc gui`, load an example on page 1, and run
+   `pypalc examples my_examples` followed by
+   `pypalc run my_examples/simple.yaml`.
 
 6. Tag the release and push the tag (here for version 0.1.0):
 

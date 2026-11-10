@@ -50,9 +50,23 @@ def test_serve_arguments(monkeypatch):
 
 def test_gui_without_panel(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "panel", None)
-    monkeypatch.setitem(sys.modules, "pypalc.gui.serve", None)
+    monkeypatch.delitem(sys.modules, "pypalc.gui.serve", raising=False)
     assert cli.main(["gui"]) == 6
     assert 'pip install "pypalc[gui]"' in capsys.readouterr().err
+
+
+def test_gui_other_import_error_is_shown(monkeypatch, capsys):
+    class Broken:
+        """Stands in for pypalc.gui.serve: importing it fails."""
+        def __getattr__(self, name):
+            raise ImportError("cannot import name 'x' from 'pypalc.gui'")
+
+    monkeypatch.setitem(sys.modules, "pypalc.gui.serve", Broken())
+    assert cli.main(["gui"]) == 6
+    err = capsys.readouterr().err
+    assert "cannot import name 'x'" in err
+    assert "pypalc gui could not start" in err
+    assert "pip install" not in err
 
 
 def test_cli_import_has_no_panel():

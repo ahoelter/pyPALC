@@ -1,5 +1,6 @@
 """The package metadata, the logos inside the package and the built wheel."""
 import re
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -62,13 +63,20 @@ def test_wheel_contents(tmp_path):
             pytest.skip('setuptools >= 77 is needed to build the wheel')
     except ImportError:
         pytest.skip('setuptools is not installed')
+    # build from a copy: building in the checkout leaves build/ and
+    # pypalc.egg-info/ behind
+    source = tmp_path / 'source'
+    shutil.copytree(ROOT, source, ignore=shutil.ignore_patterns(
+        '.git', 'build', 'dist', '*.egg-info', '__pycache__', 'docs',
+        '.pytest_cache', '.superpowers'))
+    out = tmp_path / 'out'
     result = subprocess.run(
         [sys.executable, '-m', 'pip', 'wheel', '.', '--no-deps',
-         '--no-build-isolation', '-w', str(tmp_path)],
-        cwd=ROOT, capture_output=True, text=True)
+         '--no-build-isolation', '-w', str(out)],
+        cwd=source, capture_output=True, text=True)
     if result.returncode != 0:
         pytest.skip('pip wheel is unavailable: ' + result.stderr[-300:])
-    wheel, = tmp_path.glob('pypalc-*.whl')
+    wheel, = out.glob('pypalc-*.whl')
     names = zipfile.ZipFile(wheel).namelist()
     for name in _gui_pngs():
         assert f'pypalc/gui/static/{name}' in names

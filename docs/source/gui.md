@@ -148,6 +148,8 @@ next to it as a `.csv` file: the package includes `.yaml`, `.yml` and
 `.csv` files of this folder, and `pypalc examples` copies every file of
 it except Python files.
 
+* Add a download link for the new file to the list of example downloads
+  in {doc}`command-line` (one bullet per file, under "Get the examples").
 * The title in the selection comes from the file name: underscores become
   spaces and the first letter is upper case, so `gap_soft_margin.yaml` is
   shown as "Gap soft margin". The examples are sorted by title.

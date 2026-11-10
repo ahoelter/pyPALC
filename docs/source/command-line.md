@@ -25,7 +25,8 @@ files exists in the folder already, no file is copied and the command ends
 with exit code 5.
 
 The examples can also be downloaded here:
-{download}`simple.yaml <../../pypalc/examples/simple.yaml>`.
+
+* {download}`simple.yaml <../../pypalc/examples/simple.yaml>`
 
 ## Run a setup file
 
@@ -193,7 +194,7 @@ a file cannot be read), it is appended as `(caused by ...)`. With
 | 3 | the venue cannot be built from the audience lines (message `venue error: ...`) |
 | 4 | PALC did not converge or the calculation failed (message `calculation error: ...`) |
 | 5 | the results (or, for `pypalc examples`, the examples) cannot be written (message `output error: ...`) |
-| 6 | `pypalc gui` without the GUI dependencies; install them with `pip install "pypalc[gui]"` |
+| 6 | `pypalc gui` cannot start: without the GUI dependencies (install them with `pip install "pypalc[gui]"`) or for another import error, whose text is printed (message `pypalc gui could not start: ...`) |
 
 If PALC does not converge, a smaller `loudspeaker.aperture_angle_deg` or a
 larger `algorithm.tolerance` usually helps (see {doc}`setup-file`).

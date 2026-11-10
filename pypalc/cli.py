@@ -24,11 +24,17 @@ EXIT_GUI = 6
 #: Prefix of the core's error texts, which the GUI shows as they are.
 _GUI_PREFIX = "Error: "
 
+#: Top-level packages of the ``gui`` extra; only their absence is reported
+#: as "install pypalc[gui]".
+_GUI_PACKAGES = {"panel", "bokeh", "panel_material_ui", "pandas",
+                 "colorcet", "param"}
+
 
 def _parser() -> argparse.ArgumentParser:
     """Build the argument parser."""
     parser = argparse.ArgumentParser(
-        prog="pypalc", description="pyPALC without the GUI.")
+        prog="pypalc", description="pyPALC: run setup files, copy the examples, "
+        "serve the GUI.")
     sub = parser.add_subparsers(dest="command", required=True)
     run_parser = sub.add_parser(
         "run", help="run a setup file and write the results as CSV")
@@ -48,8 +54,10 @@ def _parser() -> argparse.ArgumentParser:
                             "interfaces; browsers of other hosts are refused "
                             "unless allowed with --allow-websocket-origin)")
     gui_parser.add_argument("--allow-websocket-origin", action="append",
+                            metavar="HOST[:PORT]",
                             help="host allowed to open websocket "
-                            "connections (repeatable)")
+                            "connections (repeatable; without it only "
+                            "localhost:PORT is allowed)")
     gui_parser.add_argument("--prefix", default=None,
                             help="URL prefix of the app")
     gui_parser.add_argument("--show", action=argparse.BooleanOptionalAction,
@@ -103,9 +111,13 @@ def _gui(args: argparse.Namespace) -> int:
     """Serve the GUI; return the exit code."""
     try:
         from .gui.serve import serve
-    except ImportError:
-        print('pypalc gui needs the GUI dependencies: '
-              'pip install "pypalc[gui]"', file=sys.stderr)
+    except ImportError as exc:
+        missing = (exc.name or "").split(".")[0]
+        if isinstance(exc, ModuleNotFoundError) and missing in _GUI_PACKAGES:
+            print('pypalc gui needs the GUI dependencies: '
+                  'pip install "pypalc[gui]"', file=sys.stderr)
+        else:
+            print("pypalc gui could not start: %s" % exc, file=sys.stderr)
         return EXIT_GUI
     serve(port=args.port, address=args.address,
           allow_websocket_origin=args.allow_websocket_origin,
@@ -126,7 +138,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     int
         Exit code: 0 ok, 2 invalid setup, 3 venue error, 4 no convergence
         or calculation error, 5 output could not be written, 6 the GUI
-        dependencies are missing (``pypalc gui``). An error is
+        dependencies are missing or the GUI cannot start (``pypalc gui``). An error is
         printed to stderr with its cause; with ``--traceback`` the full
         (chained) traceback is printed too.
     """

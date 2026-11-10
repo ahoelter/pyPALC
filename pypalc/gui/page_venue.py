@@ -83,7 +83,7 @@ class VenuePage:
         """Error text of the page (``object``); hidden while empty."""
         self.load_setup_input = setup_file_input()
         """Upload of a setup file, loaded by page 4
-        (:meth:`.PageAlgorithm.load_selected`)."""
+        (:meth:`.AlgorithmPage.load_selected`)."""
         found = examples()
         self.example_select = select(
             'Example', {e.title: e.name for e in found},
@@ -93,7 +93,7 @@ class VenuePage:
                                           variant='outlined',
                                           disabled=not found)
         """Loads the selected example, done by page 4
-        (:meth:`.PageAlgorithm.load_example_selected`)."""
+        (:meth:`.AlgorithmPage.load_example_selected`)."""
         self._layout: Optional[pn.viewable.Viewable] = None
         # sources
         x_init = np.array([0, 0]).astype(float)
