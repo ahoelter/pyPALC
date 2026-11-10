@@ -22,7 +22,9 @@ environment; set `PYTHONNOUSERSITE=1` for every command, e.g.
 the server stops), or activate the environment first:
 `conda activate pyPALC3` and `PYTHONNOUSERSITE=1 panel serve pyPALC --show`.
 
-Run the app locally, from the folder that contains this folder:
+Run the app with the installed package: `pypalc gui` (options `--port`,
+`--address`, `--allow-websocket-origin`, `--prefix`, `--no-show`).
+From a checkout, run it from the folder that contains this folder:
 `panel serve pyPALC --show`
 "pyPALC" is the folder that contains the app.
 
@@ -34,7 +36,7 @@ More info soon!
 
 | path | content |
 |---|---|
-| `main.py` | entry point of `panel serve`: builds one `PalcApp` per browser session and serves its view |
+| `main.py` | entry point of `panel serve` from a checkout: serves `pypalc.gui.serve.create_view()` (one `PalcApp` per browser session) |
 | `pypalc/core/` | the calculation without Bokeh: settings and setup files, venue, PALC, sound field prediction, target slope, pipeline, CSV export |
 | `pypalc/gui/` | the GUI in Panel / panel-material-ui with Bokeh figures: `PalcApp` (page frame and switching, `app.py`), one module per page (the help texts in `help_text.py`, the sound field in `page_results.py`), plot ranges, the axis modes of the venue figure and the equal scaling of the beam plots (`ranges.py`), setup save/load, the files of the downloads (`downloads.py`), style, card and input building blocks (`widgets.py`) |
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |

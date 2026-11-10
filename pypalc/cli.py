@@ -1,4 +1,5 @@
-"""Command line interface: ``pypalc run SETUP`` and ``pypalc examples DIR``."""
+"""Command line interface: ``pypalc run SETUP``, ``pypalc examples DIR`` and
+``pypalc gui``."""
 from __future__ import annotations
 
 import argparse
@@ -18,6 +19,7 @@ EXIT_SETUP = 2
 EXIT_VENUE = 3
 EXIT_CALCULATION = 4
 EXIT_OUTPUT = 5
+EXIT_GUI = 6
 
 #: Prefix of the core's error texts, which the GUI shows as they are.
 _GUI_PREFIX = "Error: "
@@ -38,6 +40,19 @@ def _parser() -> argparse.ArgumentParser:
     examples_parser = sub.add_parser(
         "examples", help="copy the example setup files into a directory")
     examples_parser.add_argument("directory", help="target directory")
+    gui_parser = sub.add_parser("gui", help="serve the GUI in the browser")
+    gui_parser.add_argument("--port", type=int, default=5006,
+                            help="port of the server (default: 5006)")
+    gui_parser.add_argument("--address", default=None,
+                            help="address to listen on (default: localhost)")
+    gui_parser.add_argument("--allow-websocket-origin", action="append",
+                            help="host allowed to open websocket "
+                            "connections (repeatable)")
+    gui_parser.add_argument("--prefix", default=None,
+                            help="URL prefix of the app")
+    gui_parser.add_argument("--show", action=argparse.BooleanOptionalAction,
+                            default=True,
+                            help="open the app in a browser (default: yes)")
     return parser
 
 
@@ -82,6 +97,20 @@ def _copy_examples(directory: str) -> int:
     return 0
 
 
+def _gui(args: argparse.Namespace) -> int:
+    """Serve the GUI; return the exit code."""
+    try:
+        from .gui.serve import serve
+    except ImportError:
+        print('pypalc gui needs the GUI dependencies: '
+              'pip install "pypalc[gui]"', file=sys.stderr)
+        return EXIT_GUI
+    serve(port=args.port, address=args.address,
+          allow_websocket_origin=args.allow_websocket_origin,
+          prefix=args.prefix, show=args.show)
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Run the command line interface.
 
@@ -94,13 +123,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     -------
     int
         Exit code: 0 ok, 2 invalid setup, 3 venue error, 4 no convergence
-        or calculation error, 5 output could not be written. An error is
+        or calculation error, 5 output could not be written, 6 the GUI
+        dependencies are missing (``pypalc gui``). An error is
         printed to stderr with its cause; with ``--traceback`` the full
         (chained) traceback is printed too.
     """
     args = _parser().parse_args(argv)
     if args.command == "examples":
         return _copy_examples(args.directory)
+    if args.command == "gui":
+        return _gui(args)
     try:
         try:
             setup = load_setup(args.setup)
