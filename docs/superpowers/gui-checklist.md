@@ -155,6 +155,11 @@ These were not walked in a browser; they are noted from the legacy
   (the same message pane as on pages 2 to 4) — browser_check: `load_page1`
   and `load_page1_error`; pinned on the server by
   `tests/test_load_setup_page1.py`
+- [ ] "Example" and "Load Example" on page 1 (card "Setup file", below
+  "Load Setup") load the selected example setup of `pypalc.examples` like
+  a setup file: the app lands on page 5 with results, a failing example
+  shows its error on page 1 — browser_check: `load_example`; pinned on
+  the server by `tests/test_load_example.py`
 - [ ] Choosing the same file again in "Load Setup" loads it again — needs
   browser (pinned on the server by
   `test_load_same_file_again_loads_again`)
@@ -210,6 +215,7 @@ running server in a headless Firefox window (`--width`, default 1280 x
 | check | what it does |
 |---|---|
 | `screenshots_fresh` | screenshot of every page of a new session (the whole page) |
+| `load_example` | selects the first example in "Example" on page 1 and clicks "Load Example"; the app must switch to page 5 with figures and no alert |
 | `load` | loads a setup through the "Load Setup" file input (default `tests/cases/gap_soft_margin_target_slope.yaml`); the app must switch to page 5, and page 4 must show the setup's gap handling, weighting and hinges and "26. PALC Run" ready again |
 | `load_page1` | loads the setup of `load` again through the "Load Setup" input of page 1; the app must switch to page 5 with results |
 | `load_page1_error` | loads `tests/cases/measured.yaml` (invalid in the GUI) through the input of page 1; page 1 must show "Error: setup file invalid ..." and stay on page 1 |

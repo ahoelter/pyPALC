@@ -138,7 +138,7 @@ ANGLES_FILE = DOWNLOAD_FILE_NAMES['results']
 DOWNLOAD_FILES = (ANGLES_FILE, RESULTS_FILE_NAME, SETUP_FILE_NAME)
 #: States of the screenshots (``OUT/<page>_<state>.png``); one per axis
 #: mode of the venue figure (``axes_0`` ...).
-SCREENSHOT_STATES = ('fresh', 'loaded', 'load_error', 'running', 'dragged', 'beam_plots',
+SCREENSHOT_STATES = ('fresh', 'example', 'loaded', 'load_error', 'running', 'dragged', 'beam_plots',
                      'axes_0', 'axes_1', 'axes_2', 'tabs_1', 'tabs_2',
                      'tabs_3')
 #: Name of the report in OUT and of the copy of the downloads in OUT.
@@ -1101,6 +1101,44 @@ class BrowserCheck:
         figures = self.js("return figureViews().length;")
         alerts = self.js("""return deep('.MuiAlert-message').map(
             e => e.textContent.trim()).filter(t => t);""")
+        ok = figures > 0 and not alerts
+        return ok, 'switched to page 5 after %.1fs; %d figures; alerts %r' \
+            % (time.time() - start, figures, alerts)
+
+    def check_load_example(self) -> tuple:
+        """Select the first example on page 1 and click "Load Example":
+        the app must switch to page 5, which shows figures and no alert.
+
+        Returns
+        -------
+        tuple
+            ``(ok, detail)``.
+        """
+        self.show_page(1)
+        # the page switch may be pending: wait for the selection
+        self.wait_for(lambda: self.js("""return deep('.MuiSelect-select')
+            .some(e => e.textContent.trim() !== '' && e.offsetParent);"""),
+                      'example selection on page 1', timeout=30)
+        shown = self.js("""const s = deep('.MuiInputLabel-root').filter(
+            e => e.textContent.trim() === 'Example' && e.offsetParent);
+            return s.length;""")
+        if shown != 1:
+            return False, '%d "Example" selections found on page 1' % shown
+        buttons = self.js("""return deep('button').filter(
+            e => e.textContent.trim() === 'Load Example').length;""")
+        if buttons != 1:
+            return False, '%d "Load Example" buttons found' % buttons
+        start = time.time()
+        self.js("""deep('button').filter(
+            e => e.textContent.trim() === 'Load Example')[0].click();""")
+        self.wait_for(lambda: self.active_page() == 5,
+                      'page 5 after loading an example',
+                      timeout=self.timeout)
+        self.wait_settled()
+        figures = self.js("return figureViews().length;")
+        alerts = self.js("""return deep('.MuiAlert-message').map(
+            e => e.textContent.trim()).filter(t => t);""")
+        self.screenshot(5, 'example')
         ok = figures > 0 and not alerts
         return ok, 'switched to page 5 after %.1fs; %d figures; alerts %r' \
             % (time.time() - start, figures, alerts)
@@ -2100,6 +2138,8 @@ class BrowserCheck:
         print('BokehJS %s at %s, window %dx%d' % ((version, self.url)
                                                   + self.window), flush=True)
         self.run_check('screenshots_fresh', self.check_fresh_screenshots)
+        # first: it replaces the setup of the session, 'load' loads its own
+        self.run_check('load_example', self.check_load_example)
         after_load = [
             ('load_page1', self.check_load_page1),
             ('load_page1_error', self.check_load_page1_error),

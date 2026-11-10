@@ -31,8 +31,9 @@ from bokeh.plotting import figure
 
 from pypalc.core.errors import SetupError
 from pypalc.core.palc import clamp_fixed_angle, fixed_angle_borders
-from pypalc.core.settings import TargetPoint, load_setup_text
+from pypalc.core.settings import Setup, TargetPoint, load_setup_text
 from pypalc.core.target_slope import hinge_indices, snap_to_distance_grid
+from pypalc.examples import load_example
 from pypalc.gui import CALLBACK_ERRORS, skipped_while_applying_setup
 from pypalc.gui.downloads import (DOWNLOAD_COLUMNS, DOWNLOAD_FILE_NAMES,
                                   RESULTS_FILE_NAME, SETUP_FILE_NAME,
@@ -359,6 +360,9 @@ class AlgorithmPage:
         watch(app.pages[1].load_setup_input,
               lambda event: self.load_selected(
                   event.new, app.pages[1].load_setup_input), 'value')
+        on_click(app.pages[1].load_example_button,
+                 lambda event: self.load_example_selected(
+                     app.pages[1].example_select.value))
 
     def layout(self) -> pn.FlexBox:
         """Body of the page below the header.
@@ -915,14 +919,64 @@ class AlgorithmPage:
         -------
         None.
         """
-        app = self.app
-        try:
+        def read() -> Setup:
             try:
                 text = data.decode('utf-8')
             except ValueError as exc:  # UnicodeDecodeError
                 raise SetupError('file', 'not a UTF-8 text file') from exc
-            setup = load_setup_text(text)
-            apply_setup(app, setup)
+            return load_setup_text(text)
+        self._apply_setup_reporting(read)
+
+    def load_example_selected(self, name: str) -> None:
+        """Load the example ``name`` selected on page 1 ("Load Example")
+        with the running look (:meth:`run_later`); ignored while a
+        calculation runs.
+
+        Parameters
+        ----------
+        name : str
+            Name of the example (:func:`pypalc.examples.load_example`).
+
+        Returns
+        -------
+        None.
+        """
+        self.run_later(lambda: self.load_example(name))
+
+    def load_example(self, name: str) -> None:
+        """Load the example setup ``name`` like :meth:`load_setup` loads a
+        file: apply it, run the calculation and show page 5; an error is
+        shown in the same way.
+
+        Parameters
+        ----------
+        name : str
+            Name of the example.
+
+        Returns
+        -------
+        None.
+        """
+        self._apply_setup_reporting(lambda: load_example(name))
+
+    def _apply_setup_reporting(self, read: Callable[[], Setup]) -> None:
+        """Get a setup from ``read`` and apply it
+        (:func:`~.setup_io.apply_setup`); an error is shown in
+        :attr:`~.app.PalcApp.config_error_info` and changes nothing.
+
+        Parameters
+        ----------
+        read : callable
+            Returns the setup; raises :class:`~pypalc.core.errors.SetupError`
+            if it is invalid.
+
+        Returns
+        -------
+        None.
+        """
+        app = self.app
+        try:
+            apply_setup(app, read())
         except SetupError as exc:
             message = PATH_DIRECTIVITY_MESSAGE \
                 if exc.key == PATH_DIRECTIVITY_KEY else exc.message
