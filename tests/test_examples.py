@@ -12,8 +12,11 @@ CASES = Path(__file__).resolve().parent / "cases"
 
 
 def test_simple_is_listed():
-    assert [e.name for e in examples()] == ["simple"]
-    assert examples()[0].title == "Simple"
+    # the author adds further examples; only simple is known here
+    found = {e.name: e for e in examples()}
+    assert found["simple"].title == "Simple"
+    titles = [(e.title, e.name) for e in examples()]
+    assert titles == sorted(titles)
 
 
 @pytest.mark.parametrize("example", examples(), ids=lambda e: e.name)

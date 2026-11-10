@@ -21,6 +21,17 @@ def test_sphinx_build_without_warnings(tmp_path):
     assert (tmp_path / "index.html").is_file()
     assert (tmp_path / "api" / "generated" / "pypalc.core.pipeline.html").is_file()
     assert (tmp_path / "api" / "generated" / "pypalc.gui.app.html").is_file()
+    # the API pages document the members of the modules, not only their
+    # docstrings
+    generated = tmp_path / "api" / "generated"
+    for page, name in [
+            ("pypalc.core.pipeline", "pypalc.core.pipeline.run"),
+            ("pypalc.core.pipeline", "pypalc.core.pipeline.RunResult"),
+            ("pypalc.core.settings", "pypalc.core.settings.Setup"),
+            ("pypalc.examples", "pypalc.examples.load_example"),
+            ("pypalc.gui.app", "pypalc.gui.app.PalcApp")]:
+        html = (generated / (page + ".html")).read_text(encoding="utf-8")
+        assert 'id="%s"' % name in html, name
 
 
 def test_readthedocs_config():

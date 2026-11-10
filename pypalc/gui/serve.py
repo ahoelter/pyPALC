@@ -37,9 +37,12 @@ def serve(port: int = 5006, address: Optional[str] = None,
     port : int
         Port of the server.
     address : str, optional
-        Address to listen on (Panel's default: localhost).
+        Address to listen on. If None, the server listens on all network
+        interfaces; browsers on other hosts are still refused unless their
+        host is in ``allow_websocket_origin``.
     allow_websocket_origin : list of str, optional
-        Hosts that may open websocket connections to the app.
+        Hosts that may open websocket connections to the app. If None,
+        only ``localhost:<port>``.
     prefix : str, optional
         URL prefix of the app.
     show : bool

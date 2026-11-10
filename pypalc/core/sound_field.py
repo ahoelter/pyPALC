@@ -535,7 +535,7 @@ def beam_plot_spl(config, tilt_angles, ranges, frequency, measured_directivity_d
     """
     Calcuates the SPL values to map them on a mesh. This is called beamplot.
     Calls :any:`air_absorption_coefficient` and :any:`green_functions`. Called
-    by :any:`getBeamplotRes`. The maximum amount of points in the mesh is set
+    by ``getBeamplotRes``. The maximum amount of points in the mesh is set
     to 1000. If the app is run locally, the amount of points may be increased.
 
     Parameters
@@ -835,7 +835,7 @@ def initial_directivity_plot():
     """
     Initializes the directivity plot in bokeh ``pdir``. Avoids error message
     that no data is presend to plot. Calls :any:`frequency_vector`. Called by
-    :py:doc:`main`.
+    ``main``.
 
     Returns
     -------

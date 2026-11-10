@@ -6,6 +6,12 @@ Panel (Bokeh) only accepts from allowed hosts: `--allow-websocket-origin`
 must name the host that users type into their browser, the public name of
 the server, not the address the server listens on.
 
+Without `--address`, the server listens on all network interfaces of the
+computer; browsers on other hosts still get no app unless their host is
+allowed with `--allow-websocket-origin` (by default only
+`localhost:PORT`). `--address` restricts the interface, for example to
+`127.0.0.1` behind a reverse proxy.
+
 The configurations below are examples to adapt: replace the host names,
 ports, paths and the user with your own.
 
@@ -26,7 +32,9 @@ front of it.
 ## Behind Apache
 
 A reverse proxy forwards the requests of the browsers to the Panel server,
-which then only listens on the local address `127.0.0.1`. Apache needs
+which then only needs to listen on the local address
+(`--address 127.0.0.1`), so that its port cannot be reached from other
+computers. Apache needs
 the modules `mod_proxy`, `mod_proxy_http` and `mod_proxy_wstunnel` (on
 Debian and Ubuntu: `sudo a2enmod proxy proxy_http proxy_wstunnel`). The
 app's websocket is at the path `/pyPALC/ws` below the app's prefix; it

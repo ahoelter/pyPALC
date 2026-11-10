@@ -857,7 +857,7 @@ def fixed_angle_mid_max(last_segment, config):
     Calculates the average / mid and maximum tilt angle for the heighest LSA cabinet.
     When functionality of fixing the heighest LSA cabinet on a specific tilt
     angle, the borders of the maximum and minimum tilt angle can thus be found.
-    Called by :any:`use_fixed_angle`.
+    Called by ``use_fixed_angle``.
 
     Parameters
     ----------

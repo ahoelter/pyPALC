@@ -29,6 +29,8 @@ autosummary_generate = True
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False
 autodoc_member_order = "bysource"
+# document the functions and classes of every module, not only its docstring
+autodoc_default_options = {"members": True, "show-inheritance": True}
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),

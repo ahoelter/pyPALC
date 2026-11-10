@@ -44,7 +44,9 @@ def _parser() -> argparse.ArgumentParser:
     gui_parser.add_argument("--port", type=int, default=5006,
                             help="port of the server (default: 5006)")
     gui_parser.add_argument("--address", default=None,
-                            help="address to listen on (default: localhost)")
+                            help="address to listen on (default: all "
+                            "interfaces; browsers of other hosts are refused "
+                            "unless allowed with --allow-websocket-origin)")
     gui_parser.add_argument("--allow-websocket-origin", action="append",
                             help="host allowed to open websocket "
                             "connections (repeatable)")
