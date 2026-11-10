@@ -2,7 +2,9 @@
 import ast
 from pathlib import Path
 
-CORE = Path(__file__).resolve().parent.parent / "pypalc" / "core"
+PACKAGE = Path(__file__).resolve().parent.parent / "pypalc"
+CORE = PACKAGE / "core"
+EXAMPLES = PACKAGE / "examples"
 
 
 def _imported_modules(path):
@@ -16,7 +18,7 @@ def _imported_modules(path):
 
 
 def test_core_has_no_bokeh():
-    files = sorted(CORE.rglob("*.py"))
+    files = sorted(CORE.rglob("*.py")) + sorted(EXAMPLES.rglob("*.py"))
     assert files
     offending = [
         "%s imports %s" % (path.name, module)

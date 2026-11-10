@@ -64,3 +64,4 @@ include = ["pypalc*"]
 
 [tool.setuptools.package-data]
 "pypalc.gui" = ["static/*.png", "static/*.jpg", "static/*.pdf", "static/*.eps"]
+"pypalc.examples" = ["*.yaml", "*.yml", "*.csv"]

@@ -73,5 +73,6 @@ def test_wheel_contents(tmp_path):
     for name in _gui_pngs():
         assert f'pypalc/gui/static/{name}' in names
     assert 'pypalc/cli.py' in names
+    assert 'pypalc/examples/simple.yaml' in names
     for forbidden in ('tests/', 'tools/', 'docs/', 'main.py'):
         assert not [n for n in names if n.startswith(forbidden)]

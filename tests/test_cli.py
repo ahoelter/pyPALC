@@ -178,3 +178,12 @@ def test_cli_no_convergence_exit_code(tmp_path, capsys):
     assert capsys.readouterr().err == \
         "calculation error: No convergence reached\n"
     assert not (tmp_path / "o").exists()
+
+
+def test_examples_subcommand(tmp_path, capsys):
+    destination = tmp_path / "ex"
+    assert main(["examples", str(destination)]) == 0
+    assert (destination / "simple.yaml").is_file()
+    assert str(destination / "simple.yaml") in capsys.readouterr().out
+    assert main(["examples", str(destination)]) == cli.EXIT_OUTPUT
+    assert "already exists" in capsys.readouterr().err

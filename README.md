@@ -38,7 +38,7 @@ More info soon!
 | `pypalc/core/` | the calculation without Bokeh: settings and setup files, venue, PALC, sound field prediction, target slope, pipeline, CSV export |
 | `pypalc/gui/` | the GUI in Panel / panel-material-ui with Bokeh figures: `PalcApp` (page frame and switching, `app.py`), one module per page (the help texts in `help_text.py`, the sound field in `page_results.py`), plot ranges, the axis modes of the venue figure and the equal scaling of the beam plots (`ranges.py`), setup save/load, the files of the downloads (`downloads.py`), style, card and input building blocks (`widgets.py`) |
 | `pypalc/cli.py` | the headless runner (`python -m pypalc run ...`) |
-| `examples/` | example setup files |
+| `pypalc/examples/` | example setup files (`pypalc examples DIR` copies them) |
 | `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_reference.json` holds the application data of the former Bokeh GUI after each scripted GUI step (`tests/gui_steps.py`) |
 | `tools/` | development tools: browser check with screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
 | `pypalc/gui/static/` | logos |
@@ -115,11 +115,12 @@ on MUI, Bokeh and Tabulator class names).
 
 Run a setup file headless and write the results as CSV:
 
-`python -m pypalc run examples/simple.yaml --out results`
+`pypalc examples my_examples
+pypalc run my_examples/simple.yaml --out results`
 
 `--out` defaults to `./results`; it is created if missing and existing files
 are overwritten. A relative measured-directivity `path` in the setup file is
-resolved against the directory of the setup file. [`examples/simple.yaml`](examples/simple.yaml)
+resolved against the directory of the setup file. [`pypalc/examples/simple.yaml`](pypalc/examples/simple.yaml)
 is a small example setup. Exit codes: 0 ok, 2 invalid setup (or unreadable
 setup file), 3 venue error, 4 no convergence or calculation error, 5 output
 could not be written; messages go to stderr, with the cause of the error.

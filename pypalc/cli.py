@@ -1,4 +1,4 @@
-"""Command line interface: ``python -m pypalc run SETUP --out DIR``."""
+"""Command line interface: ``pypalc run SETUP`` and ``pypalc examples DIR``."""
 from __future__ import annotations
 
 import argparse
@@ -12,6 +12,7 @@ from .core.errors import (CalculationError, ConvergenceError, PalcError,
 from .core.export import write_results
 from .core.pipeline import run
 from .core.settings import load_setup
+from .examples import copy_examples
 
 EXIT_SETUP = 2
 EXIT_VENUE = 3
@@ -34,6 +35,9 @@ def _parser() -> argparse.ArgumentParser:
                             help="output directory (default: ./results)")
     run_parser.add_argument("--traceback", action="store_true",
                             help="print the full traceback of an error")
+    examples_parser = sub.add_parser(
+        "examples", help="copy the example setup files into a directory")
+    examples_parser.add_argument("directory", help="target directory")
     return parser
 
 
@@ -65,6 +69,19 @@ def _report(exc: BaseException, text: str, show_traceback: bool) -> None:
     print(text, file=sys.stderr)
 
 
+def _copy_examples(directory: str) -> int:
+    """Copy the examples to ``directory``; return the exit code."""
+    try:
+        paths = copy_examples(Path(directory))
+    except OSError as exc:
+        print("output error: cannot copy the examples to %s: %s"
+              % (directory, exc), file=sys.stderr)
+        return EXIT_OUTPUT
+    for path in paths:
+        print(path)
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Run the command line interface.
 
@@ -82,6 +99,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         (chained) traceback is printed too.
     """
     args = _parser().parse_args(argv)
+    if args.command == "examples":
+        return _copy_examples(args.directory)
     try:
         try:
             setup = load_setup(args.setup)
