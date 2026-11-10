@@ -151,5 +151,54 @@ names:
 
 ## Releasing
 
-*To be written: the release steps (version, changelog, tag, publishing to
-PyPI).*
+Releases are published to PyPI by the GitHub workflow
+`.github/workflows/publish.yml`, using Trusted Publishing: no password or
+token is stored anywhere. The workflow builds the package, runs
+`twine check` and, depending on how it was started, uploads to TestPyPI or
+PyPI.
+
+### One-time setup
+
+1. On [pypi.org](https://pypi.org/manage/account/publishing/), open
+   "Publishing" in your account settings and add a *pending publisher*
+   with these values: PyPI project name `pypalc`, owner `ahoelter`,
+   repository `pyPALC`, workflow name `publish.yml`, environment name
+   `pypi`.
+2. Do the same on [test.pypi.org](https://test.pypi.org/manage/account/publishing/)
+   (a separate account is needed there), with environment name `testpypi`.
+3. In the GitHub repository, open Settings, Environments, and create the
+   environment `testpypi`.
+4. Create the environment `pypi` as well. Optionally add yourself as a
+   required reviewer, so that every upload to PyPI has to be approved by
+   hand.
+
+The first successful upload turns each pending publisher into a normal
+trusted publisher and creates the project.
+
+### Each release
+
+1. Update `__version__` in `pypalc/__init__.py` and add the entry to
+   {doc}`changelog`.
+2. Run the tests and build the documentation.
+3. Merge the changes into `master`.
+4. In GitHub, open Actions, "Publish", "Run workflow" on `master`. This
+   uploads to TestPyPI (approve the `testpypi` environment if asked).
+5. Check the upload in a fresh environment:
+
+   ```bash
+   pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pypalc
+   ```
+
+6. Tag the release and push the tag (here for version 0.1.0):
+
+   ```bash
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+   The workflow first checks that the tag equals `v` plus `__version__`
+   (`tools/check_version_tag.py`), then uploads to PyPI (approve the `pypi`
+   environment if you added a reviewer).
+
+A version can be uploaded only once, so a faulty release is fixed by a new
+version number.
