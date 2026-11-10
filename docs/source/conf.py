@@ -22,6 +22,9 @@ extensions = [
     "myst_parser",
 ]
 
+# definition lists (term, then ": definition") in the Markdown pages
+myst_enable_extensions = ["deflist"]
+
 autosummary_generate = True
 napoleon_numpy_docstring = True
 napoleon_google_docstring = False

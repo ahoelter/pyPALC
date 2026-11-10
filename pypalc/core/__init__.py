@@ -2,7 +2,8 @@
 
 The code uses descriptive names. The table relates them to the symbols of
 the PALC papers (Straube et al. 2018, JAES 66(1/2); Hölter et al. 2021);
-``README.md`` lists the former names of the code.
+the Development page of the documentation lists the former names of the
+code.
 
 ==========================================  ===========  ======================================================================
 Name                                        Paper        Meaning
