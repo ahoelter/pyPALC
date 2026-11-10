@@ -4,9 +4,9 @@ The code uses descriptive names. The table relates them to the symbols of
 the PALC papers (Straube et al. 2018, JAES 66(1/2); Hölter et al. 2021);
 ``README.md`` lists the former names of the code.
 
-==========================================  ===========  =======================================
+==========================================  ===========  ======================================================================
 Name                                        Paper        Meaning
-==========================================  ===========  =======================================
+==========================================  ===========  ======================================================================
 :class:`~.venue.AudienceLines`                           drawn audience lines, discretized
 :class:`~.venue.PalcVenue`                               venue in the format of the PALC algorithm
 :class:`~.palc.PalcConfig`                               configuration of the PALC algorithm
@@ -31,21 +31,23 @@ Name                                        Paper        Meaning
 ``non_audience_lines``                                   suggested lines in gaps of the venue
 ``points_x``, ``points_y``                               discrete venue points in m
 ``line_end_indices``                                     index of the last point of each line
-``cabinet_centers_x``, ``cabinet_centers_y``             centers of the cabinets in m
-``hit_points``, ``hit_points_start``,                    points where the center, upper and lower
-``hit_points_stop``                                      ray of a cabinet hit the venue
+``cabinet_centers_x``                                    centers of the cabinets in m (x)
+``cabinet_centers_y``                                    centers of the cabinets in m (y)
+``hit_points``                                           points where the center ray of a cabinet hits the venue
+``hit_points_start``                                     points where the upper ray of a cabinet hits the venue
+``hit_points_stop``                                      points where the lower ray of a cabinet hits the venue
 ``spl_db``                                               sound pressure level in dB
 ``frequencies``                                          frequency bins in Hz
 ``homogeneity_db``                          H(f)         homogeneity in dB
-``homogeneity_low_db``,                                  reference lines of the homogeneity figure
-``homogeneity_high_db``
+``homogeneity_low_db``                                   lower reference line of the homogeneity figure
+``homogeneity_high_db``                                  upper reference line of the homogeneity figure
 ``spl_over_distance``                                    SPL over the distance from the array
-``evaluation``, ``evaluation_reference``                 :class:`~.sound_field.ArrayEvaluation` of the
-                                                         optimized and of the reference array
-``optimized_array``, ``reference_array``                 :class:`~.palc.ArrayGeometry` of the
-                                                         optimized and of the reference array
-``drawn_lines``, ``palc_venue``                          :class:`~.venue.AudienceLines` as drawn, and the
-                                                         :class:`~.venue.PalcVenue` made from them
+``evaluation``                                           :class:`~.sound_field.ArrayEvaluation` of the optimized array
+``evaluation_reference``                                 :class:`~.sound_field.ArrayEvaluation` of the reference array
+``optimized_array``                                      :class:`~.palc.ArrayGeometry` of the optimized array
+``reference_array``                                      :class:`~.palc.ArrayGeometry` of the reference array
+``drawn_lines``                                          :class:`~.venue.AudienceLines` as drawn
+``palc_venue``                                           :class:`~.venue.PalcVenue` made from the drawn lines
 ``weighting_nu``                            ν            parameter of linear and logarithmic weighting
-==========================================  ===========  =======================================
+==========================================  ===========  ======================================================================
 """

@@ -19,3 +19,4 @@ docs/_build/
 # macOS metadata
 .DS_Store
 ._*
+docs/source/api/generated/

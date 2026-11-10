@@ -48,7 +48,7 @@ class SoundFieldConfig(PalcConfig):
         
     def set_plot_directivity(self, H_post, plot_frequencies, measured=False):
         """
-        Calculates the amplitude of the directivity to plot in :any:`pdir`.
+        Calculates the amplitude of the directivity to plot in ``pdir``.
 
         Parameters
         ----------
@@ -833,7 +833,7 @@ def smooth_spectrum(frequencies, X_f, r_oct):
 
 def initial_directivity_plot():
     """
-    Initializes the directivity plot in bokeh :any:`pdir`. Avoids error message
+    Initializes the directivity plot in bokeh ``pdir``. Avoids error message
     that no data is presend to plot. Calls :any:`frequency_vector`. Called by
     :py:doc:`main`.
 

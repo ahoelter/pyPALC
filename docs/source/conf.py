@@ -1,85 +1,38 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import os
+"""Sphinx configuration of the pyPALC documentation."""
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
-sys.path.insert(0, os.path.abspath('../../fun/'))
+from pathlib import Path
 
+# repository root, so that ``pypalc`` is importable without installation
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-# -- Project information -----------------------------------------------------
+import pypalc  # noqa: E402
 
-project = 'pyPALC'
-copyright = '2021, Arne Hoelter'
-author = 'Arne Hoelter'
+project = "pyPALC"
+author = "Arne Hölter, Florian Straube"
+copyright = "2021-2026, Arne Hölter, Florian Straube"
+release = pypalc.__version__
+version = release
 
-
-# -- General configuration ---------------------------------------------------
-
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "myst_parser",
 ]
 
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+autosummary_generate = True
+napoleon_numpy_docstring = True
+napoleon_google_docstring = False
+autodoc_member_order = "bysource"
 
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
-
-
-# -- Options for HTML output -------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
-html_theme = 'classic'# 'sphinxdoc'
-
-html_theme_options = {
-        "footerbgcolor"    : "#323030",
-        "footertextcolor"  : "white",
-        "sidebarbgcolor"   : "#323030",
-        "sidebarbtncolor"  : "darkred",
-        "sidebartextcolor" : "white",
-        "sidebarlinkcolor" : "green",
-        "relbarbgcolor"    : "#323030",
-        "relbartextcolor"  : "white",
-        "relbarlinkcolor"  : "green",
-        "bgcolor"          : "#323030",
-        "textcolor"        : "white",
-        "linkcolor"        : "green",
-        "visitedlinkcolor" : "green",
-        "headbgcolor"      : "#323030",
-        "headtextcolor"    : "white",
-        "headlinkcolor"    : "green",
-        "codebgcolor"      : "darkgrey",
-        "codetextcolor"    : "lightblue",
-        "bodyfont"         : "Helvetica",
-        "headfont"         : "Helvetica",
-        "stickysidebar"    : "true",
-        "collapsiblesidebar" : "true",
-        "externalrefs"     : "true"
-
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
 }
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+exclude_patterns = ["_build"]
+
+html_theme = "furo"
+html_title = f"pyPALC {release}"
