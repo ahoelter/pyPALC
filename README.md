@@ -41,7 +41,7 @@ More info soon!
 | `examples/` | example setup files |
 | `tests/` | the tests; `tests/cases/*.yaml` are setup files whose results recorded from the original code are in `tests/baseline/*.npz`, and `tests/gui_reference.json` holds the application data of the former Bokeh GUI after each scripted GUI step (`tests/gui_steps.py`) |
 | `tools/` | development tools: browser check with screenshots, comparison of screenshots and of GUI states (see "Browser tools") |
-| `static/` | logos |
+| `pypalc/gui/static/` | logos |
 
 ### Running the tests
 

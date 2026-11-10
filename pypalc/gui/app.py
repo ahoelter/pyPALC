@@ -56,7 +56,8 @@ from pypalc.core.sound_field import SoundFieldConfig
 from pypalc.core.target_slope import TargetSlopeState
 from pypalc.core.venue import (AudienceLines, PalcVenue,
                                fill_palc_venue, suggest_venue)
-from pypalc.gui import APP_DIR, CALLBACK_ERRORS, skipped_while_applying_setup
+from pypalc.gui import (CALLBACK_ERRORS, STATIC_DIR,
+                        skipped_while_applying_setup)
 from pypalc.gui.help_text import HelpPage
 from pypalc.gui.page_algorithm import AlgorithmPage
 from pypalc.gui.page_array import ArrayPage
@@ -185,8 +186,8 @@ LATER_DELAY_MS = 120
 
 
 def _data_uri(name: str) -> str:
-    """A PNG of the app's ``static`` folder as a data URI."""
-    data = (APP_DIR / 'static' / name).read_bytes()
+    """A PNG of the package's ``static`` folder as a data URI."""
+    data = (STATIC_DIR / name).read_bytes()
     return 'data:image/png;base64,' + base64.b64encode(data).decode('ascii')
 
 

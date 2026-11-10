@@ -7,8 +7,8 @@ from pathlib import Path
 
 from pypalc.core.errors import PalcError
 
-#: Directory of the app (the one with ``main.py``).
-APP_DIR = Path(__file__).resolve().parents[2]
+#: Directory of the logos (inside the package).
+STATIC_DIR = Path(__file__).resolve().parent / 'static'
 
 #: Exceptions a GUI callback catches to show an error text instead of
 #: failing: the errors of :mod:`pypalc.core` and those the legacy

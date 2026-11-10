@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypalc"
+dynamic = ["version"]
+description = "Optimization of line source arrays (PALC) with a calculation core, a command line runner and a browser GUI"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Arne Hölter"},
+    {name = "Florian Straube"},
+]
+requires-python = ">=3.12"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+gui = [
+    "panel>=1.10",
+    "panel-material-ui>=0.16.6",
+    "bokeh>=3.10",
+    "pandas",
+    "colorcet",
+    "param",
+]
+docs = [
+    "sphinx>=8",
+    "furo",
+    "myst-parser>=4",
+]
+test = [
+    "pytest>=8",
+]
+dev = [
+    "build",
+    "twine",
+]
+
+[project.scripts]
+pypalc = "pypalc.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ahoelter/pyPALC"
+Documentation = "https://pypalc.readthedocs.io"
+
+[tool.setuptools.dynamic]
+version = {attr = "pypalc.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["pypalc*"]
+
+[tool.setuptools.package-data]
+"pypalc.gui" = ["static/*.png", "static/*.jpg", "static/*.pdf", "static/*.eps"]
