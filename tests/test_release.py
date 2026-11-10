@@ -20,14 +20,23 @@ def _run_check(tag):
     )
 
 
+def _version():
+    spec = importlib.util.spec_from_file_location("check_version_tag", CHECK)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.read_version()
+
+
 def test_matching_tag_passes():
-    assert _run_check("v0.1.0").returncode == 0
+    assert _run_check("v" + _version()).returncode == 0
 
 
 def test_mismatching_tag_fails_and_prints_both():
-    result = _run_check("v0.1.1")
+    good = "v" + _version()
+    bad = good + ".post1"
+    result = _run_check(bad)
     assert result.returncode == 1
-    assert "v0.1.1" in result.stdout and "v0.1.0" in result.stdout
+    assert bad in result.stdout and good in result.stdout
 
 
 @pytest.fixture(scope="module")
@@ -50,6 +59,21 @@ def test_publish_jobs(workflow, job, environment):
     assert spec["permissions"] == {"id-token": "write"}
     uses = [s.get("uses", "") for s in spec["steps"]]
     assert any(u.startswith("pypa/gh-action-pypi-publish@") for u in uses)
+
+
+def test_publish_job_conditions_and_artifact(workflow):
+    jobs = workflow["jobs"]
+    assert jobs["publish-testpypi"]["if"] == "github.event_name == 'workflow_dispatch'"
+    assert jobs["publish-pypi"]["if"] == (
+        "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')"
+    )
+    for name in ("publish-testpypi", "publish-pypi"):
+        assert jobs[name]["needs"] == "build"
+        downloads = [
+            s for s in jobs[name]["steps"]
+            if s.get("uses", "").startswith("actions/download-artifact@")
+        ]
+        assert [d["with"]["name"] for d in downloads] == ["dist"]
 
 
 def test_testpypi_uses_test_repository_url(workflow):
