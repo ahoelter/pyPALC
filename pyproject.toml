@@ -25,10 +25,6 @@ dependencies = [
     "numpy>=2.0",
     "scipy>=1.13",
     "pyyaml>=6.0",
-]
-
-[project.optional-dependencies]
-gui = [
     "panel>=1.10",
     "panel-material-ui>=0.16.6",
     "bokeh>=3.10",
@@ -36,6 +32,8 @@ gui = [
     "colorcet",
     "param",
 ]
+
+[project.optional-dependencies]
 docs = [
     "sphinx>=8",
     "furo",
@@ -51,6 +49,7 @@ dev = [
 
 [project.scripts]
 pypalc = "pypalc.cli:main"
+pypalc_gui = "pypalc.cli:gui_main"
 
 [project.urls]
 Homepage = "https://github.com/ahoelter/pyPALC"

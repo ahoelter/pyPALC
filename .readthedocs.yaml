@@ -10,7 +10,6 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - gui
         - docs
 
 sphinx:

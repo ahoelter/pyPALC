@@ -186,10 +186,10 @@ trusted publisher and creates the project.
 5. Check the upload in a fresh environment:
 
    ```bash
-   pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ "pypalc[gui]"
+   pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pypalc
    ```
 
-   Then start `pypalc gui`, load an example on page 1, and run
+   Then start `pypalc gui` (and try `pypalc_gui --help`), load an example on page 1, and run
    `pypalc examples my_examples` followed by
    `pypalc run my_examples/simple.yaml`.
 

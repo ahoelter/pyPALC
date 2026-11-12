@@ -6,7 +6,7 @@ Installing pyPALC adds the command `pypalc` with three subcommands:
 |---|---|
 | `pypalc run SETUP --out DIR` | computes a setup file and writes the results as CSV files |
 | `pypalc examples DIR` | copies the example setup files into a folder |
-| `pypalc gui` | serves the GUI and opens it in the browser (see {doc}`gui`) |
+| `pypalc gui` | serves the GUI and opens it in the browser (see {doc}`gui`); `pypalc_gui` is the same command in one word, with the same options |
 
 `python -m pypalc ...` is the same as `pypalc ...`, for example
 `python -m pypalc run setup.yaml`. `pypalc --help` and
@@ -194,7 +194,7 @@ a file cannot be read), it is appended as `(caused by ...)`. With
 | 3 | the venue cannot be built from the audience lines (message `venue error: ...`) |
 | 4 | PALC did not converge or the calculation failed (message `calculation error: ...`) |
 | 5 | the results (or, for `pypalc examples`, the examples) cannot be written (message `output error: ...`) |
-| 6 | `pypalc gui` cannot start: without the GUI dependencies (install them with `pip install "pypalc[gui]"`) or for another import error, whose text is printed (message `pypalc gui could not start: ...`) |
+| 6 | `pypalc gui` (or `pypalc_gui`) cannot start: a package of the GUI is missing (the installation is incomplete; reinstall with `pip install --force-reinstall pypalc`) or another import error occurred, whose text is printed (message `pypalc gui could not start: ...`) |
 
 If PALC does not converge, a smaller `loudspeaker.aperture_angle_deg` or a
 larger `algorithm.tolerance` usually helps (see {doc}`setup-file`).

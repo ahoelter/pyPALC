@@ -16,9 +16,11 @@ in the documentation and on the Help page of the GUI.
 pyPALC needs Python 3.12 or newer.
 
 ```console
-pip install pypalc            # the calculation and the command line runner
-pip install "pypalc[gui]"     # with the GUI
+pip install pypalc
 ```
+
+This installs the calculation, the command line runner (`pypalc`) and the
+GUI (`pypalc gui` or `pypalc_gui`).
 
 To work on pyPALC, clone the repository and install the pinned
 dependencies of `requirements.txt` (conda) or `requirements_pip.txt` (pip);
@@ -31,9 +33,9 @@ and [Development](https://pypalc.readthedocs.io/en/latest/development.html).
 pypalc gui
 ```
 
-opens the app at `http://localhost:5006/pyPALC` (options `--port`,
+(or `pypalc_gui`, which takes the same options) opens the app at `http://localhost:5006/pyPALC` (options `--port`,
 `--address`, `--allow-websocket-origin`, `--prefix`, `--no-show`). From a
-checkout, without installing, run `panel serve pyPALC --show` from the
+checkout, without installing pyPALC, run `panel serve pyPALC --show` from the
 folder that contains the `pyPALC` folder.
 
 ## Run a setup file without the GUI

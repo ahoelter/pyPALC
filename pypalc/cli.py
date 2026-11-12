@@ -24,10 +24,30 @@ EXIT_GUI = 6
 #: Prefix of the core's error texts, which the GUI shows as they are.
 _GUI_PREFIX = "Error: "
 
-#: Top-level packages of the ``gui`` extra; only their absence is reported
-#: as "install pypalc[gui]".
+#: Top-level packages of the GUI; only their absence is reported as an
+#: incomplete installation.
 _GUI_PACKAGES = {"panel", "bokeh", "panel_material_ui", "pandas",
                  "colorcet", "param"}
+
+
+def _add_gui_options(gui_parser: argparse.ArgumentParser) -> None:
+    """Add the options of the GUI server (``pypalc gui``, ``pypalc_gui``)."""
+    gui_parser.add_argument("--port", type=int, default=5006,
+                            help="port of the server (default: 5006)")
+    gui_parser.add_argument("--address", default=None,
+                            help="address to listen on (default: all "
+                            "interfaces; browsers of other hosts are refused "
+                            "unless allowed with --allow-websocket-origin)")
+    gui_parser.add_argument("--allow-websocket-origin", action="append",
+                            metavar="HOST[:PORT]",
+                            help="host allowed to open websocket "
+                            "connections (repeatable; without it only "
+                            "localhost:PORT is allowed)")
+    gui_parser.add_argument("--prefix", default=None,
+                            help="URL prefix of the app")
+    gui_parser.add_argument("--show", action=argparse.BooleanOptionalAction,
+                            default=True,
+                            help="open the app in a browser (default: yes)")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -47,22 +67,7 @@ def _parser() -> argparse.ArgumentParser:
         "examples", help="copy the example setup files into a directory")
     examples_parser.add_argument("directory", help="target directory")
     gui_parser = sub.add_parser("gui", help="serve the GUI in the browser")
-    gui_parser.add_argument("--port", type=int, default=5006,
-                            help="port of the server (default: 5006)")
-    gui_parser.add_argument("--address", default=None,
-                            help="address to listen on (default: all "
-                            "interfaces; browsers of other hosts are refused "
-                            "unless allowed with --allow-websocket-origin)")
-    gui_parser.add_argument("--allow-websocket-origin", action="append",
-                            metavar="HOST[:PORT]",
-                            help="host allowed to open websocket "
-                            "connections (repeatable; without it only "
-                            "localhost:PORT is allowed)")
-    gui_parser.add_argument("--prefix", default=None,
-                            help="URL prefix of the app")
-    gui_parser.add_argument("--show", action=argparse.BooleanOptionalAction,
-                            default=True,
-                            help="open the app in a browser (default: yes)")
+    _add_gui_options(gui_parser)
     return parser
 
 
@@ -114,8 +119,10 @@ def _gui(args: argparse.Namespace) -> int:
     except ImportError as exc:
         missing = (exc.name or "").split(".")[0]
         if isinstance(exc, ModuleNotFoundError) and missing in _GUI_PACKAGES:
-            print('pypalc gui needs the GUI dependencies: '
-                  'pip install "pypalc[gui]"', file=sys.stderr)
+            print("pypalc gui cannot start: the installation is incomplete "
+                  "(%s is missing). Reinstall pyPALC: pip install "
+                  "--force-reinstall pypalc (or pip install -e . in a "
+                  "clone)." % missing, file=sys.stderr)
         else:
             print("pypalc gui could not start: %s" % exc, file=sys.stderr)
         return EXIT_GUI
@@ -138,9 +145,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     int
         Exit code: 0 ok, 2 invalid setup, 3 venue error, 4 no convergence
         or calculation error, 5 output could not be written, 6 the GUI
-        dependencies are missing or the GUI cannot start (``pypalc gui``). An error is
-        printed to stderr with its cause; with ``--traceback`` the full
-        (chained) traceback is printed too.
+        cannot start (``pypalc gui``): its packages are missing or it
+        fails to import. An error is printed to stderr with its cause;
+        with ``--traceback`` the full (chained) traceback is printed too.
     """
     args = _parser().parse_args(argv)
     if args.command == "examples":
@@ -174,3 +181,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     for path in paths:
         print(path)
     return 0
+
+
+def gui_main(argv: Optional[List[str]] = None) -> int:
+    """Run the ``pypalc_gui`` command: the same as ``pypalc gui``.
+
+    Parameters
+    ----------
+    argv : list of str, optional
+        The options of ``pypalc gui`` (``--port``, ``--address``,
+        ``--allow-websocket-origin``, ``--prefix``, ``--show``/``--no-show``);
+        defaults to ``sys.argv[1:]``.
+
+    Returns
+    -------
+    int
+        Exit code: 0 ok, 6 the GUI cannot start.
+    """
+    parser = argparse.ArgumentParser(
+        prog="pypalc_gui", description="Serve the pyPALC GUI in the browser "
+        "(the same as 'pypalc gui').")
+    _add_gui_options(parser)
+    return _gui(parser.parse_args(argv))

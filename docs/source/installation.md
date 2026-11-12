@@ -4,23 +4,16 @@ pyPALC needs Python 3.12 or newer.
 
 ## From PyPI
 
-The calculation and the command line runner, with numpy, scipy and PyYAML
-as their only dependencies:
-
 ```console
 pip install pypalc
 ```
 
-With the GUI (Panel, panel-material-ui, Bokeh and the other packages the
-GUI imports):
-
-```console
-pip install "pypalc[gui]"
-```
-
-The quotes keep the shell from reading the brackets. Check the
-installation with `pypalc --help`; `pypalc gui` starts the GUI (see
-{doc}`gui`).
+installs the calculation, the command line runner and the GUI, with numpy,
+scipy, PyYAML, Panel, panel-material-ui, Bokeh and the other packages they
+need. Check the installation with `pypalc --help`. The commands are
+`pypalc run`, `pypalc examples` and `pypalc gui`; `pypalc_gui` is a
+one-word command that does the same as `pypalc gui` and takes the same
+options (see {doc}`gui`).
 
 Further extras: `docs` (Sphinx, Furo and MyST-Parser, to build this
 documentation), `test` (pytest) and `dev` (build and twine, to build and
@@ -57,16 +50,18 @@ as in `requirements.txt`):
 pip install -r requirements_pip.txt
 ```
 
-Then install pyPALC itself in editable mode, which adds the `pypalc`
-command and keeps the package pointing at the checkout:
+Then install pyPALC itself in editable mode, once, in the conda or pip
+environment. This adds the commands `pypalc`, `pypalc gui` and `pypalc_gui`,
+which then work from any folder while the environment is active, and keeps
+the package pointing at the checkout:
 
 ```console
 pip install -e .
 ```
 
-A checkout also runs the GUI without installing it:
-`panel serve pyPALC --show`, from the folder that contains the `pyPALC`
-folder (see {doc}`gui`).
+A checkout also runs the GUI without this step: `panel serve pyPALC --show`,
+from the folder that contains the `pyPALC` folder, keeps working without
+installing pyPALC (see {doc}`gui`).
 
 ## Packages in `~/.local`
 

@@ -9,18 +9,24 @@ code, for people who adapt the app.
 
 ## Start it
 
-With the GUI dependencies installed (`pip install "pypalc[gui]"`):
+With pyPALC installed (`pip install pypalc`, see {doc}`installation`):
 
 ```console
 pypalc gui
 ```
 
 starts the server and opens `http://localhost:5006/pyPALC` in the browser.
-The server runs until it is stopped with Ctrl+C. Without the GUI
-dependencies the command prints how to install them and ends with exit
-code 6.
+The server runs until it is stopped with Ctrl+C. The one-word command
+`pypalc_gui` does exactly the same and takes the same options. If a
+package of the GUI is missing, the command prints that the installation
+is incomplete and how to reinstall pyPALC, and ends with exit code 6.
 
-Options:
+In a cloned repository, `pip install -e .` once in the conda or pip
+environment makes `pypalc`, `pypalc gui` and `pypalc_gui` available from
+any folder; `panel serve pyPALC --show` (see below) keeps working without
+it.
+
+Options (for `pypalc gui` and `pypalc_gui`):
 
 `--port PORT`
 : Port of the server, default 5006.

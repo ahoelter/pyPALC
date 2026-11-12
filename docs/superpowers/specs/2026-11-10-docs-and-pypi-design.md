@@ -223,3 +223,14 @@ documented too, for people adapting the app.
 * Where the GUI entry lives inside the package and how `pypalc gui` calls
   Panel (`pn.serve` with a per-session function, or Panel's serve command).
 * Upper bounds on dependencies where justified.
+
+## Change of 2026-11-12: one package
+
+The author decided that `pip install pypalc` installs the calculation and
+the GUI; the `gui` extra is removed (nothing is released yet, so there is
+no alias). The GUI packages (`panel`, `panel-material-ui`, `bokeh`,
+`pandas`, `colorcet`, `param`) are normal dependencies, Read the Docs
+installs only the `docs` extra, and a second command `pypalc_gui` does
+what `pypalc gui` does. `pypalc.core` and `pypalc.examples` still never
+import Panel or Bokeh. Goals 1 and 2 and the dependency list above are
+superseded by this note.

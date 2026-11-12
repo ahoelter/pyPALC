@@ -17,9 +17,9 @@ ports, paths and the user with your own.
 
 ## Directly
 
-Install pyPALC with the GUI on the server (for example in a virtual
+Install pyPALC on the server (for example in a virtual
 environment, `python3 -m venv /opt/pypalc/venv` and
-`/opt/pypalc/venv/bin/pip install "pypalc[gui]"`) and start it:
+`/opt/pypalc/venv/bin/pip install pypalc`) and start it:
 
 ```console
 pypalc gui --address 0.0.0.0 --port 5006 --allow-websocket-origin pypalc.example.org:5006 --no-show

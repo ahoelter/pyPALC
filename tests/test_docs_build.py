@@ -40,6 +40,6 @@ def test_readthedocs_config():
     assert config["build"]["os"] == "ubuntu-24.04"
     assert config["build"]["tools"]["python"] == "3.12"
     assert config["python"]["install"] == [
-        {"method": "pip", "path": ".", "extra_requirements": ["gui", "docs"]}]
+        {"method": "pip", "path": ".", "extra_requirements": ["docs"]}]
     assert config["sphinx"]["configuration"] == "docs/source/conf.py"
     assert config["sphinx"]["fail_on_warning"] is True

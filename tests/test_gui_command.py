@@ -48,11 +48,46 @@ def test_serve_arguments(monkeypatch):
     assert not {"address", "websocket_origin", "prefix"} & set(kwargs)
 
 
+_GUI_OPTIONS = ["--port", "5010", "--address", "0.0.0.0",
+                "--allow-websocket-origin", "a.org",
+                "--allow-websocket-origin", "b.org",
+                "--prefix", "pypalc", "--no-show"]
+
+
+def test_gui_main_serves_like_gui_command(monkeypatch):
+    import panel
+    calls = []
+    monkeypatch.setattr(
+        panel, "serve", lambda *args, **kwargs: calls.append((args, kwargs)))
+    assert cli.main(["gui"] + _GUI_OPTIONS) == 0
+    assert cli.gui_main(_GUI_OPTIONS) == 0
+    assert cli.main(["gui"]) == 0
+    assert cli.gui_main([]) == 0
+    assert len(calls) == 4
+    assert calls[0] == calls[1]
+    assert calls[2] == calls[3]
+    assert calls[1][1]["port"] == 5010
+
+
+def test_gui_main_help(capsys):
+    with pytest.raises(SystemExit) as info:
+        cli.gui_main(["--help"])
+    assert info.value.code == 0
+    out = capsys.readouterr().out
+    assert "usage: pypalc_gui" in out
+    for option in ("--port", "--address", "--allow-websocket-origin",
+                   "--prefix", "--show"):
+        assert option in out
+
+
 def test_gui_without_panel(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "panel", None)
     monkeypatch.delitem(sys.modules, "pypalc.gui.serve", raising=False)
     assert cli.main(["gui"]) == 6
-    assert 'pip install "pypalc[gui]"' in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "installation is incomplete" in err
+    assert "pip install --force-reinstall pypalc" in err
+    assert "pypalc[gui]" not in err
 
 
 def test_gui_other_import_error_is_shown(monkeypatch, capsys):

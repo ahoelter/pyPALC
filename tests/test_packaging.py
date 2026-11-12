@@ -40,14 +40,18 @@ def test_version():
 
 
 def test_console_script():
-    assert _pyproject()['project']['scripts']['pypalc'] == 'pypalc.cli:main'
+    scripts = _pyproject()['project']['scripts']
+    assert scripts['pypalc'] == 'pypalc.cli:main'
+    assert scripts['pypalc_gui'] == 'pypalc.cli:gui_main'
 
 
-def test_core_dependencies():
+def test_dependencies():
     project = _pyproject()['project']
-    assert _names(project['dependencies']) == {'numpy', 'scipy', 'pyyaml'}
-    assert {'panel', 'panel-material-ui', 'bokeh'} <= _names(
-        project['optional-dependencies']['gui'])
+    assert _names(project['dependencies']) == {
+        'numpy', 'scipy', 'pyyaml', 'panel', 'panel-material-ui', 'bokeh',
+        'pandas', 'colorcet', 'param'}
+    assert 'gui' not in project['optional-dependencies']
+    assert {'docs', 'test', 'dev'} <= set(project['optional-dependencies'])
 
 
 def test_static_inside_package():

@@ -22,7 +22,7 @@ pyPALC
   audience positions, the level over distance, the homogeneity over
   frequency and the level in the vertical radiation plane (beam plots).
 
-The calculation (`pypalc.core`) has no GUI dependencies. It is used by the
+The calculation (`pypalc.core`) does not import the GUI packages. It is used by the
 command line runner (`pypalc run`, see {doc}`command-line`), by your own
 scripts (see {doc}`tutorial`) and by the GUI (`pypalc gui`, see
 {doc}`gui`); all three compute a setup in the same way and give the same
