@@ -112,7 +112,7 @@ def test_running_look_during_load(monkeypatch):
     # the click on "PALC Run" during the load started no calculation
     assert looks == [(RUNNING_LABEL, RUNNING)]
     assert read(app.config_error_info, 'text') == ''
-    assert read(app.page_select, 'active') == 5
+    assert read(app.page_select, 'active') == 4
     _assert_idle(app)
 
 

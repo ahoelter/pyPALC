@@ -5,10 +5,9 @@ exactly as a user leaves it who enters the setup by hand, page by page, and
 clicks "PALC Run" (the hand path of ``tests/test_gui_equivalence.py``,
 clicked on page 4). Compared are all widgets, sources and figures of the
 pages (:func:`state_of`) and the values the PALC configuration stores, for
-every baseline case. Three differences are accepted (:data:`NOT_COMPARED`),
+every baseline case. Two differences are accepted (:data:`NOT_COMPARED`),
 and the start-up nesting of the reference table is removed:
 
-* ``app.page_select.active``: load switches to page 5 (the results).
 * ``2.directivity_upload.value``: a browser file input cannot be filled by
   the server, so after a load the directivity upload shows no file. The
   data is restored in the session (``state.measured_directivity_csv``).
@@ -63,8 +62,7 @@ from tools.record_gui_reference import compact, norm
 ROOT = Path(__file__).resolve().parent.parent
 TARGET_SLOPE_CASES = ("target_slope", "gap_soft_margin_target_slope")
 #: Values that differ on purpose between load and the hand path.
-NOT_COMPARED = ("app.page_select.active", "2.directivity_upload.value",
-                "4.load_setup_input.value")
+NOT_COMPARED = ("2.directivity_upload.value", "4.load_setup_input.value")
 PATH_KEY = "loudspeaker.measured_directivity.path"
 #: Compared properties (Bokeh-era names, read through
 #: ``tests/gui_driver.py``): those of the GUI reference and the titles,
@@ -108,8 +106,7 @@ def load(app, text):
 def models_of(app):
     """Bokeh models and Panel objects of the app and its pages:
     name -> model. Private attributes (layouts built when a page is first
-    shown, such as ``_layout``) are left out: they hold no state, and the
-    load shows page 5, the hand path does not."""
+    shown, such as ``_layout``) are left out: they hold no state."""
     owners = [("app", app)] + [(str(i), p) for i, p in app.pages.items()]
     return {"%s.%s" % (owner, name): value
             for owner, obj in owners for name, value in vars(obj).items()
@@ -214,10 +211,10 @@ def loaded(case):
 
 
 @pytest.mark.parametrize("case", CASES)
-def test_load_shows_results(case):
+def test_load_shows_algorithm_page(case):
     app = loaded(case)
     assert app.config_error_info.object == ''
-    assert app.page_select.active == 5
+    assert app.page_select.active == 4
     assert app.state.result is not None
     assert app.pages[4].start_toggle.value is False
     assert app.state.applying_setup is False

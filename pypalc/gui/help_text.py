@@ -38,7 +38,7 @@ _GENERAL = (
      'header lead through an optimization; its steps are numbered 1 to '
      '34. '
      '<b>Load Setup</b> on page <b>1 · Venue</b> or <b>4 · Algorithm</b> '
-     'restores a saved setup, runs it and shows <b>5 · Sound Field</b>; '
+     'restores a saved setup, runs it and shows <b>4 · Algorithm</b>; '
      '<b>Load Example</b> on page <b>1 · Venue</b> does the same with one '
      'of the example setups.'),
     ('Based on the following publications:',

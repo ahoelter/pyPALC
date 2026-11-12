@@ -234,3 +234,11 @@ installs only the `docs` extra, and a second command `pypalc_gui` does
 what `pypalc gui` does. `pypalc.core` and `pypalc.examples` still never
 import Panel or Bokeh. Goals 1 and 2 and the dependency list above are
 superseded by this note.
+
+## Change of 2026-11-12: a load shows page 4
+
+The author prefers that loading a setup ("Load Setup" on pages 1 and 4,
+"Load Example" on page 1) shows page 4, 4 · Algorithm, instead of page 5.
+The calculation still runs and the results are on page 5; an error stays
+where it is shown. Where this spec says that an example "shows page 5", it
+is superseded by this note.

@@ -207,7 +207,7 @@ class VenuePage:
                 'Setup file',
                 caption('Load a saved setup file or one of the examples. '
                         'It restores all pages, runs the calculation and '
-                        'shows 5 · Sound Field.'),
+                        'shows 4 · Algorithm.'),
                 self.load_setup_input, self.example_select,
                 self.load_example_button, self.app.config_error_info)
             figure_card = card(

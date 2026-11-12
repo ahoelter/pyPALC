@@ -52,7 +52,7 @@ def test_every_example_loads_on_page_1(example):
     app = PalcApp(Document())
     app.pages[1].example_select.value = example.name
     _click(app)
-    assert read(app.page_select, 'active') == 5
+    assert read(app.page_select, 'active') == 4
     assert read(app.config_error_info, 'text') == ''
     assert angles_csv(app.pages[4]) == angles_csv(via4.pages[4])
     assert angles_csv(app.pages[4])
@@ -69,7 +69,7 @@ def test_example_with_data_file_loads(tmp_path, monkeypatch):
     venue.example_select.value = 'measured'
     _click(app)
     assert read(app.config_error_info, 'text') == ''
-    assert read(app.page_select, 'active') == 5
+    assert read(app.page_select, 'active') == 4
     assert app.pages[2].directivity_select.value == 'Measured Loudspeaker Data'
 
 

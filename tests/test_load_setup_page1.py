@@ -49,7 +49,7 @@ def test_load_through_page_1_equals_page_4():
     _load(via4.pages[4].load_setup_input, _text())
     via1 = PalcApp(Document())
     _load(via1.pages[1].load_setup_input, _text())
-    assert read(via1.page_select, 'active') == 5
+    assert read(via1.page_select, 'active') == 4
     assert read(via1.config_error_info, 'text') == ''
     assert _angles(via1) == _angles(via4) and _angles(via1)
     assert via1.pages[4].running is False

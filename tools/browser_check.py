@@ -85,9 +85,10 @@ WIDE_HEIGHT = 1080
 PAGE_NAMES = ['%d_%s' % (index, '_'.join(re.findall(r'[a-z]+',
                                                      label.lower())))
               for index, label in enumerate(PAGE_LABELS)]
-#: Order of the screenshots after loading: page 5 and 4 come first (load
-#: check), page 1 last, because showing page 1 removes the rays.
-LOADED_ORDER = [5, 4, 3, 2, 0, 1]
+#: Order of the screenshots after loading: page 4 (the page a load shows)
+#: and 5 come first (load check), page 1 last, because showing page 1
+#: removes the rays.
+LOADED_ORDER = [4, 5, 3, 2, 0, 1]
 #: Labels of the buttons the checks click.
 DOWNLOAD_ANGLES_LABEL = 'Download PALC Angles'
 DOWNLOAD_RESULTS_LABEL = 'Download Results'
@@ -1018,9 +1019,9 @@ class BrowserCheck:
 
         Gives the file input the setup file, as a user does by choosing it,
         and records the look of "PALC Run" while the setup loads. The app
-        must switch to page 5; page 4 must then show the gap handling, the
+        must stay on page 4, which must then show the gap handling, the
         weighting and the number of hinges of the setup and "PALC Run"
-        ready again.
+        ready again; page 5 must then show figures.
 
         Returns
         -------
@@ -1042,34 +1043,49 @@ class BrowserCheck:
         start = time.time()
         inputs[0].send_keys(str(self.setup))
         end = start + self.timeout
-        while self.active_page() != 5:
+        while True:
             look = self.run_look()
             if look is not None:
                 self.load_looks.append((look['label'], look['background']))
+                # page 4 is shown before the load, so the end of the load
+                # is "PALC Run" ready again after it was seen running
+                if (look['label'] == RUN_LABEL and not look['disabled']
+                        and len(self.load_looks) > 1
+                        and any(label != RUN_LABEL
+                                for label, _ in self.load_looks)):
+                    break
             if time.time() > end:
                 alerts = self.js("""return deep('.MuiAlert-message').map(
                     e => e.textContent.trim()).filter(t => t);""")
-                return False, 'app did not switch to page 5 within %ds; ' \
+                return False, 'load did not finish within %ds; ' \
                     'page %s; alerts %r' % (self.timeout, self.active_page(),
                                             alerts)
             time.sleep(0.05)
         self.wait_settled()
         seconds = time.time() - start
-        self.screenshot(5, 'loaded')
-        self.show_page(4)
+        problems = []
+        if self.active_page() != 4:
+            problems.append('page %s shown after the load, expected 4'
+                            % self.active_page())
+        self.screenshot(4, 'loaded')
         shown = self.js('return fields();')
         look = self.run_look()
-        problems = []
         for key, value in expected.items():
             if shown.get(key) != value:
                 problems.append('%s: shows %r, expected %r'
                                 % (key, shown.get(key), value))
         if not look or look['label'] != RUN_LABEL or look['disabled']:
             problems.append('"PALC Run" not ready: %r' % look)
-        self.screenshot(4, 'loaded')
-        detail = 'switched to page 5 after %.1fs; page 4 shows %s; ' \
-            '"PALC Run" %r' % (seconds, ', '.join(
-                '%s=%r' % (k, shown.get(k)) for k in expected), look)
+        self.show_page(5)
+        self.wait_settled()
+        figures = self.js("return figureViews().length;")
+        if not figures:
+            problems.append('page 5 shows no figures')
+        self.screenshot(5, 'loaded')
+        detail = 'stayed on page 4 after %.1fs; page 4 shows %s; ' \
+            '"PALC Run" %r; %d figures on page 5' % (seconds, ', '.join(
+                '%s=%r' % (k, shown.get(k)) for k in expected), look,
+                figures)
         if problems:
             detail += '; ' + '; '.join(problems)
         return not problems, detail
@@ -1083,7 +1099,7 @@ class BrowserCheck:
 
     def check_load_page1(self) -> tuple:
         """Load the setup again through the "Load Setup" input of
-        page 1: the app must switch to page 5, which shows results.
+        page 1: the app must switch to page 4; page 5 must show results.
 
         Returns
         -------
@@ -1095,19 +1111,21 @@ class BrowserCheck:
             return False, 'no single setup file input on page 1'
         start = time.time()
         field.send_keys(str(self.setup))
-        self.wait_for(lambda: self.active_page() == 5,
-                      'page 5 after loading on page 1', timeout=self.timeout)
+        self.wait_for(lambda: self.active_page() == 4,
+                      'page 4 after loading on page 1', timeout=self.timeout)
         self.wait_settled()
-        figures = self.js("return figureViews().length;")
         alerts = self.js("""return deep('.MuiAlert-message').map(
             e => e.textContent.trim()).filter(t => t);""")
+        self.show_page(5)
+        self.wait_settled()
+        figures = self.js("return figureViews().length;")
         ok = figures > 0 and not alerts
-        return ok, 'switched to page 5 after %.1fs; %d figures; alerts %r' \
+        return ok, 'switched to page 4 after %.1fs; %d figures; alerts %r' \
             % (time.time() - start, figures, alerts)
 
     def check_load_example(self) -> tuple:
         """Select the first example on page 1 and click "Load Example":
-        the app must switch to page 5, which shows figures and no alert.
+        the app must switch to page 4 without alert; page 5 must show figures.
 
         Returns
         -------
@@ -1131,16 +1149,18 @@ class BrowserCheck:
         start = time.time()
         self.js("""deep('button').filter(
             e => e.textContent.trim() === 'Load Example')[0].click();""")
-        self.wait_for(lambda: self.active_page() == 5,
-                      'page 5 after loading an example',
+        self.wait_for(lambda: self.active_page() == 4,
+                      'page 4 after loading an example',
                       timeout=self.timeout)
         self.wait_settled()
-        figures = self.js("return figureViews().length;")
         alerts = self.js("""return deep('.MuiAlert-message').map(
             e => e.textContent.trim()).filter(t => t);""")
-        self.screenshot(5, 'example')
+        self.screenshot(4, 'example')
+        self.show_page(5)
+        self.wait_settled()
+        figures = self.js("return figureViews().length;")
         ok = figures > 0 and not alerts
-        return ok, 'switched to page 5 after %.1fs; %d figures; alerts %r' \
+        return ok, 'switched to page 4 after %.1fs; %d figures; alerts %r' \
             % (time.time() - start, figures, alerts)
 
     def check_load_page1_error(self) -> tuple:

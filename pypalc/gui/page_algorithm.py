@@ -256,7 +256,7 @@ class AlgorithmPage:
         (:func:`~.downloads.setup_yaml`)."""
         self.load_setup_input = setup_file_input()
         """Upload of a setup file; loading it restores the setup, runs the
-        calculation and shows page 5. Page 1 has a second input
+        calculation and shows page 4. Page 1 has a second input
         (:attr:`.PageVenue.load_setup_input`) with the same effect."""
 
     def _setup_file(self) -> Optional[io.StringIO]:
@@ -905,7 +905,7 @@ class AlgorithmPage:
         Decodes the file (UTF-8), reads it with
         :func:`~pypalc.core.settings.load_setup_text` and applies it with
         :func:`~.setup_io.apply_setup`, which runs the calculation and
-        shows page 5. An invalid file shows ``Error: setup file invalid at
+        shows page 4. An invalid file shows ``Error: setup file invalid at
         <key>: <msg>`` and changes nothing. A measured directivity given as
         a path is invalid here, because the GUI only receives the file's
         contents.
@@ -945,7 +945,7 @@ class AlgorithmPage:
 
     def load_example(self, name: str) -> None:
         """Load the example setup ``name`` like :meth:`load_setup` loads a
-        file: apply it, run the calculation and show page 5; an error is
+        file: apply it, run the calculation and show page 4; an error is
         shown in the same way.
 
         Parameters
