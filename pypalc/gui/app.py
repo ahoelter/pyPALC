@@ -753,8 +753,14 @@ class PalcApp:
         widgets = self._config_widgets()
         keys = [key for key in widgets
                 if key not in ('use_discrete_angles', 'fixed_angle', 'top_y')]
-        for key in keys + ['top_y']:
-            self._store_config_value(key, widgets[key].value)
+        # Read every value first: storing the cabinet count or height
+        # compares the array with the previous mounting height and may
+        # raise it in the widget before the loaded height is stored.
+        values = {key: widgets[key].value for key in keys + ['top_y']}
+        for key in keys:
+            self._store_config_value(key, values[key])
+        widgets['top_y'].value = values['top_y']
+        self._store_config_value('top_y', values['top_y'])
         self._config_values_stored()
 
     # ------------------------------------------------------------------

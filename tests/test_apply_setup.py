@@ -610,3 +610,27 @@ def test_save_after_dragging_writes_dragged_points():
     assert saved != ts
     assert saved.points[1].distance == grid[20]
     assert saved.points[1].level_db == -2.0
+
+
+@pytest.mark.parametrize("top_y, shown", [(13.0, "13"), (3.0, "4.8")])
+def test_load_keeps_mounting_height_of_long_array(top_y, shown):
+    """A loaded mounting height is kept when the array fits below it, also
+    if the array is longer than the start-up height (2 m): the cabinet count
+    and height are stored before the mounting height and must not raise it
+    on the way. A height that is really too low is raised, as by hand."""
+    base = case_setup("gap_without")
+    setup = dataclasses.replace(
+        base,
+        loudspeaker=dataclasses.replace(base.loudspeaker, cabinet_height=0.3),
+        array=dataclasses.replace(base.array, cabinet_count=16,
+                                  top_position=(0.0, top_y)))
+    app = new_app()
+    load(app, dump_setup(setup))
+    assert app.pages[3].top_y_input.value == shown
+    assert app.state.config.top_y == pytest.approx(float(shown))
+    assert pipeline.top_position_y(setup) == pytest.approx(float(shown))
+    got = result_arrays(app.state.result)
+    want = result_arrays(run(setup))
+    assert got.keys() == want.keys()
+    for key in want:
+        np.testing.assert_allclose(got[key], want[key], err_msg=key)
