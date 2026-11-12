@@ -464,6 +464,7 @@ class BrowserCheck:
         self.overflow_pages: set = set()
         #: Looks of "PALC Run" seen while a setup was loaded.
         self.load_looks: List[tuple] = []
+        self.load_fingerprint = ''
 
     # ------------------------------------------------------------------
     # Helpers
@@ -1015,21 +1016,27 @@ class BrowserCheck:
         return True, ', '.join(files)
 
     def angles_fingerprint(self) -> str:
-        """The tilt angles of the table of page 4 (it is rebuilt by every
-        calculation and a load changes it), as text."""
-        return self.js("""return JSON.stringify(
-            live('ColumnDataSource').filter(
-                s => s.data && s.data.tilt_angle_deg)
-            .map(s => Array.from(s.data.tilt_angle_deg)));""")
+        """The texts of the cells of the tilt angle table of page 4 (the
+        Tabulator table of the card "Tilt angles", the only table of the
+        app; it is rebuilt by every calculation and a load changes it),
+        joined by ``|``; empty while the table shows no cell."""
+        return self.js("""
+            const tables = deep('.tabulator');
+            const cells = [];
+            for (const t of tables)
+                for (const c of deep('.tabulator-cell', t))
+                    cells.push(c.textContent.trim());
+            return cells.join('|');""")
 
     def wait_load_done(self, expected: dict, before: str,
                        start: float) -> Optional[str]:
         """Wait until a load has finished and page 4 is shown: the fields
         in ``expected`` show their values, "PALC Run" is ready and the
-        tilt angles differ from ``before`` (the fingerprint taken before
-        the load); when the loaded angles are the same as before, these
-        conditions must hold for ``settle`` seconds instead. The looks of
-        "PALC Run" seen meanwhile are kept in ``load_looks`` (for
+        tilt angle table is not empty and differs from ``before`` (the
+        fingerprint taken before the load); when it is the same as before,
+        these conditions must hold for ``settle`` seconds instead. The
+        branch that ended the wait is put in ``load_fingerprint``. The
+        looks of "PALC Run" seen meanwhile are kept in ``load_looks`` (for
         ``running_indicator``); they do not decide the end.
 
         Returns
@@ -1048,12 +1055,23 @@ class BrowserCheck:
             if done and expected:
                 shown = self.js('return fields();')
                 done = all(shown.get(k) == v for k, v in expected.items())
-            if done and self.angles_fingerprint() == before:
+            if not done:
+                since = None
+            else:
+                now = self.angles_fingerprint()
+                done = bool(now)
+            if done and now != before:
+                branch = 'changed'
+            elif done:
                 since = since or time.time()
                 done = time.time() - since >= self.settle
-            elif not done:
-                since = None
+                branch = 'unchanged, ended by settle'
             if done:
+                cells = now.split('|')
+                self.load_fingerprint = '%s (%d cells, first %s; before: %s)' \
+                    % (branch, len(cells), cells[0],
+                       '%d cells' % len(before.split('|')) if before
+                       else 'empty')
                 return None
             if time.time() > end:
                 alerts = self.js("""return deep('.MuiAlert-message').map(
@@ -1117,9 +1135,10 @@ class BrowserCheck:
             problems.append('page 5 shows no figures')
         self.screenshot(5, 'loaded')
         detail = 'stayed on page 4 after %.1fs; page 4 shows %s; ' \
-            '"PALC Run" %r; %d figures on page 5' % (seconds, ', '.join(
-                '%s=%r' % (k, shown.get(k)) for k in expected), look,
-                figures)
+            '"PALC Run" %r; %d figures on page 5; tilt table %s' % (
+                seconds, ', '.join('%s=%r' % (k, shown.get(k))
+                                   for k in expected), look, figures,
+                self.load_fingerprint)
         if problems:
             detail += '; ' + '; '.join(problems)
         return not problems, detail
@@ -1156,8 +1175,9 @@ class BrowserCheck:
         self.wait_settled()
         figures = self.js("return figureViews().length;")
         ok = figures > 0 and not alerts
-        return ok, 'switched to page 4 after %.1fs; %d figures; alerts %r' \
-            % (time.time() - start, figures, alerts)
+        return ok, 'switched to page 4 after %.1fs; %d figures; alerts %r; ' \
+            'tilt table %s' % (time.time() - start, figures, alerts,
+                               self.load_fingerprint)
 
     def check_load_example(self) -> tuple:
         """Select the first example on page 1 and click "Load Example":
@@ -1197,8 +1217,9 @@ class BrowserCheck:
         self.wait_settled()
         figures = self.js("return figureViews().length;")
         ok = figures > 0 and not alerts
-        return ok, 'switched to page 4 after %.1fs; %d figures; alerts %r' \
-            % (time.time() - start, figures, alerts)
+        return ok, 'switched to page 4 after %.1fs; %d figures; alerts %r; ' \
+            'tilt table %s' % (time.time() - start, figures, alerts,
+                               self.load_fingerprint)
 
     def check_load_page1_error(self) -> tuple:
         """An invalid setup (``tests/cases/measured.yaml``) loaded through
