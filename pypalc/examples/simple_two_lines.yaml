@@ -1,0 +1,43 @@
+version: 1
+venue:
+  audience_lines:
+  - start:
+    - 10.0
+    - 0.0
+    stop:
+    - 20.0
+    - 0.0
+    points_per_meter: 1.0
+  - start:
+    - 20.0
+    - 0.0
+    stop:
+    - 30.0
+    - 5.0
+    points_per_meter: 1.0
+loudspeaker:
+  aperture_angle_deg: 3.0
+  cabinet_height: 0.2
+  directivity: circular_piston
+array:
+  cabinet_count: 8
+  top_position:
+  - 0.0
+  - 8.0
+  cabinet_gap: 0.0
+reference_array:
+  type: straight
+  top_angle_deg: 0.0
+  angle_param_deg: 0.0
+  use_discrete_angles: false
+  tilt_angles_deg: []
+algorithm:
+  variant: palc2
+  gap_handling: without
+  soft_margin_strength: 1.0
+  weighting: without
+  weighting_nu: 1.0
+  tolerance: 1.0
+  frequency_range_hz:
+  - 200.0
+  - 8000.0
