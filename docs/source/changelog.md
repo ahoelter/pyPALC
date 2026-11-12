@@ -18,7 +18,7 @@ The first release on PyPI (`pip install pypalc`).
   `--show`/`--no-show` (see {doc}`gui` and {doc}`server`).
 * **Examples:** example setups ship with the package. `pypalc examples DIR`
   copies them; page 1 of the GUI loads them ("Load Example").
-* **Package:** the calculation (`pypalc.core`) needs only numpy, scipy and
+* **Package:** the calculation (`pypalc.core`) imports only numpy, scipy and
   PyYAML; the GUI is installed with it, and `pypalc_gui` is a one-word
   command for `pypalc gui`. The code uses descriptive
   names instead of the paper notation (see {doc}`development`).

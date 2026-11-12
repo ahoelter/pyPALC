@@ -33,7 +33,8 @@ and [Development](https://pypalc.readthedocs.io/en/latest/development.html).
 pypalc gui
 ```
 
-(or `pypalc_gui`, which takes the same options) opens the app at `http://localhost:5006/pyPALC` (options `--port`,
+(or `pypalc_gui`, which takes the same options) opens the app at
+`http://localhost:5006/pyPALC` (options `--port`,
 `--address`, `--allow-websocket-origin`, `--prefix`, `--no-show`). From a
 checkout, without installing pyPALC, run `panel serve pyPALC --show` from the
 folder that contains the `pyPALC` folder.

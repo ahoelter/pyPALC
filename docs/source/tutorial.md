@@ -1,7 +1,7 @@
 # Python tutorial
 
-`pypalc.core` is the calculation without the GUI; it needs only numpy,
-scipy and PyYAML (`pip install pypalc`). This page runs a setup file from
+`pypalc.core` is the calculation without the GUI; it imports only numpy,
+scipy and PyYAML (all installed with `pip install pypalc`). This page runs a setup file from
 Python, looks at the results and builds a setup in code. The code is in two
 scripts, which the tests of pyPALC run:
 {download}`run_setup.py <tutorial/run_setup.py>` and
