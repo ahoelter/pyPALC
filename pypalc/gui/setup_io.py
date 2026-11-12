@@ -416,8 +416,9 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
     (:meth:`~.app.PalcApp.check_venue`), fixes the angle of the uppermost
     cabinet, selects the weighting (for target slope: the initial
     calculation, the hinges, the target points and the reference point),
-    runs the calculation (:meth:`~.app.PalcApp.run_calculation`) and shows
-    page 4 (the results are on page 5).
+    runs the calculation (:meth:`~.app.PalcApp.run_calculation`). The session
+    shows page 4 from the start of the load and stays there, also after a
+    failed calculation (the results are on page 5).
 
     While the widgets are set, ``state.applying_setup`` keeps their
     callbacks from running; this function does their work itself, once and
@@ -478,9 +479,8 @@ def apply_setup(app: PalcApp, setup: Setup) -> None:
         array.update_reference_angles()
         app.check_venue()
         _set_fixed_angle(app, setup.algorithm.fixed_top_angle_deg)
-        if _set_weighting(app, setup) and app.run_calculation():
-            app.page_select.active = 4
-        elif state.result is None:
+        if not (_set_weighting(app, setup) and app.run_calculation()) \
+                and state.result is None:
             # nothing of this setup was calculated: show no results
             # instead of those of the previous setup
             app.clear_results()

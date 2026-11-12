@@ -62,7 +62,7 @@ def test_invalid_file_through_page_1_shows_error():
     app = PalcApp(Document())
     _load(app.pages[1].load_setup_input, b'venue: [')
     assert read(app.config_error_info, 'text').startswith('Error: ')
-    assert read(app.page_select, 'active') != 5
+    assert read(app.page_select, 'active') == 1
     assert app.pages[1].load_setup_input.value is None
 
 
@@ -70,7 +70,7 @@ def test_load_through_page_1_ignored_while_running(monkeypatch):
     app = PalcApp(Document())
     app.pages[4].running = True
     _load(app.pages[1].load_setup_input, _text())
-    assert read(app.page_select, 'active') != 5
+    assert read(app.page_select, 'active') == 1
     assert app.pages[1].load_setup_input.value is None
     app.pages[4].running = False
 

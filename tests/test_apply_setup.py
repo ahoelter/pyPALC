@@ -205,7 +205,7 @@ def by_hand(case):
 def loaded(case):
     """A new session after loading the case."""
     app = new_app()
-    app.page_select.active = 4
+    app.page_select.active = 1
     load(app, case_text(case))
     return app
 

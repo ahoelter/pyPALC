@@ -1014,6 +1014,55 @@ class BrowserCheck:
             files.append(self.screenshot(index, 'fresh').name)
         return True, ', '.join(files)
 
+    def angles_fingerprint(self) -> str:
+        """The tilt angles of the table of page 4 (it is rebuilt by every
+        calculation and a load changes it), as text."""
+        return self.js("""return JSON.stringify(
+            live('ColumnDataSource').filter(
+                s => s.data && s.data.tilt_angle_deg)
+            .map(s => Array.from(s.data.tilt_angle_deg)));""")
+
+    def wait_load_done(self, expected: dict, before: str,
+                       start: float) -> Optional[str]:
+        """Wait until a load has finished and page 4 is shown: the fields
+        in ``expected`` show their values, "PALC Run" is ready and the
+        tilt angles differ from ``before`` (the fingerprint taken before
+        the load); when the loaded angles are the same as before, these
+        conditions must hold for ``settle`` seconds instead. The looks of
+        "PALC Run" seen meanwhile are kept in ``load_looks`` (for
+        ``running_indicator``); they do not decide the end.
+
+        Returns
+        -------
+        str or None
+            The failure text, None when the load has finished.
+        """
+        end = start + self.timeout
+        since = None
+        while True:
+            look = self.run_look()
+            if look is not None:
+                self.load_looks.append((look['label'], look['background']))
+            done = (look is not None and look['label'] == RUN_LABEL
+                    and not look['disabled'] and self.active_page() == 4)
+            if done and expected:
+                shown = self.js('return fields();')
+                done = all(shown.get(k) == v for k, v in expected.items())
+            if done and self.angles_fingerprint() == before:
+                since = since or time.time()
+                done = time.time() - since >= self.settle
+            elif not done:
+                since = None
+            if done:
+                return None
+            if time.time() > end:
+                alerts = self.js("""return deep('.MuiAlert-message').map(
+                    e => e.textContent.trim()).filter(t => t);""")
+                return 'load did not finish within %ds; page %s; look %r; ' \
+                    'alerts %r' % (self.timeout, self.active_page(), look,
+                                   alerts)
+            time.sleep(0.05)
+
     def check_load(self) -> tuple:
         """Load the setup through the "Load Setup" file input of page 4.
 
@@ -1040,27 +1089,12 @@ class BrowserCheck:
             e => e.accept.indexOf('.yaml') >= 0);""")
         if len(inputs) != 1:
             return False, '%d setup file inputs found' % len(inputs)
+        before = self.angles_fingerprint()
         start = time.time()
         inputs[0].send_keys(str(self.setup))
-        end = start + self.timeout
-        while True:
-            look = self.run_look()
-            if look is not None:
-                self.load_looks.append((look['label'], look['background']))
-                # page 4 is shown before the load, so the end of the load
-                # is "PALC Run" ready again after it was seen running
-                if (look['label'] == RUN_LABEL and not look['disabled']
-                        and len(self.load_looks) > 1
-                        and any(label != RUN_LABEL
-                                for label, _ in self.load_looks)):
-                    break
-            if time.time() > end:
-                alerts = self.js("""return deep('.MuiAlert-message').map(
-                    e => e.textContent.trim()).filter(t => t);""")
-                return False, 'load did not finish within %ds; ' \
-                    'page %s; alerts %r' % (self.timeout, self.active_page(),
-                                            alerts)
-            time.sleep(0.05)
+        failure = self.wait_load_done(expected, before, start)
+        if failure:
+            return False, failure
         self.wait_settled()
         seconds = time.time() - start
         problems = []
@@ -1109,10 +1143,12 @@ class BrowserCheck:
         field = self.page1_setup_input()
         if field is None:
             return False, 'no single setup file input on page 1'
+        before = self.angles_fingerprint()
         start = time.time()
         field.send_keys(str(self.setup))
-        self.wait_for(lambda: self.active_page() == 4,
-                      'page 4 after loading on page 1', timeout=self.timeout)
+        failure = self.wait_load_done({}, before, start)
+        if failure:
+            return False, failure
         self.wait_settled()
         alerts = self.js("""return deep('.MuiAlert-message').map(
             e => e.textContent.trim()).filter(t => t);""")
@@ -1146,12 +1182,13 @@ class BrowserCheck:
             e => e.textContent.trim() === 'Load Example').length;""")
         if buttons != 1:
             return False, '%d "Load Example" buttons found' % buttons
+        before = self.angles_fingerprint()
         start = time.time()
         self.js("""deep('button').filter(
             e => e.textContent.trim() === 'Load Example')[0].click();""")
-        self.wait_for(lambda: self.active_page() == 4,
-                      'page 4 after loading an example',
-                      timeout=self.timeout)
+        failure = self.wait_load_done({}, before, start)
+        if failure:
+            return False, failure
         self.wait_settled()
         alerts = self.js("""return deep('.MuiAlert-message').map(
             e => e.textContent.trim()).filter(t => t);""")

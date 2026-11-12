@@ -77,7 +77,7 @@ def test_example_ignored_while_running():
     app = PalcApp(Document())
     app.pages[4].running = True
     _click(app)
-    assert read(app.page_select, 'active') != 5
+    assert read(app.page_select, 'active') == 1
     app.pages[4].running = False
 
 
@@ -89,7 +89,7 @@ def test_example_error_shown_on_page_1(monkeypatch):
     _click(app)
     assert app.config_error_info.object == \
         'Error: setup file invalid at x: bad'
-    assert read(app.page_select, 'active') != 5
+    assert read(app.page_select, 'active') == 1
     assert app.pages[4].running is False
 
 
