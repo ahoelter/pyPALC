@@ -26,7 +26,8 @@ import numpy as np
 import pandas as pd
 import panel as pn
 import panel_material_ui as pmui
-from bokeh.models import ColumnDataSource, NumberFormatter, PointDrawTool
+from bokeh.models import (ColumnDataSource, HoverTool, NumberFormatter,
+                          PointDrawTool)
 from bokeh.plotting import figure
 
 from pypalc.core.errors import SetupError
@@ -278,30 +279,27 @@ class AlgorithmPage:
             title="SPL over Distance (maximum SPL normalized to 0 dB)",
             x_axis_label="Distance LSA to Receiver in m",
             y_axis_label="SPL change in dB",
-            tools="box_zoom,pan,wheel_zoom,reset,hover,save, tap",
-            tooltips=[("Title", "$name"), ("Index", "$index"),
-                      ("SPL in dB", "$y"), ("Distance", "$x"),
-                      ("(x,y) of Venue Slice in m", "@x_m, @y_m")],
+            tools="box_zoom,pan,wheel_zoom,reset,save, tap",
             y_range=(-15, 0.3), sizing_mode='stretch_width',
             height=VENUE_MAX_HEIGHT)
         spl_figure.toolbar.logo = None
-        spl_figure.line('distance_m', 'spl_db',
-                        source=self.spl_over_distance_source,
-                        color="lightskyblue", name="PALC",
-                        legend_label='PALC (optimized)')
-        spl_figure.line('distance_m', 'reference_spl_db',
-                        source=self.reference_spl_over_distance_source,
-                        color="orange", name="Reference",
-                        legend_label='Reference LSA')
+        palc_line = spl_figure.line('distance_m', 'spl_db',
+                                    source=self.spl_over_distance_source,
+                                    color="lightskyblue", name="PALC",
+                                    legend_label='PALC (optimized)')
+        reference_line = spl_figure.line(
+            'distance_m', 'reference_spl_db',
+            source=self.reference_spl_over_distance_source,
+            color="orange", name="Reference", legend_label='Reference LSA')
         target_line = spl_figure.line('distance_m', 'level_db',
                                       source=self.target_source,
-                                      color="lime", name="Reference",
+                                      color="lime", name="Target Slope",
                                       legend_label='Target Slope')
         target_points = spl_figure.scatter('distance_m', 'level_db',
                                            source=self.target_source,
                                            line_color="yellow",
                                            fill_color="black", line_width=2,
-                                           name="Reference",
+                                           name="Target Slope",
                                            legend_label='Target Slope')
         reference_point = spl_figure.scatter(
             'distance_m', 'level_db', source=self.target_reference_source,
@@ -309,6 +307,14 @@ class AlgorithmPage:
             name="Reference Point", legend_label="Reference Point")
         spl_figure.patch('x', 'y', source=self.target_region_source,
                          alpha=0.2, line_width=0.1)
+        # Hover only on the lines and points: the shaded target region
+        # covers the whole plot and has none of the hovered fields.
+        spl_figure.add_tools(HoverTool(
+            renderers=[palc_line, reference_line, target_line, target_points,
+                       reference_point],
+            tooltips=[("Title", "$name"), ("Index", "$index"),
+                      ("SPL in dB", "$y"), ("Distance", "$x"),
+                      ("(x,y) of Venue Slice in m", "@x_m, @y_m")]))
         legend = spl_figure.legend
         legend.location, legend.orientation = 'top_right', 'horizontal'
         legend.margin, legend.glyph_width = 0, 30

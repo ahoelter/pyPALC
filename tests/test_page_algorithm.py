@@ -129,3 +129,20 @@ def test_one_error_text_for_pages_2_to_4():
     assert alert.visible and alert.severity == 'error'
     app.pages[3].cabinet_count_input.value = '5'
     assert read(alert, 'text') == '' and not alert.visible
+
+
+def test_spl_over_distance_hover_only_on_lines_and_points():
+    """The hover of "SPL over distance" shows values only on the lines and
+    points: not on the shaded target region, which covers the whole plot
+    (it would show a tooltip everywhere, with ??? for the missing fields).
+    Every hovered glyph has a name and the venue coordinates."""
+    from bokeh.models import HoverTool, Patch
+    fig = PalcApp(Document()).pages[4].spl_over_distance_figure
+    (hover,) = [t for t in fig.toolbar.tools if isinstance(t, HoverTool)]
+    patches = [r for r in fig.renderers if isinstance(r.glyph, Patch)]
+    assert patches and hover.renderers != 'auto'
+    assert not set(patches) & set(hover.renderers)
+    assert {r.name for r in hover.renderers} == {
+        'PALC', 'Reference', 'Target Slope', 'Reference Point'}
+    for renderer in hover.renderers:
+        assert {'x_m', 'y_m'} <= set(renderer.data_source.data)
