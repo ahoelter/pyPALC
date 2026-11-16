@@ -32,7 +32,7 @@ def _gui_pngs():
 
 
 def test_version():
-    assert pypalc.__version__ == '0.1.0'
+    assert pypalc.__version__ == '0.1.1'
     data = _pyproject()
     assert data['project']['dynamic'] == ['version']
     assert (data['tool']['setuptools']['dynamic']['version']
