@@ -223,7 +223,12 @@ _SOUND_FIELD = (
      '<i>PALC</i> optimized tilt angles.',
      '<b>30. SPL at all audience positions: Reference array</b>: frequency '
      'responses at all audience positions for the <i>reference loudspeaker '
-     'array</i>.'),
+     'array</i>.',
+     '<b>Smoothing</b> of (29.) and (30.): <i>None</i> shows the '
+     'frequency responses as calculated, in 1/12 octave steps; <i>1/3 '
+     'octave</i> and <i>Octave</i> average the sound power over that '
+     'bandwidth. It changes only the display: the homogeneity (31.), the '
+     'bar charts and the downloads use the unsmoothed values.'),
     ('<b>31. Homogeneity</b> over frequency at all audience positions for '
      'the loudspeaker array using the <i>PALC</i> optimized tilt angles in '
      'blue and for the <i>reference loudspeaker array</i> in orange.',

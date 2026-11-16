@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+* **GUI:** the frequency responses on page 5 (29. and 30.) can be shown
+  smoothed over 1/3 octave or an octave ("Smoothing"); the homogeneity,
+  the bar charts and the downloads stay unsmoothed.
+* **API:** {func}`pypalc.core.sound_field.smooth_fractional_octave`
+  replaces the unused `smooth_spectrum`.
+
 ## 0.1.0
 
 The first release on PyPI (`pip install pypalc`).

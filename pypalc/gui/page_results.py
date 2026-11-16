@@ -21,7 +21,7 @@ from bokeh.models import (ColorBar, ColumnDataSource, CustomJS,
 from bokeh.palettes import Cividis256
 from bokeh.plotting import figure
 
-from pypalc.core.sound_field import beam_plot_spl
+from pypalc.core.sound_field import beam_plot_spl, smooth_fractional_octave
 from pypalc.gui import CALLBACK_ERRORS
 from pypalc.gui.ranges import (VARIABLE_HEIGHT, VENUE_MAX_HEIGHT,
                                ScaledFigure, data_aspect, set_data_ranges)
@@ -40,6 +40,12 @@ F_TICKS_OVERRIDE = {20: '0.02', 50: '0.05', 100: '0.1', 200: '0.2', 500: '0.5',
 #: Frequencies of the beam plots in Hz.
 BEAM_FREQUENCIES = ['63', '125', '250', '500', '1000', '2000', '4000', '8000',
                     '16000']
+#: Smoothing of the frequency responses (29., 30.): the shown label and b
+#: of the 1/b octave window; 0 shows them unsmoothed, in the 1/12 octave
+#: steps of the sound field prediction (not None: the selection would show
+#: no label for it).
+SMOOTHING = {'None (1/12 octave resolution)': 0, '1/3 octave': 3,
+             'Octave': 1}
 #: Height in px of the venue points figure and of the figures shown side
 #: by side (frequency responses, bar charts).
 POINTS_HEIGHT = 300
@@ -107,6 +113,13 @@ class ResultsPage:
             'Frequency in Hz', list(BEAM_FREQUENCIES), '63', width=160,
             sizing_mode='fixed')
         """Frequency of the beam plots."""
+        self.smoothing_select = select(
+            'Smoothing', dict(SMOOTHING), 0, width=240,
+            sizing_mode='fixed')
+        """Smoothing of the frequency responses (29., 30.)."""
+        self._response_indices: list = []
+        """The tapped venue points whose frequency responses are shown;
+        empty: all."""
         self.beam_checkbox = pmui.CheckButtonGroup(
             options=['PALC', 'Reference'], value=[], disabled=True,
             size='small', color='primary', align='center', margin=(4, 8))
@@ -214,6 +227,8 @@ class ResultsPage:
         """Tabs of the figures."""
         self.scale_beam_figures()
         # callbacks
+        watch(self.smoothing_select, lambda event: self.show_responses(
+            self.app.state.result, self._response_indices), 'value')
         watch(self.beam_frequency_select, lambda event: (
             self.update_beam_plot('value', event.old, event.new)), 'value')
         watch(self.beam_checkbox, lambda event: (
@@ -336,7 +351,11 @@ class ResultsPage:
             responses, homogeneity, bars, beams = self._tab_columns
             responses.objects = [
                 pane(self.venue_points_figure),
-                caption('Tap a position to see its frequency responses.'),
+                pn.Row(self.smoothing_select,
+                       caption('Tap a position to see its frequency '
+                               'responses.', align='center',
+                               sizing_mode=None, margin=(2, 0, 2, 16)),
+                       margin=0),
                 pair(self.sound_field_figure,
                      self.reference_sound_field_figure)]
             homogeneity.objects = [pane(self.homogeneity_figure)]
@@ -501,26 +520,41 @@ class ResultsPage:
         -------
         None.
         """
-        result = self.app.state.result
+        self.show_responses(self.app.state.result, new)
+
+    def show_responses(self, result, indices=()) -> None:
+        """Show the frequency responses (29., 30.) of the venue points
+        ``indices`` (all if empty), smoothed as chosen in
+        :attr:`smoothing_select`.
+
+        Parameters
+        ----------
+        result : RunResult or None
+            The calculation to show; None shows nothing.
+        indices : list of int
+            Tapped venue points.
+
+        Returns
+        -------
+        None.
+        """
+        self._response_indices = list(indices)
         if result is None:
             return
         evaluation = result.optimized.evaluation
         evaluation_reference = result.reference.evaluation
-        frequencies, spl_db, reference_spl_db = [], [], []
-        if np.shape(new)[0] >= 1:
-            for n in range(np.shape(new)[0]):
-                frequencies.append(evaluation.plot_frequencies[new[n]])
-                spl_db.append(evaluation.plot_spl_db[new[n]])
-                reference_spl_db.append(
-                    evaluation_reference.plot_spl_db[new[n]])
-            self.sound_field_source.data = dict(
-                frequencies_hz=frequencies, spl_db=spl_db,
-                line_index=list(np.arange(np.shape(spl_db)[0])),
-                reference_spl_db=reference_spl_db)
-        else:
-            self.sound_field_source.data = dict(
-                frequencies_hz=evaluation.plot_frequencies,
-                spl_db=evaluation.plot_spl_db,
-                line_index=list(np.arange(
-                    np.shape(evaluation.plot_spl_db)[0])),
-                reference_spl_db=evaluation_reference.plot_spl_db)
+        rows = (self._response_indices
+                or range(np.shape(evaluation.plot_spl_db)[0]))
+        fraction = self.smoothing_select.value or None
+
+        def responses(of):
+            shown = [of.plot_spl_db[n] for n in rows]
+            if fraction is None:
+                return shown
+            return [list(row) for row in smooth_fractional_octave(
+                of.frequencies, shown, fraction)]
+        spl_db = responses(evaluation)
+        self.sound_field_source.data = dict(
+            frequencies_hz=[evaluation.plot_frequencies[n] for n in rows],
+            spl_db=spl_db, line_index=list(np.arange(len(spl_db))),
+            reference_spl_db=responses(evaluation_reference))

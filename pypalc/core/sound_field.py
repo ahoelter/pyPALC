@@ -800,35 +800,50 @@ def acoustic_contrast(spl_db, non_audience_spl_db, x_a, y_a, x_na, y_na, p0):
     return L_p_a_na
 
 
-def smooth_spectrum(frequencies, X_f, r_oct):
+def smooth_fractional_octave(frequencies, spl_db, fraction):
     """
-    Smoothes a frequency spectrum. Not used in bokeh.
+    Smoothes frequency responses over a fraction of an octave. Each value
+    is the average of the sound power (not of the level) in the window of
+    1/``fraction`` octave centered at its frequency. Each bin covers half
+    the way to its neighbours on the logarithmic frequency axis and is
+    weighted with the part of it inside the window; at the ends of the
+    frequency range the window holds only the bins there are. The GUI
+    shows the frequency responses of page 5 smoothed with it.
 
     Parameters
     ----------
     frequencies : 1D-array
-        Frequency bins.
-    X_f : 1D-array
-        Spectrum to be smoothed.
-    r_oct : float
-        Resolution to smooth.
+        Frequency bins in Hz, ascending.
+    spl_db : 1D- or 2D-array
+        Frequency response(s) in dB, one per row, over ``frequencies``.
+    fraction : int or None
+        b of the 1/b octave window (3: third octave, 1: octave); None
+        returns the responses unsmoothed.
 
     Returns
     -------
-    X_f_out : 1D-array
-        Smoothed spectrum.
+    smoothed_db : 1D- or 2D-array
+        The smoothed frequency response(s) in dB, of the shape of
+        ``spl_db``.
 
     """
-    X_f_out = np.zeros(np.shape(X_f))
-    for n in range(np.shape(frequencies)[0]):
-        # standard deviation
-        sigma = frequencies[n] / r_oct / np.pi
-        # Gaussian window with the center frequnecy frequencies[n] an dstandard deviation
-        w = np.exp( -(frequencies-frequencies[n])**2 / (2*sigma**2) )
-        w = w / np.sum(w, axis=0)
-        X_f_out[n] = np.sum(w * X_f)
-    
-    return X_f_out
+    spl_db = np.array(spl_db, dtype=float)
+    frequencies = np.asarray(frequencies, dtype=float)
+    if fraction is None or np.size(frequencies) < 2:
+        return spl_db
+    # bin edges in octaves: halfway to the neighbours
+    octaves = np.log2(frequencies)
+    middles = (octaves[1:] + octaves[:-1]) / 2
+    lower = np.concatenate(([2 * octaves[0] - middles[0]], middles))
+    upper = np.concatenate((middles, [2 * octaves[-1] - middles[-1]]))
+    # part of each bin (column) in the window of each frequency (row)
+    half_width = 1 / (2 * fraction)
+    weights = np.clip(
+        np.minimum(upper[None, :], octaves[:, None] + half_width)
+        - np.maximum(lower[None, :], octaves[:, None] - half_width),
+        0, None)
+    weights /= np.sum(weights, axis=1, keepdims=True)
+    return 10 * np.log10(10 ** (spl_db / 10) @ weights.T)
 
 
 def initial_directivity_plot():

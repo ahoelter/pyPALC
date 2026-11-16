@@ -872,11 +872,7 @@ class PalcApp:
             'x_m', 'y_m', source=results.venue_points_source, marker='x',
             color=linear_cmap('point_index', rainbow[::-1], 0,
                               np.shape(evaluation.spl_db)[0]-1))
-        results.sound_field_source.data = dict(
-            spl_db=evaluation.plot_spl_db,
-            frequencies_hz=evaluation.plot_frequencies,
-            line_index=list(np.arange(np.shape(evaluation.plot_spl_db)[0])),
-            reference_spl_db=evaluation_reference.plot_spl_db)
+        results.show_responses(result)
         results.sound_field_figure.multi_line(
             'frequencies_hz', 'spl_db', source=results.sound_field_source,
             color=linear_cmap(field_name='line_index', palette=rainbow[::-1],

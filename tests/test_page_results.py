@@ -13,6 +13,7 @@ from bokeh.document import Document
 from bokeh.models import BoxZoomTool, CustomJS, Range1d
 
 from pypalc.core.settings import load_setup
+from pypalc.core.sound_field import smooth_fractional_octave
 from pypalc.gui.app import PalcApp
 from pypalc.gui.ranges import VARIABLE_HEIGHT, VENUE_MAX_HEIGHT, ScaledFigure
 from tests.baseline_cases import case_path
@@ -186,6 +187,69 @@ def test_tapped_venue_points_show_their_responses(ran):
     write(page.venue_points_source, 'selected', [])
     assert len(page.sound_field_source.data['spl_db']) == \
         len(evaluation.plot_spl_db)
+
+
+def test_smoothing_select():
+    select = PalcApp(Document()).pages[5].smoothing_select
+    assert isinstance(select, pmui.Select)
+    assert select.label == 'Smoothing'
+    assert select.options == {'None (1/12 octave resolution)': 0,
+                              '1/3 octave': 3, 'Octave': 1}
+    assert select.value == 0
+
+
+def _smoothed(evaluation, rows, fraction):
+    return [list(smooth_fractional_octave(evaluation.plot_frequencies[n],
+                                          evaluation.plot_spl_db[n],
+                                          fraction)) for n in rows]
+
+
+def test_the_smoothing_applies_to_the_shown_responses(ran):
+    """The smoothing changes the responses (29., 30.) of all or the tapped
+    venue points; the homogeneity stays unsmoothed."""
+    page = ran.pages[5]
+    evaluation = ran.state.result.optimized.evaluation
+    reference = ran.state.result.reference.evaluation
+    homogeneity = dict(page.homogeneity_source.data)
+    every = range(len(evaluation.plot_spl_db))
+    try:
+        write(page.smoothing_select, 'value', 3)
+        data = page.sound_field_source.data
+        np.testing.assert_allclose(data['spl_db'],
+                                   _smoothed(evaluation, every, 3))
+        np.testing.assert_allclose(data['reference_spl_db'],
+                                   _smoothed(reference, every, 3))
+        assert not np.allclose(data['spl_db'], evaluation.plot_spl_db)
+        # tapped points stay smoothed, also when the smoothing changes
+        write(page.venue_points_source, 'selected', [2, 5])
+        np.testing.assert_allclose(page.sound_field_source.data['spl_db'],
+                                   _smoothed(evaluation, [2, 5], 3))
+        write(page.smoothing_select, 'value', 1)
+        data = page.sound_field_source.data
+        np.testing.assert_allclose(data['spl_db'],
+                                   _smoothed(evaluation, [2, 5], 1))
+        np.testing.assert_allclose(data['reference_spl_db'],
+                                   _smoothed(reference, [2, 5], 1))
+        assert data['line_index'] == [0, 1]
+        assert page.homogeneity_source.data == homogeneity
+    finally:
+        write(page.smoothing_select, 'value', 0)
+        write(page.venue_points_source, 'selected', [])
+    # no smoothing shows the calculated responses
+    assert page.sound_field_source.data['spl_db'] == evaluation.plot_spl_db
+
+
+def test_a_new_result_is_shown_with_the_chosen_smoothing(ran):
+    page = ran.pages[5]
+    try:
+        write(page.smoothing_select, 'value', 1)
+        ran.pages[4].start_toggle.value = True
+        evaluation = ran.state.result.optimized.evaluation
+        np.testing.assert_allclose(
+            page.sound_field_source.data['spl_db'],
+            _smoothed(evaluation, range(len(evaluation.plot_spl_db)), 1))
+    finally:
+        write(page.smoothing_select, 'value', 0)
 
 
 def test_a_new_result_resets_the_beam_selection(ran):
